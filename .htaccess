@@ -1,9 +1,5 @@
 # SGD — protecção de ficheiros sensíveis e pastas internas.
 
-# Página de entrada e sem listagem de directório.
-DirectoryIndex login.php
-Options -Indexes
-
 # Bloqueia acesso directo a ficheiros de configuração/dados/documentação.
 <FilesMatch "\.(sql|env|md|ini|log)$">
     Require all denied
