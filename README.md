@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SGD — Sistema de Gestão de Processos
 
 Tribunal Supremo de Cabo Verde. Aplicação multi-página com backend PHP/MySQL
@@ -114,3 +115,6 @@ sempre a `painel.php` — a página inicial da plataforma depois do login.
   o acesso a qualquer página até o utilizador trocar a senha em `perfil.php`, que só dá acesso ao resto
   da plataforma depois da troca
 - `.htaccess` bloqueia acesso directo a `.sql`/`.env`/`.md` e às pastas `config/`, `includes/`, `scripts/`
+=======
+# SGDSTJ
+>>>>>>> 1521a3795263f57944accdba1ffa90c6a1bf9989
