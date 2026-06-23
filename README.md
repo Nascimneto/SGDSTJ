@@ -59,6 +59,7 @@ Botão "Imprimir" usa `window.print()` com a barra de filtros e a navegação es
 SGD/
 ├── login.php, painel.php, processos.php, conclusao.php, vistos.php,
 │   estatisticas.php, utilizadores.php, perfil.php, configuracoes.php
+├── instalar.php        ← cria o admin em produção sem SSH (ver "Deploy em produção"); apagar após uso
 ├── config/             ← ligação à BD, sessão, parser do .env (bloqueado por .htaccess)
 ├── includes/           ← guard de autenticação, layout partilhado (bloqueado por .htaccess)
 ├── api/                ← endpoints PHP (JSON), exigem sessão válida
@@ -115,8 +116,14 @@ sempre a `painel.php` — a página inicial da plataforma depois do login.
    com as credenciais reais da base de dados criada no passo 3. Nunca commitar este ficheiro.
 6. **Schema**: importar `database.sql` via phpMyAdmin (hPanel → Bases de Dados → phpMyAdmin →
    Importar) na base de dados criada no passo 3.
-7. **Seed inicial**: via SSH, `cd public_html && php scripts/seed.php` — cria o utilizador `admin`
-   (senha inicial `stj@2026`, troca obrigatória no primeiro login) e os processos de demonstração.
+7. **Criar o admin inicial** — duas formas, conforme o plano:
+   - **Com SSH** (hPanel → Avançado → Acesso SSH): `cd public_html && php scripts/seed.php` — cria o
+     `admin` e também processos de demonstração (úteis em staging, dispensáveis em produção real).
+   - **Sem SSH**: definir `INSTALL_TOKEN` no `.env` (um valor aleatório só teu) e abrir
+     `https://<dominio>/instalar.php?token=<o-mesmo-valor>` — cria só o utilizador `admin`, sem dados
+     de demonstração. Depois de confirmar a criação, **apagar `instalar.php` e remover `INSTALL_TOKEN`
+     do `.env`** — o ficheiro fica inútil sem token, mas não vale a pena deixá-lo exposto.
+   - Em ambos os casos, a senha inicial é `stj@2026`, com troca obrigatória no primeiro login.
 8. **SSL/HTTPS**: activar o certificado gratuito em hPanel → Segurança → SSL (Let's Encrypt) — costuma
    ficar activo em poucos minutos. O `.htaccess` já força o redireccionamento `http://` → `https://`.
 9. Confirmar o login em `https://<dominio>/login.php` e trocar a senha do `admin` imediatamente.
@@ -138,3 +145,6 @@ sempre a `painel.php` — a página inicial da plataforma depois do login.
 - `.htaccess` bloqueia acesso directo a `.sql`/`.env`/`.md` e às pastas `config/`, `includes/`, `scripts/`
 - `.htaccess` força HTTPS (redireccionamento 301 de `http://` para `https://`) em produção
 - `.env` está em `.gitignore` — nunca é versionado; usar `.env.example` como modelo
+- `instalar.php` (raiz) só responde se `INSTALL_TOKEN` estiver definido no `.env` e for passado em
+  `?token=` — fail-closed por defeito (token vazio = 404 sempre); usar e apagar logo a seguir (ver
+  secção "Deploy em produção")
