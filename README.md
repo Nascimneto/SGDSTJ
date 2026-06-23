@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # SGD — Sistema de Gestão de Processos
 
 Tribunal Supremo de Cabo Verde. Aplicação multi-página com backend PHP/MySQL
@@ -100,6 +99,28 @@ sempre a `painel.php` — a página inicial da plataforma depois do login.
 - Exportação: jsPDF + jsPDF-AutoTable (PDF), SheetJS/xlsx (Excel), impressão via `window.print()`
 - Ícones: Tabler Icons v2.44 · Fontes: IBM Plex Sans/Mono (Google Fonts)
 
+## Deploy em produção (Hostinger)
+1. **Plano**: escolher um plano com PHP 8, MySQL e, idealmente, acesso SSH (hPanel → Avançado →
+   Acesso SSH) — necessário para correr `scripts/seed.php` na primeira instalação. Sem SSH, o seed
+   tem de ser adaptado para correr uma única vez via browser (não incluído por defeito, porque
+   `scripts/seed.php` rejeita invocação fora da CLI de propósito).
+2. **Domínio**: associar o domínio (ou subdomínio) ao plano em hPanel → Domínios, apontando para a
+   pasta onde o código vai ficar (normalmente `public_html/`).
+3. **Base de dados**: criar uma base de dados MySQL em hPanel → Bases de Dados → Gestor de Bases de
+   Dados (nome, utilizador e senha próprios — nunca reutilizar `root` sem senha como em desenvolvimento
+   local). O host é normalmente `localhost`, porta `3306`.
+4. **Código**: enviar os ficheiros para `public_html/` — via hPanel → Git (ligar directamente ao
+   repositório `https://github.com/Nascimneto/SGDSTJ`) ou por Gestor de Ficheiros/FTP.
+5. **`.env`**: criar manualmente o ficheiro `.env` no servidor (não existe no Git — ver `.env.example`)
+   com as credenciais reais da base de dados criada no passo 3. Nunca commitar este ficheiro.
+6. **Schema**: importar `database.sql` via phpMyAdmin (hPanel → Bases de Dados → phpMyAdmin →
+   Importar) na base de dados criada no passo 3.
+7. **Seed inicial**: via SSH, `cd public_html && php scripts/seed.php` — cria o utilizador `admin`
+   (senha inicial `stj@2026`, troca obrigatória no primeiro login) e os processos de demonstração.
+8. **SSL/HTTPS**: activar o certificado gratuito em hPanel → Segurança → SSL (Let's Encrypt) — costuma
+   ficar activo em poucos minutos. O `.htaccess` já força o redireccionamento `http://` → `https://`.
+9. Confirmar o login em `https://<dominio>/login.php` e trocar a senha do `admin` imediatamente.
+
 ## Segurança
 - Sessões PHP (`httponly`, `SameSite=Strict`), senhas com `password_hash()` (bcrypt)
 - RBAC aplicado no servidor (`includes/guard.php`, `includes/api_guard.php`), nunca só no cliente
@@ -115,6 +136,5 @@ sempre a `painel.php` — a página inicial da plataforma depois do login.
   o acesso a qualquer página até o utilizador trocar a senha em `perfil.php`, que só dá acesso ao resto
   da plataforma depois da troca
 - `.htaccess` bloqueia acesso directo a `.sql`/`.env`/`.md` e às pastas `config/`, `includes/`, `scripts/`
-=======
-# SGDSTJ
->>>>>>> 1521a3795263f57944accdba1ffa90c6a1bf9989
+- `.htaccess` força HTTPS (redireccionamento 301 de `http://` para `https://`) em produção
+- `.env` está em `.gitignore` — nunca é versionado; usar `.env.example` como modelo

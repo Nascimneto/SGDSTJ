@@ -9,8 +9,15 @@ Options -Indexes
     Require all denied
 </FilesMatch>
 
-# Nega acesso directo a includes/ e config/ (só usados via include() pelo PHP).
+# Força HTTPS em produção (certificado fornecido pelo hosting, ex: Let's Encrypt
+# no Hostinger). Exclui localhost/127.0.0.1 para não quebrar o XAMPP local, que
+# não tem certificado configurado.
 RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Nega acesso directo a includes/ e config/ (só usados via include() pelo PHP).
 RewriteRule ^(includes|config|scripts)/ - [F,L]
 
 # Cabeçalhos de segurança básicos.
