@@ -1,0 +1,21 @@
+# SGD — protecção de ficheiros sensíveis e pastas internas.
+
+# Página de entrada e sem listagem de directório.
+DirectoryIndex login.php
+Options -Indexes
+
+# Bloqueia acesso directo a ficheiros de configuração/dados/documentação.
+<FilesMatch "\.(sql|env|md|ini|log)$">
+    Require all denied
+</FilesMatch>
+
+# Nega acesso directo a includes/ e config/ (só usados via include() pelo PHP).
+RewriteEngine On
+RewriteRule ^(includes|config|scripts)/ - [F,L]
+
+# Cabeçalhos de segurança básicos.
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "same-origin"
+</IfModule>
