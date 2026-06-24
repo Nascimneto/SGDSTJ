@@ -1,27 +1,7 @@
 <?php
-require_once __DIR__ . '/includes/guard.php';
-exigirPerfil(['Administrador']);
-$paginaActiva = 'configuracoes';
-$tituloPagina = 'Configurações';
-?>
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-<?php include __DIR__ . '/includes/head.php'; ?>
-</head>
-<body data-pagina="<?= sgd_e($paginaActiva) ?>">
-<div id="app">
-  <?php include __DIR__ . '/includes/sidebar.php'; ?>
-  <div class="main">
-    <?php include __DIR__ . '/includes/topbar.php'; ?>
-    <div class="content" id="content">
-      <div class="empty"><i class="ti ti-loader-2"></i><p>A carregar...</p></div>
-    </div>
-  </div>
-</div>
-<?php include __DIR__ . '/includes/modais.php'; ?>
-<script src="<?= sgd_asset('js/comum.js') ?>"></script>
-<script src="<?= sgd_asset('js/api.js') ?>"></script>
-<script src="<?= sgd_asset('js/configuracoes.js') ?>"></script>
-</body>
-</html>
+require_once __DIR__ . '/app/bootstrap.php';
+require_once __DIR__ . '/app/Core/PageGuard.php';
+PageGuard::aplicar();
+PageGuard::exigirPerfil(['Administrador']);
+require_once __DIR__ . '/app/Controllers/ConfiguracaoController.php';
+(new ConfiguracaoController())->index();

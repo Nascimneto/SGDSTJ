@@ -13,8 +13,9 @@ RewriteCond %{HTTPS} off
 RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Nega acesso directo a includes/ e config/ (só usados via include() pelo PHP).
-RewriteRule ^(includes|config|scripts)/ - [F,L]
+# Nega acesso directo a includes/, config/, app/ e scripts/ (só usados via
+# include()/require() pelo PHP, nunca pedidos directos do browser).
+RewriteRule ^(includes|config|app|scripts)/ - [F,L]
 
 # Cabeçalhos de segurança básicos.
 <IfModule mod_headers.c>

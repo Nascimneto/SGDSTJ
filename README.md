@@ -20,7 +20,37 @@ Tribunal Supremo de Cabo Verde. Aplicação multi-página com backend PHP/MySQL
    ```
 4. Abrir `login.php` através do Apache (ex: `http://localhost/SGD/login.php`).
 
-As credenciais de demonstração ficam definidas em `scripts/seed.php`. A senha inicial é sempre a mesma para todos os utilizadores — `stj@2026` (constante `SGD_SENHA_INICIAL` em `includes/senha.php`) — atribuída automaticamente na criação (e usada também pelo seed); como qualquer senha definida por outra pessoa, a aplicação obriga a troca no primeiro login seguinte.
+As credenciais de demonstração ficam definidas em `scripts/seed.php`. A senha inicial é sempre a mesma para todos os utilizadores — `stj@2026` — atribuída automaticamente na criação e usada também pelo seed; como qualquer senha definida por outra pessoa, a aplicação obriga a troca no primeiro login seguinte. O valor vive em dois sítios com o mesmo literal (nunca um a chamar o outro, propositadamente — ver "Arquitectura"): `Senha::INICIAL` (`app/Core/Senha.php`), usada pela app; e a constante `SGD_SENHA_INICIAL` (`includes/senha.php`), usada só por `scripts/seed.php` e `instalar.php`, que ficaram fora da migração para MVC.
+
+## Arquitectura (MVC leve)
+Desde 2026-06-24 a app segue um padrão MVC sem router central — `login.php`, `painel.php`,
+`processos.php`, etc. (raiz) e os endpoints em `api/**/*.php` mantêm exactamente os mesmos URLs de
+sempre, mas passaram a ser shims de ~6 linhas que chamam um Controller em `app/Controllers/`:
+```php
+require_once __DIR__ . '/app/bootstrap.php';
+require_once __DIR__ . '/app/Core/PageGuard.php';
+PageGuard::aplicar();
+require_once __DIR__ . '/app/Controllers/ProcessoController.php';
+(new ProcessoController())->index();
+```
+- `app/Core/` — ligação à BD (`Database`), sessão/autenticação (`Session`, `Auth`), guards de página
+  e de API (`PageGuard`, `ApiGuard`), auditoria (`Auditoria`), política de senha (`Senha`), helpers de
+  template (`Helpers.php` — `sgd_e()`/`sgd_iniciais()`/`sgd_asset()` continuam funções globais, não
+  métodos estáticos, porque são chamadas centenas de vezes dentro das Views) e `View::render()`.
+- `app/Models/` — uma classe por domínio (`ProcessoModel`, `UtilizadorModel`, etc.), um método por
+  query/operação, sem nenhum `echo`/`http_response_code()`/`exit` (erros voltam como
+  `['erro' => ..., 'codigo' => ...]` para o Controller decidir a resposta HTTP).
+- `app/Controllers/` — um método por página/endpoint, traduzindo o resultado do Model para o mesmo
+  JSON/HTML que a versão anterior já devolvia (formas como `{items:[...]}`, `{processo:{...}}`,
+  `{ok:true}` foram preservadas ao byte, porque `js/*.js` já dependia delas).
+- `app/Views/<modulo>/index.php` — o HTML que antes estava inline na página raiz, sem alterações de
+  conteúdo; continuam a incluir `includes/{head,sidebar,topbar,modais}.php` directamente (esses 4
+  partials nunca migraram — são usados por todas as Views por igual).
+- `includes/auth_funcoes.php`, `guard.php`, `api_guard.php`, `log.php` e `config/sessao.php` foram
+  apagados (substituídos 1:1 pelas classes em `app/Core/`). `config/conexao.php`, `config/env.php` e
+  `includes/senha.php` continuam a existir só porque `diagnostico.php`, `instalar.php` e
+  `scripts/seed.php` (ferramentas de deploy/dev, fora do âmbito desta migração) ainda os usam
+  directamente — nunca chamados pelo resto da app.
 
 ## Histórico e Auditoria
 O menu tem dois itens separados — **Histórico** (`auditoria.php`) e **Auditoria** (`auditoria.php?aba=sistema`)
@@ -30,8 +60,8 @@ carregamento). As duas abas são alimentadas por tabelas distintas — não são
   (registo, edição, mudança de estado, datas), sempre ligados a um `processo_id`.
 - **Auditoria do Sistema** (`auditoria_sistema` / `api/auditoria/sistema.php`): acções administrativas
   sem processo associado — criação/edição/eliminação/activação/desactivação de utilizadores, reset de
-  senha e alterações em Configurações. Registada por `sgd_registar_auditoria()` (`includes/log.php`),
-  chamada a partir de cada endpoint em `api/utilizadores/*` e `api/configuracoes/atualizar.php`.
+  senha e alterações em Configurações. Registada por `Auditoria::registar()` (`app/Core/Auditoria.php`),
+  chamada a partir de `UtilizadorModel` e `ConfiguracaoModel`.
 
 Tal como `processos.php`, as duas tabelas têm uma vista em cartões (`.pc-list`) para ecrãs estreitos —
 o CSS escondia `.tbl-outer` a partir de 767px e, sem isto, os dados desapareciam em telas pequenas
@@ -58,11 +88,20 @@ Botão "Imprimir" usa `window.print()` com a barra de filtros e a navegação es
 ```
 SGD/
 ├── login.php, painel.php, processos.php, conclusao.php, vistos.php,
-│   estatisticas.php, utilizadores.php, perfil.php, configuracoes.php
+│   estatisticas.php, utilizadores.php, perfil.php, configuracoes.php, auditoria.php
+│   (shims finos — ver "Arquitectura (MVC leve)")
 ├── instalar.php        ← cria o admin em produção sem SSH (ver "Deploy em produção"); apagar após uso
-├── config/             ← ligação à BD, sessão, parser do .env (bloqueado por .htaccess)
-├── includes/           ← guard de autenticação, layout partilhado (bloqueado por .htaccess)
-├── api/                ← endpoints PHP (JSON), exigem sessão válida
+├── diagnostico.php     ← diagnóstico temporário de ligação à BD; apagar depois de usar
+├── app/
+│   ├── bootstrap.php
+│   ├── Core/           ← Database, Session, Auth, PageGuard, ApiGuard, Auditoria, Senha, Helpers, View
+│   ├── Models/         ← um por domínio (ProcessoModel, UtilizadorModel, EstatisticaModel, ...)
+│   ├── Controllers/    ← um por domínio, um método por página/endpoint
+│   └── Views/<modulo>/index.php ← HTML por módulo
+├── config/             ← só conexao.php/env.php, usados pelos scripts de deploy/dev (bloqueado por .htaccess)
+├── includes/           ← só os 4 partials de layout partilhados por todas as Views + senha.php (uso do
+│                          scripts/seed.php), bloqueado por .htaccess
+├── api/                ← endpoints PHP (JSON), shims finos que chamam app/Controllers/
 ├── scripts/seed.php    ← seed de desenvolvimento (bcrypt; bloqueado por .htaccess)
 ├── assets/img/         ← logótipo e outras imagens estáticas (acesso directo, sem bloqueio)
 ├── css/estilos.css
@@ -130,18 +169,18 @@ sempre a `painel.php` — a página inicial da plataforma depois do login.
 
 ## Segurança
 - Sessões PHP (`httponly`, `SameSite=Strict`), senhas com `password_hash()` (bcrypt)
-- RBAC aplicado no servidor (`includes/guard.php`, `includes/api_guard.php`), nunca só no cliente
+- RBAC aplicado no servidor (`app/Core/PageGuard.php`, `app/Core/ApiGuard.php`), nunca só no cliente
 - Rate limiting de login (`max_tentativas_login`/`bloqueio_min`, parametrizável em Configurações)
-- Política de senha (`includes/senha.php`): mínimo 8 caracteres, com pelo menos uma letra e um número
+- Política de senha (`app/Core/Senha.php`): mínimo 8 caracteres, com pelo menos uma letra e um número
 - Senha inicial fixa e igual para todos (`stj@2026`) na criação de utilizador — nunca escolhida pelo Administrador
 - "O Meu Perfil" (`perfil.php`/`api/perfil/atualizar.php`) só permite ao próprio trocar a senha — nome
   e utilizador nunca são editáveis por esta via, só pelo Administrador (`api/utilizadores/atualizar.php`)
 - Toda a acção administrativa sobre utilizadores e configurações fica registada em `auditoria_sistema`
   (ver secção "Histórico e Auditoria" abaixo) — incluindo eliminação, que antes não deixava rasto nenhum
 - Sempre que a senha de um utilizador é definida por outra pessoa — criação, edição pelo Administrador
-  ou "Resetar senha" — a conta fica marcada com `obrigar_troca_senha`; `includes/guard.php` bloqueia
-  o acesso a qualquer página até o utilizador trocar a senha em `perfil.php`, que só dá acesso ao resto
-  da plataforma depois da troca
+  ou "Resetar senha" — a conta fica marcada com `obrigar_troca_senha`; `PageGuard::aplicar()`
+  (`app/Core/PageGuard.php`) bloqueia o acesso a qualquer página até o utilizador trocar a senha em
+  `perfil.php`, que só dá acesso ao resto da plataforma depois da troca
 - `.htaccess` bloqueia acesso directo a `.sql`/`.env`/`.md` e às pastas `config/`, `includes/`, `scripts/`
 - `.htaccess` força HTTPS (redireccionamento 301 de `http://` para `https://`) em produção
 - `.env` está em `.gitignore` — nunca é versionado; usar `.env.example` como modelo

@@ -11,6 +11,6 @@
   window.SGD_NOME     = <?= json_encode($_SESSION['nome'] ?? '') ?>;
   window.SGD_USERNAME = <?= json_encode($_SESSION['username'] ?? '') ?>;
   // Lido por perfil.js para restringir o formulário só à troca de senha
-  // enquanto sgd_deve_trocar_senha() estiver activo (ver includes/guard.php).
+  // enquanto sgd_deve_trocar_senha() estiver activo (ver app/Core/PageGuard.php).
   window.SGD_TROCAR_SENHA = <?= json_encode(sgd_deve_trocar_senha()) ?>;
 </script>

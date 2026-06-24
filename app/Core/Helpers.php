@@ -21,7 +21,7 @@ function sgd_iniciais(?string $nome): string
  */
 function sgd_asset(string $caminhoRelativo): string
 {
-    $absoluto = __DIR__ . '/../' . $caminhoRelativo;
+    $absoluto = __DIR__ . '/../../' . $caminhoRelativo;
     $v = is_file($absoluto) ? filemtime($absoluto) : time();
     return $caminhoRelativo . '?v=' . $v;
 }
