@@ -13,12 +13,14 @@ function buildFormCriar() {
     + '<div class="fsec-t"><i class="ti ti-id" style="color:var(--blue)"></i> Identificação do Processo</div>'
     + '<div class="fg2"><div class="fg"><label>N&ordm; de Registo de Processo</label><input readonly class="auto" value="Gerado automaticamente"></div>'
     + '<div class="fg"><label>Data de Registo</label><input readonly class="auto" value="' + nowPT() + '"></div></div>'
-    + '<div class="fg"><label>N&ordm; de Processo</label><input id="f_num_externo" placeholder="N&ordm; do processo (ex: do tribunal de origem)..."></div>'
+    + '<div class="fg"><label class="required">N&ordm; de Processo</label><input id="f_num_externo" placeholder="N&ordm; do processo (ex: do tribunal de origem)..."></div>'
     + '<div class="fg2"><div class="fg"><label class="required">Espécie de Processo</label><select id="f_esp">' + espOpts + '</select></div>'
     + '<div class="fg"><label class="required">Origem</label><input id="f_orig" placeholder="Tribunal / Entidade..."></div></div>'
     + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" placeholder="Ex: Autor vs Reu..."></div>'
     + '<div class="fg"><label>Distribuição (Juiz/Relator)</label><input id="f_dist" placeholder="Nome do magistrado..."></div>'
     + '</div>'
+    + '<div class="fsec"><div class="fsec-t"><i class="ti ti-notes" style="color:var(--green)"></i> Observações</div>'
+    + '<div class="fg"><textarea id="f_obs" maxlength="1500" placeholder="Notas adicionais (máx. 1500 caracteres)..."></textarea></div></div>'
     + '<div class="ib blue"><i class="ti ti-info-circle" style="flex-shrink:0"></i> As datas de controlo processual (conclusão, vistos, tabela, acórdão...) ficam disponíveis depois, ao editar o processo.</div>';
 }
 
@@ -53,7 +55,7 @@ function buildFormEditar(p) {
     + '<div class="fg"><label>Conta e Custas</label><input type="date" id="f_custas" value="' + iv('conta_custas') + '"></div></div>'
     + '<div class="fg2"><div class="fg"><label>Arquivamento</label><input type="date" id="f_arch" value="' + iv('arquivamento') + '"></div><div></div></div></div>'
     + '<div class="fsec"><div class="fsec-t"><i class="ti ti-notes" style="color:var(--green)"></i> Observações</div>'
-    + '<div class="fg"><textarea id="f_obs" placeholder="Notas adicionais...">' + esc(p.observacoes || '') + '</textarea></div></div>';
+    + '<div class="fg"><textarea id="f_obs" maxlength="1500" placeholder="Notas adicionais (máx. 1500 caracteres)...">' + esc(p.observacoes || '') + '</textarea></div></div>';
 }
 
 /* ─── Abrir / fechar modal CRUD ─── */
@@ -84,7 +86,8 @@ function lerCamposComuns() {
     origem: GV('f_orig').trim(),
     partes: GV('f_partes').trim(),
     distribuicao: GV('f_dist').trim(),
-    numero_processo_externo: GV('f_num_externo').trim()
+    numero_processo_externo: GV('f_num_externo').trim(),
+    observacoes: GV('f_obs').trim()
   };
 }
 
@@ -94,6 +97,8 @@ function guardarCriar() {
   G('f_partes').classList.remove('err-input');
   if (!dados.origem) { G('f_orig').classList.add('err-input'); showToast('Preencha a Origem', 'ti-alert-circle', 'red'); return; }
   G('f_orig').classList.remove('err-input');
+  if (!dados.numero_processo_externo) { G('f_num_externo').classList.add('err-input'); showToast('Preencha o Número de Processo', 'ti-alert-circle', 'red'); return; }
+  G('f_num_externo').classList.remove('err-input');
 
   apiPost('api/processos/criar.php', dados).then(function (res) {
     closeCrud();
@@ -109,7 +114,6 @@ function guardarEditar(id) {
 
   dados.id                  = id;
   dados.estado              = GV('f_st');
-  dados.observacoes         = GV('f_obs');
   dados.notificacao_citacao = GV('f_notif');
   dados.conclusao           = GV('f_conc');
   dados.visto_mp            = GV('f_vmp');

@@ -98,9 +98,16 @@ class ProcessoModel
         $partes                = trim((string)($dados['partes'] ?? ''));
         $distribuicao          = trim((string)($dados['distribuicao'] ?? ''));
         $numeroProcessoExterno = trim((string)($dados['numero_processo_externo'] ?? ''));
+        $observacoes           = trim((string)($dados['observacoes'] ?? ''));
 
         if ($especie === '' || $origem === '' || $partes === '') {
             return ['erro' => 'Preencha espécie, origem e intervenientes/partes.', 'codigo' => 400];
+        }
+        if ($numeroProcessoExterno === '') {
+            return ['erro' => 'Preencha o número de processo.', 'codigo' => 400];
+        }
+        if (mb_strlen($observacoes) > 1500) {
+            return ['erro' => 'Observações: máximo de 1500 caracteres.', 'codigo' => 400];
         }
 
         $especieStmt = $this->pdo->prepare('SELECT id FROM especies_processo WHERE nome = ?');
@@ -113,9 +120,9 @@ class ProcessoModel
         $estadoId = $this->pdo->query("SELECT id FROM estados_processo WHERE codigo = 'entry'")->fetchColumn();
 
         $this->pdo->prepare(
-            'INSERT INTO processos (especie_id, partes, origem, distribuicao, estado_id, numero_processo_externo, registado_por)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
-        )->execute([$especieId, $partes, $origem, $distribuicao ?: null, $estadoId, $numeroProcessoExterno ?: null, $uid]);
+            'INSERT INTO processos (especie_id, partes, origem, distribuicao, estado_id, numero_processo_externo, observacoes, registado_por)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([$especieId, $partes, $origem, $distribuicao ?: null, $estadoId, $numeroProcessoExterno, $observacoes ?: null, $uid]);
 
         $novoId = (int)$this->pdo->lastInsertId();
 
@@ -154,6 +161,9 @@ class ProcessoModel
 
         if ($especie === '' || $origem === '' || $partes === '') {
             return ['erro' => 'Preencha espécie, origem e intervenientes/partes.', 'codigo' => 400];
+        }
+        if (mb_strlen($observacoes) > 1500) {
+            return ['erro' => 'Observações: máximo de 1500 caracteres.', 'codigo' => 400];
         }
 
         $especieStmt = $this->pdo->prepare('SELECT id FROM especies_processo WHERE nome = ?');
