@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../Models/AuthModel.php';
 require_once __DIR__ . '/../Models/ConfiguracaoModel.php';
+require_once __DIR__ . '/../Core/ApiGuard.php';
 
 class AuthController
 {
@@ -38,9 +39,7 @@ class AuthController
         header('Content-Type: application/json; charset=utf-8');
         [$this->model, $this->configuracoes] = $this->modelos();
 
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['erro' => 'Método não permitido.']);
+        if (!ApiGuard::exigirMetodo('POST')) {
             return;
         }
 
@@ -66,6 +65,7 @@ class AuthController
         }
 
         if ($user['bloqueado']) {
+            $this->model->registarTentativaContaBloqueada($user['username']);
             http_response_code(423);
             echo json_encode(['erro' => 'Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.']);
             return;
@@ -74,7 +74,7 @@ class AuthController
         if (!password_verify($senha, $user['senha_hash'])) {
             $maxTentativas = (int)$this->configuracoes->obter('max_tentativas_login', 5);
             $bloqueioMin   = (int)$this->configuracoes->obter('bloqueio_min', 15);
-            $this->model->registarTentativaFalha((int)$user['id'], (int)$user['tentativas_falha'], $maxTentativas, $bloqueioMin);
+            $this->model->registarTentativaFalha((int)$user['id'], $user['username'], (int)$user['tentativas_falha'], $maxTentativas, $bloqueioMin);
 
             http_response_code(401);
             echo json_encode($erroGenerico);
@@ -87,7 +87,7 @@ class AuthController
         $perfil = $this->model->obterPerfilCodigo((int)$user['perfil_id']);
 
         $expiraMin = (int)$this->configuracoes->obter('sessao_expira_min', 60);
-        $this->model->registarLoginSucesso((int)$user['id'], $expiraMin);
+        $this->model->registarLoginSucesso((int)$user['id'], $user['username'], $expiraMin);
 
         $_SESSION['uid']      = $user['id'];
         $_SESSION['perfil']   = $perfil;
@@ -113,7 +113,7 @@ class AuthController
         if (!empty($_SESSION['uid'])) {
             try {
                 [$this->model] = $this->modelos();
-                $this->model->encerrarSessoesAbertas((int)$_SESSION['uid']);
+                $this->model->encerrarSessoesAbertas((int)$_SESSION['uid'], (string)($_SESSION['username'] ?? ''));
             } catch (Throwable $e) {
                 // não bloquear o logout por falha no registo de auditoria
             }

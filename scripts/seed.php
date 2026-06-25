@@ -9,13 +9,13 @@ if (PHP_SAPI !== 'cli') {
     exit('Apenas via linha de comando.');
 }
 
-require_once __DIR__ . '/../config/conexao.php';
-require_once __DIR__ . '/../includes/senha.php';
+require_once __DIR__ . '/../app/bootstrap.php';
 
-$pdo = obterConexao();
+$pdo = Database::pdo();
 
-// Mesma senha inicial fixa usada por api/utilizadores/criar.php para todo
-// utilizador novo (SGD_SENHA_INICIAL) — também aqui no seed, por consistência.
+// Mesma senha inicial fixa usada como ponto de partida pelo seed — em
+// produção, UtilizadorModel::criar() já gera uma senha aleatória por
+// utilizador (ver app/Models/UtilizadorModel.php).
 $utilizadoresSeed = [
     ['username' => 'admin',      'nome' => 'Administrador',     'perfil' => 'Administrador', 'dept' => 'SEC', 'email' => 'admin@supremo.cv',     'activo' => 1],
     ['username' => 'secretaria', 'nome' => 'Maria Santos',      'perfil' => 'Secretario',    'dept' => 'SEC', 'email' => 'msantos@supremo.cv',   'activo' => 1],
@@ -45,7 +45,7 @@ foreach ($utilizadoresSeed as $u) {
     $deptStmt->execute([$u['dept']]);
     $deptId = $deptStmt->fetchColumn();
 
-    $hash = password_hash(SGD_SENHA_INICIAL, PASSWORD_BCRYPT);
+    $hash = password_hash(Senha::INICIAL, PASSWORD_BCRYPT);
 
     // obrigar_troca_senha = 1: mesmo no seed, a senha é "definida por outra
     // pessoa" (o script), por isso a app pede a troca no primeiro login.
@@ -55,7 +55,7 @@ foreach ($utilizadoresSeed as $u) {
     )->execute([$u['username'], $hash, $u['nome'], $u['email'], $perfilId, $deptId, $u['activo']]);
 
     $idsPorUsername[$u['username']] = (int)$pdo->lastInsertId();
-    echo "+ {$u['username']} criado (senha inicial: " . SGD_SENHA_INICIAL . " — trocar no primeiro acesso).\n";
+    echo "+ {$u['username']} criado (senha inicial: " . Senha::INICIAL . " — trocar no primeiro acesso).\n";
 }
 
 // ── Processos de demonstração ──────────────────────────────────────────

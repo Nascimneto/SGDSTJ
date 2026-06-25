@@ -26,21 +26,41 @@ class AuthModel
         return $stmt->fetchColumn() ?: null;
     }
 
-    public function registarTentativaFalha(int $id, int $tentativasFalha, int $maxTentativas, int $bloqueioMin): void
+    public function registarTentativaFalha(int $id, string $username, int $tentativasFalha, int $maxTentativas, int $bloqueioMin): void
     {
         $tentativas = $tentativasFalha + 1;
+        $atingiuLimite = $tentativas >= $maxTentativas;
 
-        if ($tentativas >= $maxTentativas) {
+        if ($atingiuLimite) {
             $this->pdo->prepare('UPDATE utilizadores SET tentativas_falha = ?, bloqueado_ate = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE id = ?')
                 ->execute([$tentativas, $bloqueioMin, $id]);
         } else {
             $this->pdo->prepare('UPDATE utilizadores SET tentativas_falha = ? WHERE id = ?')
                 ->execute([$tentativas, $id]);
         }
+
+        Auditoria::registar(
+            $this->pdo,
+            'SESSAO',
+            $atingiuLimite ? 'LOGIN_BLOQUEIO' : 'LOGIN_FALHA',
+            $atingiuLimite
+                ? "Conta \"$username\" bloqueada por {$bloqueioMin} min após {$tentativas} tentativas falhadas."
+                : "Tentativa de login falhada para \"$username\" ({$tentativas}/{$maxTentativas})."
+        );
+    }
+
+    public function registarTentativaContaBloqueada(string $username): void
+    {
+        Auditoria::registar(
+            $this->pdo,
+            'SESSAO',
+            'LOGIN_NEGADO_BLOQUEADO',
+            "Tentativa de login em conta já bloqueada: \"$username\"."
+        );
     }
 
     /** @return string o token de sessão gerado, guardado em sessoes_utilizador. */
-    public function registarLoginSucesso(int $uid, int $expiraMin): string
+    public function registarLoginSucesso(int $uid, string $username, int $expiraMin): string
     {
         $this->pdo->prepare('UPDATE utilizadores SET tentativas_falha = 0, bloqueado_ate = NULL, ultimo_acesso = NOW() WHERE id = ?')
             ->execute([$uid]);
@@ -57,12 +77,18 @@ class AuthModel
             $expiraMin,
         ]);
 
+        // uid passado explicitamente: $_SESSION['uid'] só fica definido depois
+        // deste método devolver (ver AuthController::login()).
+        Auditoria::registar($this->pdo, 'SESSAO', 'LOGIN_SUCESSO', "Login bem sucedido: \"$username\".", $uid);
+
         return $token;
     }
 
-    public function encerrarSessoesAbertas(int $uid): void
+    public function encerrarSessoesAbertas(int $uid, string $username): void
     {
         $this->pdo->prepare('UPDATE sessoes_utilizador SET terminado_em = NOW() WHERE utilizador_id = ? AND terminado_em IS NULL')
             ->execute([$uid]);
+
+        Auditoria::registar($this->pdo, 'SESSAO', 'LOGOUT', "Logout: \"$username\".", $uid);
     }
 }

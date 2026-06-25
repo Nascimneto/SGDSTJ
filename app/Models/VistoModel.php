@@ -1,7 +1,14 @@
 <?php
+require_once __DIR__ . '/ProcessoModel.php';
+
 class VistoModel
 {
-    public function __construct(private PDO $pdo) {}
+    private ProcessoModel $processos;
+
+    public function __construct(private PDO $pdo)
+    {
+        $this->processos = new ProcessoModel($pdo);
+    }
 
     public function listarPendentes(): array
     {
@@ -34,17 +41,10 @@ class VistoModel
         )->fetchColumn();
     }
 
-    public function existe(int $id): bool
-    {
-        $stmt = $this->pdo->prepare('SELECT id FROM processos WHERE id = ?');
-        $stmt->execute([$id]);
-        return (bool)$stmt->fetchColumn();
-    }
-
     /** @return array{erro?:string,codigo?:int} */
     public function guardar(int $id, array $dados, int $uid, string $nomeUtilizador): array
     {
-        if (!$this->existe($id)) {
+        if (!$this->processos->existe($id)) {
             return ['erro' => 'Processo não encontrado.', 'codigo' => 404];
         }
 

@@ -22,7 +22,7 @@ function esc(s) {
 }
 
 /**
- * Política de senha do SGD (espelha sgd_validar_senha() em includes/senha.php):
+ * Política de senha do SGD (espelha Senha::validar() em app/Core/Senha.php):
  * 8+ caracteres, com pelo menos uma letra e um número.
  */
 function senhaValida(s) {

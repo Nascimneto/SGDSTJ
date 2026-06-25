@@ -20,7 +20,14 @@ Tribunal Supremo de Cabo Verde. Aplicação multi-página com backend PHP/MySQL
    ```
 4. Abrir `login.php` através do Apache (ex: `http://localhost/SGD/login.php`).
 
-As credenciais de demonstração ficam definidas em `scripts/seed.php`. A senha inicial é sempre a mesma para todos os utilizadores — `stj@2026` — atribuída automaticamente na criação e usada também pelo seed; como qualquer senha definida por outra pessoa, a aplicação obriga a troca no primeiro login seguinte. O valor vive em dois sítios com o mesmo literal (nunca um a chamar o outro, propositadamente — ver "Arquitectura"): `Senha::INICIAL` (`app/Core/Senha.php`), usada pela app; e a constante `SGD_SENHA_INICIAL` (`includes/senha.php`), usada só por `scripts/seed.php` e `instalar.php`, que ficaram fora da migração para MVC.
+As credenciais de demonstração ficam definidas em `scripts/seed.php`. Desde 2026-06-25, a criação de
+utilizador pela interface (`UtilizadorModel::criar()`) gera uma **senha aleatória por utilizador**
+(nunca um valor fixo — um valor fixo ficaria visível para sempre no histórico de um repositório
+público), mostrada uma única vez na resposta (`senhaInicial`), tal como já acontecia em "Resetar
+senha". Como qualquer senha definida por outra pessoa, a aplicação obriga a troca no primeiro login
+seguinte. A única senha ainda fixa é `Senha::INICIAL` (`stj@2026`, em `app/Core/Senha.php`), usada só
+pelo bootstrap do `admin` (`instalar.php`/`scripts/seed.php`) antes de existir qualquer interface para
+mostrar uma senha gerada — também essa é substituída no primeiro login.
 
 ## Arquitectura (MVC leve)
 Desde 2026-06-24 a app segue um padrão MVC sem router central — `login.php`, `painel.php`,
@@ -46,11 +53,11 @@ require_once __DIR__ . '/app/Controllers/ProcessoController.php';
 - `app/Views/<modulo>/index.php` — o HTML que antes estava inline na página raiz, sem alterações de
   conteúdo; continuam a incluir `includes/{head,sidebar,topbar,modais}.php` directamente (esses 4
   partials nunca migraram — são usados por todas as Views por igual).
-- `includes/auth_funcoes.php`, `guard.php`, `api_guard.php`, `log.php` e `config/sessao.php` foram
-  apagados (substituídos 1:1 pelas classes em `app/Core/`). `config/conexao.php`, `config/env.php` e
-  `includes/senha.php` continuam a existir só porque `diagnostico.php`, `instalar.php` e
-  `scripts/seed.php` (ferramentas de deploy/dev, fora do âmbito desta migração) ainda os usam
-  directamente — nunca chamados pelo resto da app.
+- `includes/auth_funcoes.php`, `guard.php`, `api_guard.php`, `log.php`, `helpers.php`, `config/sessao.php`,
+  `config/conexao.php`, `config/env.php` e `includes/senha.php` foram todos apagados — substituídos 1:1
+  pelas classes em `app/Core/`. `diagnostico.php`, `instalar.php` e `scripts/seed.php` (ferramentas de
+  deploy/dev, fora do âmbito desta migração de páginas/endpoints) usam directamente `app/Core/Env`,
+  `Database` e `Senha` em vez de manter uma implementação duplicada só para eles.
 
 ## Histórico e Auditoria
 O menu tem dois itens separados — **Histórico** (`auditoria.php`) e **Auditoria** (`auditoria.php?aba=sistema`)
@@ -98,9 +105,7 @@ SGD/
 │   ├── Models/         ← um por domínio (ProcessoModel, UtilizadorModel, EstatisticaModel, ...)
 │   ├── Controllers/    ← um por domínio, um método por página/endpoint
 │   └── Views/<modulo>/index.php ← HTML por módulo
-├── config/             ← só conexao.php/env.php, usados pelos scripts de deploy/dev (bloqueado por .htaccess)
-├── includes/           ← só os 4 partials de layout partilhados por todas as Views + senha.php (uso do
-│                          scripts/seed.php), bloqueado por .htaccess
+├── includes/           ← só os 4 partials de layout partilhados por todas as Views (bloqueado por .htaccess)
 ├── api/                ← endpoints PHP (JSON), shims finos que chamam app/Controllers/
 ├── scripts/seed.php    ← seed de desenvolvimento (bcrypt; bloqueado por .htaccess)
 ├── assets/img/         ← logótipo e outras imagens estáticas (acesso directo, sem bloqueio)
@@ -181,7 +186,7 @@ sempre a `painel.php` — a página inicial da plataforma depois do login.
   ou "Resetar senha" — a conta fica marcada com `obrigar_troca_senha`; `PageGuard::aplicar()`
   (`app/Core/PageGuard.php`) bloqueia o acesso a qualquer página até o utilizador trocar a senha em
   `perfil.php`, que só dá acesso ao resto da plataforma depois da troca
-- `.htaccess` bloqueia acesso directo a `.sql`/`.env`/`.md` e às pastas `config/`, `includes/`, `scripts/`
+- `.htaccess` bloqueia acesso directo a `.sql`/`.env`/`.md` e às pastas `includes/`, `app/`, `scripts/`
 - `.htaccess` força HTTPS (redireccionamento 301 de `http://` para `https://`) em produção
 - `.env` está em `.gitignore` — nunca é versionado; usar `.env.example` como modelo
 - `instalar.php` (raiz) só responde se `INSTALL_TOKEN` estiver definido no `.env` e for passado em

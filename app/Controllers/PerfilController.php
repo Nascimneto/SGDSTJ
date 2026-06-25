@@ -3,11 +3,12 @@ require_once __DIR__ . '/../Models/UtilizadorModel.php';
 
 class PerfilController
 {
-    private UtilizadorModel $model;
+    private ?UtilizadorModel $model = null;
 
-    public function __construct()
+    /** Preguiçoso: index() (GET perfil.php) não toca na BD, só renderiza a página. */
+    private function model(): UtilizadorModel
     {
-        $this->model = new UtilizadorModel(Database::pdo());
+        return $this->model ??= new UtilizadorModel(Database::pdo());
     }
 
     /** GET perfil.php — página HTML. */
@@ -26,16 +27,14 @@ class PerfilController
      */
     public function atualizar(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['erro' => 'Método não permitido.']);
+        if (!ApiGuard::exigirMetodo('POST')) {
             return;
         }
         $dados  = json_decode(file_get_contents('php://input'), true) ?? [];
         $senha  = (string)($dados['senha'] ?? '');
         $senha2 = (string)($dados['senha2'] ?? '');
 
-        $erro = $this->model->atualizarSenhaProprio((int)$_SESSION['uid'], $senha, $senha2);
+        $erro = $this->model()->atualizarSenhaProprio((int)$_SESSION['uid'], $senha, $senha2);
         if ($erro !== null) {
             http_response_code(400);
             echo json_encode(['erro' => $erro]);

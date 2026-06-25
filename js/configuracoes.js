@@ -66,17 +66,24 @@ function guardarConfigSeguranca() {
   }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
 }
 
+// Sempre entre aspas e com "" a escapar aspas internas — sem isto, uma vírgula
+// dentro de Origem/Distribuição (texto livre) desalinhava todas as colunas
+// seguintes dessa linha (só "Partes" estava protegido antes desta correcção).
+function csvEsc(v) {
+  return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+}
+
 function exportarProcessosCSV() {
   apiGet('api/processos/listar.php').then(function (res) {
     var H = ['N Registo Processo', 'N Processo', 'Data Registo', 'Especie', 'Partes', 'Distribuicao', 'Origem',
       'Conclusao', 'Notif/Citacao', 'Visto MP', 'Visto Adj1', 'Visto Adj2',
       'Ins Tabela', 'Acordao', 'Notif Acordao', 'Conta Custas', 'Arquivamento', 'Estado'];
     var R = res.items.map(function (d) {
-      return [d.numero_processo, d.numero_processo_externo || '', d.data_registo, d.especie, '"' + (d.partes || '').replace(/"/g, '""') + '"',
+      return [d.numero_processo, d.numero_processo_externo || '', d.data_registo, d.especie, d.partes,
         d.distribuicao, d.origem, d.conclusao, d.notificacao_citacao, d.visto_mp, d.visto_adjunto1, d.visto_adjunto2,
-        d.inscricao_tabela, d.acordao, d.notificacao_acordao, d.conta_custas, d.arquivamento, d.estado];
+        d.inscricao_tabela, d.acordao, d.notificacao_acordao, d.conta_custas, d.arquivamento, d.estado].map(csvEsc);
     });
-    var csv = [H].concat(R).map(function (r) { return r.join(','); }).join('\n');
+    var csv = [H.map(csvEsc)].concat(R).map(function (r) { return r.join(','); }).join('\n');
     var a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
     a.download = 'SGD_Processos.csv';

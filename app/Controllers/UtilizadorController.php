@@ -30,9 +30,7 @@ class UtilizadorController
     /** POST api/utilizadores/criar.php */
     public function criar(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['erro' => 'Método não permitido.']);
+        if (!ApiGuard::exigirMetodo('POST')) {
             return;
         }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -48,9 +46,7 @@ class UtilizadorController
     /** POST api/utilizadores/atualizar.php */
     public function atualizar(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['erro' => 'Método não permitido.']);
+        if (!ApiGuard::exigirMetodo('POST')) {
             return;
         }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -67,6 +63,9 @@ class UtilizadorController
     /** POST api/utilizadores/eliminar.php */
     public function eliminar(): void
     {
+        if (!ApiGuard::exigirMetodo('POST')) {
+            return;
+        }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
         $id    = (int)($dados['id'] ?? 0);
         if (!$id) {
@@ -86,6 +85,9 @@ class UtilizadorController
     /** POST api/utilizadores/alternar-estado.php */
     public function alternarEstado(): void
     {
+        if (!ApiGuard::exigirMetodo('POST')) {
+            return;
+        }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
         $id    = (int)($dados['id'] ?? 0);
         if (!$id) {
@@ -105,6 +107,9 @@ class UtilizadorController
     /** POST api/utilizadores/resetar-senha.php */
     public function resetarSenha(): void
     {
+        if (!ApiGuard::exigirMetodo('POST')) {
+            return;
+        }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
         $id    = (int)($dados['id'] ?? 0);
         if (!$id) {

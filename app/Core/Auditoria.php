@@ -7,7 +7,12 @@
  */
 class Auditoria
 {
-    public static function registar(PDO $pdo, string $tipoEvento, string $codigoEvento, string $mensagem): void
+    /**
+     * $uid: por defeito lido da sessão (caso normal — admin a gerir utilizadores/
+     * configurações). Aceita um uid explícito para o caso do login bem sucedido,
+     * em que a sessão ainda não tem 'uid' definido no momento do registo.
+     */
+    public static function registar(PDO $pdo, string $tipoEvento, string $codigoEvento, string $mensagem, ?int $uid = null): void
     {
         $pdo->prepare(
             'INSERT INTO auditoria_sistema (mensagem, tipo_evento, codigo_evento, criado_por, ip_origem)
@@ -16,7 +21,7 @@ class Auditoria
             $mensagem,
             $tipoEvento,
             $codigoEvento,
-            $_SESSION['uid'] ?? null,
+            $uid ?? ($_SESSION['uid'] ?? null),
             $_SERVER['REMOTE_ADDR'] ?? null,
         ]);
     }

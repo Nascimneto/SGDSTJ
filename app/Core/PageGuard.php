@@ -28,6 +28,7 @@ class PageGuard
     public static function exigirPerfil(array $perfis): void
     {
         if (!in_array(Auth::perfil(), $perfis, true)) {
+            self::registarNegacao('Página: perfil "' . Auth::perfil() . '" sem acesso a ' . basename($_SERVER['SCRIPT_NAME']) . '.');
             http_response_code(403);
             echo '<p style="font-family:sans-serif;padding:60px 20px;text-align:center;color:#5C5C55">'
                 . 'Acesso negado — não tem permissão para ver esta página.</p>';
@@ -39,10 +40,16 @@ class PageGuard
     public static function exigirEscrita(): void
     {
         if (!Auth::podeEditar()) {
+            self::registarNegacao('Página: perfil Visualizador sem permissão de escrita em ' . basename($_SERVER['SCRIPT_NAME']) . '.');
             http_response_code(403);
             echo '<p style="font-family:sans-serif;padding:60px 20px;text-align:center;color:#5C5C55">'
                 . 'Acesso negado — o seu perfil só permite visualização.</p>';
             exit;
         }
+    }
+
+    private static function registarNegacao(string $mensagem): void
+    {
+        Auditoria::registar(Database::pdo(), 'ACESSO', 'ACESSO_NEGADO', $mensagem);
     }
 }

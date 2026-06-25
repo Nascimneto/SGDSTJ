@@ -49,9 +49,7 @@ class ProcessoController
     /** POST api/processos/criar.php — chamador já correu ApiGuard::exigirEscrita(). */
     public function criar(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['erro' => 'Método não permitido.']);
+        if (!ApiGuard::exigirMetodo('POST')) {
             return;
         }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -67,9 +65,7 @@ class ProcessoController
     /** POST api/processos/atualizar.php — chamador já correu ApiGuard::exigirEscrita(). */
     public function atualizar(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['erro' => 'Método não permitido.']);
+        if (!ApiGuard::exigirMetodo('POST')) {
             return;
         }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -91,9 +87,7 @@ class ProcessoController
     /** POST api/processos/eliminar.php — chamador já correu ApiGuard::exigirPerfil(['Administrador']). */
     public function eliminar(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['erro' => 'Método não permitido.']);
+        if (!ApiGuard::exigirMetodo('POST')) {
             return;
         }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -103,7 +97,12 @@ class ProcessoController
             echo json_encode(['erro' => 'id inválido.']);
             return;
         }
-        $this->model->eliminar($id);
+        $resultado = $this->model->eliminar($id);
+        if (isset($resultado['erro'])) {
+            http_response_code($resultado['codigo']);
+            echo json_encode(['erro' => $resultado['erro']]);
+            return;
+        }
         echo json_encode(['ok' => true]);
     }
 

@@ -238,9 +238,14 @@ class ProcessoModel
         return [];
     }
 
-    public function eliminar(int $id): void
+    /** @return array{erro?:string,codigo?:int} */
+    public function eliminar(int $id): array
     {
+        if (!$this->existe($id)) {
+            return ['erro' => 'Processo não encontrado.', 'codigo' => 404];
+        }
         $this->pdo->prepare('DELETE FROM processos WHERE id = ?')->execute([$id]);
+        return [];
     }
 
     public function contarEmEstado(string $codigoEstado): int

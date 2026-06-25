@@ -3,11 +3,12 @@ require_once __DIR__ . '/../Models/ConfiguracaoModel.php';
 
 class ConfiguracaoController
 {
-    private ConfiguracaoModel $model;
+    private ?ConfiguracaoModel $model = null;
 
-    public function __construct()
+    /** Preguiçoso: index() (GET configuracoes.php) não toca na BD, só renderiza a página. */
+    private function model(): ConfiguracaoModel
     {
-        $this->model = new ConfiguracaoModel(Database::pdo());
+        return $this->model ??= new ConfiguracaoModel(Database::pdo());
     }
 
     /** GET configuracoes.php — página HTML. */
@@ -22,22 +23,20 @@ class ConfiguracaoController
     /** GET api/configuracoes/obter.php */
     public function obter(): void
     {
-        echo json_encode(['configuracoes' => $this->model->obterTodas()]);
+        echo json_encode(['configuracoes' => $this->model()->obterTodas()]);
     }
 
     /** POST api/configuracoes/atualizar.php */
     public function atualizar(): void
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['erro' => 'Método não permitido.']);
+        if (!ApiGuard::exigirMetodo('POST')) {
             return;
         }
         $dados = json_decode(file_get_contents('php://input'), true) ?? [];
         if (!is_array($dados)) {
             $dados = [];
         }
-        $resultado = $this->model->atualizar($dados);
+        $resultado = $this->model()->atualizar($dados);
         if (isset($resultado['erro'])) {
             http_response_code($resultado['codigo']);
             echo json_encode(['erro' => $resultado['erro']]);

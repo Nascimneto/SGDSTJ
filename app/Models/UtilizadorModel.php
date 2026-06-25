@@ -51,9 +51,12 @@ class UtilizadorModel
 
         $deptId = $departamento !== '' ? $this->obterDepartamentoId($departamento) : null;
 
-        // Senha inicial igual para todos (Senha::INICIAL), nunca escolhida pelo
-        // admin: obriga a troca no primeiro acesso, tal como num reset.
-        $hash = password_hash(Senha::INICIAL, PASSWORD_BCRYPT);
+        // Senha inicial aleatória por utilizador (nunca um valor fixo e igual
+        // para todos — esse valor ficaria visível para sempre no histórico do
+        // repositório), nunca escolhida pelo admin: obriga a troca no primeiro
+        // acesso, tal como num reset (mesmo gerador que resetarSenha()).
+        $senhaInicial = bin2hex(random_bytes(5));
+        $hash = password_hash($senhaInicial, PASSWORD_BCRYPT);
 
         $this->pdo->prepare(
             'INSERT INTO utilizadores (username, senha_hash, nome_completo, perfil_id, departamento_id, activo, criado_por, obrigar_troca_senha)
@@ -71,7 +74,7 @@ class UtilizadorModel
             "Utilizador \"$username\" ($nome) criado, perfil $perfil."
         );
 
-        return ['id' => $novoId, 'senhaInicial' => Senha::INICIAL];
+        return ['id' => $novoId, 'senhaInicial' => $senhaInicial];
     }
 
     /** @return array{erro?:string,codigo?:int} */
