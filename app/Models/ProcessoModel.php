@@ -162,6 +162,9 @@ class ProcessoModel
         if ($especie === '' || $origem === '' || $partes === '') {
             return ['erro' => 'Preencha espécie, origem e intervenientes/partes.', 'codigo' => 400];
         }
+        if ($numeroProcessoExterno === '') {
+            return ['erro' => 'Preencha o número de processo.', 'codigo' => 400];
+        }
         if (mb_strlen($observacoes) > 1500) {
             return ['erro' => 'Observações: máximo de 1500 caracteres.', 'codigo' => 400];
         }

@@ -36,7 +36,7 @@ function buildFormEditar(p) {
     + '<div class="fsec-t"><i class="ti ti-id" style="color:var(--blue)"></i> Identificação do Processo</div>'
     + '<div class="fg2"><div class="fg"><label>N&ordm; de Registo de Processo</label><input readonly class="auto" value="' + esc(p.numero_processo) + '"></div>'
     + '<div class="fg"><label>Data de Registo</label><input readonly class="auto" value="' + esc(p.data_registo) + '"></div></div>'
-    + '<div class="fg"><label>N&ordm; de Processo</label><input id="f_num_externo" value="' + esc(p.numero_processo_externo || '') + '" placeholder="N&ordm; do processo (ex: do tribunal de origem)..."></div>'
+    + '<div class="fg"><label class="required">N&ordm; de Processo</label><input id="f_num_externo" value="' + esc(p.numero_processo_externo || '') + '" placeholder="N&ordm; do processo (ex: do tribunal de origem)..."></div>'
     + '<div class="fg2"><div class="fg"><label class="required">Espécie de Processo</label><select id="f_esp">' + espOpts + '</select></div>'
     + '<div class="fg"><label class="required">Origem</label><input id="f_orig" value="' + esc(p.origem || '') + '"></div></div>'
     + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" value="' + esc(p.partes || '') + '"></div>'
@@ -111,6 +111,7 @@ function guardarEditar(id) {
   var dados = lerCamposComuns();
   if (!dados.partes) { showToast('Preencha Intervenientes/Partes', 'ti-alert-circle', 'red'); return; }
   if (!dados.origem) { showToast('Preencha a Origem', 'ti-alert-circle', 'red'); return; }
+  if (!dados.numero_processo_externo) { showToast('Preencha o Número de Processo', 'ti-alert-circle', 'red'); return; }
 
   dados.id                  = id;
   dados.estado              = GV('f_st');

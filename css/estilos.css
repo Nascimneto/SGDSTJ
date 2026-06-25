@@ -80,7 +80,7 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .panel-title{ font-size:13px; font-weight:600; color:var(--tx); flex-shrink:0; }
 
 /* ── Toolbar de processos ── */
-.proc-tb   { display:flex; align-items:center; gap:7px; padding:9px 12px; margin-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; row-gap:6px; }
+.proc-tb   { display:flex; align-items:center; gap:7px; padding:9px 12px; margin-bottom:20px; border-bottom:1px solid var(--border); flex-wrap:wrap; row-gap:6px; }
 .proc-tb-l { display:flex; align-items:center; gap:7px; flex:1; min-width:0; flex-wrap:wrap; row-gap:6px; overflow:hidden; }
 
 /* ── Estatísticas ── */
@@ -142,7 +142,7 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .th0 { background:#1a3a52 !important; }
 
 .pt td {
-  padding: 8px 5px;
+  padding: 14px 5px;
   border: 1px solid var(--border);
   font-size: 12px;
   color: var(--tx);
@@ -230,7 +230,7 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .obs-box { background:var(--amberl); border:1px solid #fde68a; border-radius:var(--rs); padding:9px 12px; font-size:12px; color:#92400e; margin-top:9px; }
 
 /* ── Toast ── */
-#toast { position:fixed; bottom:16px; right:16px; background:var(--sid); color:#fff; padding:10px 14px; border-radius:var(--r); font-size:12px; z-index:1000; display:flex; align-items:center; gap:7px; box-shadow:var(--sh2); opacity:0; pointer-events:none; transition:opacity .3s; max-width:300px; }
+#toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--sid); color:#fff; padding:12px 18px; border-radius:var(--r); font-size:13px; z-index:1000; display:flex; align-items:center; gap:7px; box-shadow:var(--sh2); opacity:0; pointer-events:none; transition:opacity .3s; max-width:320px; }
 #toast.show { opacity:1; pointer-events:auto; }
 
 /* ── Confirmar ── */
@@ -320,7 +320,7 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
   .proc-tb   { flex-wrap:wrap; row-gap:7px; }
   .proc-tb-l { flex:1; min-width:180px; }
   .sw { max-width:100%; flex:1; min-width:100px; }
-  #toast { bottom:10px; right:10px; left:10px; max-width:none; }
+  #toast { width:calc(100% - 32px); max-width:320px; }
   .lcard { padding:20px 14px; }
   .topbar-right .btn-primary { padding:4px 9px; font-size:11px; }
 }
