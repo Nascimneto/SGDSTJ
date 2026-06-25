@@ -112,6 +112,9 @@ class UtilizadorModel
             if ($erroSenha !== null) {
                 return ['erro' => $erroSenha, 'codigo' => 400];
             }
+            if (password_verify($senha, $this->obterSenhaHash($id) ?? '')) {
+                return ['erro' => 'A nova senha tem de ser diferente da actual.', 'codigo' => 400];
+            }
             $sets[]   = 'senha_hash = ?';
             $params[] = password_hash($senha, PASSWORD_BCRYPT);
             // O admin é quem está a escolher a senha, não o próprio: tal como na
@@ -232,11 +235,21 @@ class UtilizadorModel
         if ($erroSenha !== null) {
             return $erroSenha;
         }
+        if (password_verify($senha, $this->obterSenhaHash($uid) ?? '')) {
+            return 'A nova senha tem de ser diferente da actual.';
+        }
 
         $this->pdo->prepare('UPDATE utilizadores SET senha_hash = ?, obrigar_troca_senha = 0 WHERE id = ?')
             ->execute([password_hash($senha, PASSWORD_BCRYPT), $uid]);
 
         return null;
+    }
+
+    private function obterSenhaHash(int $id): ?string
+    {
+        $stmt = $this->pdo->prepare('SELECT senha_hash FROM utilizadores WHERE id = ?');
+        $stmt->execute([$id]);
+        return $stmt->fetchColumn() ?: null;
     }
 
     private function obterPerfilId(string $codigo): string|false
