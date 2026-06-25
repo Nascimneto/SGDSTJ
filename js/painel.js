@@ -20,7 +20,8 @@ function carregarPainel() {
 }
 
 function renderPainel(resumo, conclusao, vistos) {
-  var t = resumo.totais.total;
+  var t  = resumo.totais.total;
+  var pt = resumo.totais.em_tabela;
 
   var maxEstado = 1;
   resumo.porEstado.forEach(function (e) { if (e.total > maxEstado) maxEstado = e.total; });
@@ -32,10 +33,11 @@ function renderPainel(resumo, conclusao, vistos) {
       + '<span class="chart-val">' + e.total + '</span></div>';
   }).join('');
 
-  G('content').innerHTML = '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">'
+  G('content').innerHTML = '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">'
     + '<div class="stat"><div class="stat-lbl"><i class="ti ti-files" style="color:var(--blue)"></i> Total</div><div class="stat-num" style="color:var(--blue)">' + t + '</div><div class="stat-sub">Registados</div></div>'
     + statDuplo('ti-check', 'var(--green)', 'Conclusão', conclusao.pendentes.length, conclusao.concluidosCount)
     + statDuplo('ti-stamp', 'var(--purple)', 'Visto', vistos.pendentes.length, vistos.concluidosCount)
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-calendar" style="color:var(--amber)"></i> Em Tabela</div><div class="stat-num" style="color:var(--amber)">' + pt + '</div><div class="stat-sub">Aguarda acordao</div></div>'
     + '</div>'
     + '<div class="panel" style="padding:16px"><div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Por Estado</div>' + charts + '</div>';
 }

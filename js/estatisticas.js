@@ -92,10 +92,11 @@ function renderEstatisticas(d) {
       }).join('')
     + '</div>';
 
-  G('estCorpo').innerHTML = '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">'
+  G('estCorpo').innerHTML = '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">'
     + '<div class="stat"><div class="stat-lbl"><i class="ti ti-files" style="color:var(--blue)"></i> Total</div><div class="stat-num" style="color:var(--blue)">' + d.resumo.totais.total + '</div><div class="stat-sub">Registados</div></div>'
     + statDuplo('ti-check', 'var(--green)', 'Conclusão', d.conclusao.pendentes.length, d.conclusao.concluidosCount)
     + statDuplo('ti-stamp', 'var(--purple)', 'Visto', d.vistos.pendentes.length, d.vistos.concluidosCount)
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-calendar" style="color:var(--amber)"></i> Em Tabela</div><div class="stat-num" style="color:var(--amber)">' + d.resumo.totais.em_tabela + '</div><div class="stat-sub">Aguarda acordao</div></div>'
     + '</div>'
     + '<div class="row2">'
     + '<div class="panel" style="padding:16px"><div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Distribuição por Estado</div><div class="chart-wrap"><canvas id="chartEstado"></canvas></div></div>'
