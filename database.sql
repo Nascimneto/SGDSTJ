@@ -536,8 +536,8 @@ INSERT INTO especies_processo (nome, ordem) VALUES
 
 -- 7.4 Estados do processo
 INSERT INTO estados_processo (codigo, label, cor_css, ordem) VALUES
-    ('entry',       'Em Entrada',   'b-entry',       1),
-    ('analysis',    'Em Analise',   'b-analysis',    2),
+    ('entry',       'Entrada',      'b-entry',       1),
+    ('analysis',    'Analise',      'b-analysis',    2),
     ('distributed', 'Distribuido',  'b-distributed', 3),
     ('concluded',   'Concluido',    'b-concluded',   4),
     ('archived',    'Arquivado',    'b-archived',    5);
