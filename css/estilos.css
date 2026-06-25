@@ -38,7 +38,7 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .sb-title { color:#fff; font-size:12px; font-weight:600; }
 .sb-sub   { color:#fff; font-size:12px; font-weight:600; }
 .sb-nav   { flex:1; padding:6px 0; overflow-y:auto; }
-.sb-sec   { padding:8px 12px 3px; color:rgba(122,154,176,.5); font-size:9px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; }
+.sb-sec   { padding:12px 12px 5px; color:var(--sid-a); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
 .sb-item  { display:flex; align-items:center; gap:8px; padding:10px 12px; color:var(--sid-t); cursor:pointer; border-left:3px solid transparent; transition:all .15s; user-select:none; font-size:14px; text-decoration:none; }
 .sb-item:hover  { color:#fff; background:rgba(255,255,255,.05); }
 .sb-item.active { color:#fff; background:rgba(37,99,235,.18); border-left-color:var(--sid-a); }
