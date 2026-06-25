@@ -2,7 +2,7 @@
 /**
  * Guard para páginas HTML. Chamar PageGuard::aplicar() no topo de cada
  * página autenticada, antes de instanciar o Controller — sem sessão válida,
- * redireciona para login.php. exigirPerfil()/exigirEscrita() ficam
+ * redireciona para index.php (página de login). exigirPerfil()/exigirEscrita() ficam
  * disponíveis para o Controller chamar a seguir, se a página precisar de
  * restringir mais.
  */
@@ -13,7 +13,7 @@ class PageGuard
         Auth::iniciarSessao();
 
         if (!Auth::autenticado()) {
-            header('Location: login.php');
+            header('Location: index.php');
             exit;
         }
 

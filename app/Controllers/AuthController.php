@@ -9,7 +9,7 @@ class AuthController
     private ConfiguracaoModel $configuracoes;
 
     /**
-     * Sem construtor a abrir ligação à BD: index() (GET login.php) nunca
+     * Sem construtor a abrir ligação à BD: index() (GET index.php) nunca
      * tocava na BD directamente no ficheiro original — só Session::configurar()
      * o faz, e já cai graciosamente para um valor por defeito se a BD estiver
      * em baixo. Abrir ligação aqui no construtor faria a própria página de
@@ -21,7 +21,7 @@ class AuthController
         return [new AuthModel($pdo), new ConfiguracaoModel($pdo)];
     }
 
-    /** GET login.php — página HTML (sem PageGuard: é o ponto de entrada para quem não está autenticado). */
+    /** GET index.php — página HTML de login (sem PageGuard: é o ponto de entrada para quem não está autenticado). */
     public function index(): void
     {
         Auth::iniciarSessao();

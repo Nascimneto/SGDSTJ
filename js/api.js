@@ -11,7 +11,7 @@ function api(metodo, url, corpo) {
 
   return fetch(url, opts).then(function (r) {
     if (r.status === 401) {
-      window.location = 'login.php';
+      window.location = 'index.php';
       return Promise.reject(new Error('Sessão expirada.'));
     }
     return r.json().catch(function () { return {}; }).then(function (body) {

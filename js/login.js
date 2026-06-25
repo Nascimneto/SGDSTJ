@@ -1,5 +1,5 @@
 /**
- * login.js — autenticação da página login.php
+ * login.js — autenticação da página de login (index.php)
  */
 document.addEventListener('DOMContentLoaded', function () {
   var btn = document.getElementById('loginBtn');

@@ -18,7 +18,7 @@ Tribunal Supremo de Cabo Verde. Aplicação multi-página com backend PHP/MySQL
    ```
    php scripts/seed.php
    ```
-4. Abrir `login.php` através do Apache (ex: `http://localhost/SGD/login.php`).
+4. Abrir a app através do Apache (ex: `http://localhost/SGD/`, ou directamente `http://localhost/SGD/index.php`).
 
 As credenciais de demonstração ficam definidas em `scripts/seed.php`. Desde 2026-06-25, a criação de
 utilizador pela interface (`UtilizadorModel::criar()`) gera uma **senha aleatória por utilizador**
@@ -30,7 +30,7 @@ pelo bootstrap do `admin` (`instalar.php`/`scripts/seed.php`) antes de existir q
 mostrar uma senha gerada — também essa é substituída no primeiro login.
 
 ## Arquitectura (MVC leve)
-Desde 2026-06-24 a app segue um padrão MVC sem router central — `login.php`, `painel.php`,
+Desde 2026-06-24 a app segue um padrão MVC sem router central — `index.php` (login), `painel.php`,
 `processos.php`, etc. (raiz) e os endpoints em `api/**/*.php` mantêm exactamente os mesmos URLs de
 sempre, mas passaram a ser shims de ~6 linhas que chamam um Controller em `app/Controllers/`:
 ```php
@@ -94,9 +94,11 @@ Botão "Imprimir" usa `window.print()` com a barra de filtros e a navegação es
 ## Estrutura de ficheiros
 ```
 SGD/
-├── login.php, painel.php, processos.php, conclusao.php, vistos.php,
+├── index.php (login), painel.php, processos.php, conclusao.php, vistos.php,
 │   estatisticas.php, utilizadores.php, perfil.php, configuracoes.php, auditoria.php
-│   (shims finos — ver "Arquitectura (MVC leve)")
+│   (shims finos — ver "Arquitectura (MVC leve)"). index.php é a página de login
+│   em vez de um login.php separado: o Apache já serve index.php por defeito
+│   para "/" sem precisar de DirectoryIndex no .htaccess (bloqueado no Hostinger).
 ├── instalar.php        ← cria o admin em produção sem SSH (ver "Deploy em produção"); apagar após uso
 ├── diagnostico.php     ← diagnóstico temporário de ligação à BD; apagar depois de usar
 ├── app/
@@ -170,7 +172,7 @@ sempre a `painel.php` — a página inicial da plataforma depois do login.
    - Em ambos os casos, a senha inicial é `stj@2026`, com troca obrigatória no primeiro login.
 8. **SSL/HTTPS**: activar o certificado gratuito em hPanel → Segurança → SSL (Let's Encrypt) — costuma
    ficar activo em poucos minutos. O `.htaccess` já força o redireccionamento `http://` → `https://`.
-9. Confirmar o login em `https://<dominio>/login.php` e trocar a senha do `admin` imediatamente.
+9. Confirmar o login em `https://<dominio>/` e trocar a senha do `admin` imediatamente.
 
 ## Segurança
 - Sessões PHP (`httponly`, `SameSite=Strict`), senhas com `password_hash()` (bcrypt)

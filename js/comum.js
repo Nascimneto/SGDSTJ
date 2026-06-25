@@ -74,7 +74,7 @@ function podeEditar() { return window.SGD_PERFIL !== 'Visualizador'; }
 function doLogout() {
   fetch('api/auth/logout.php', { method: 'POST', credentials: 'same-origin' })
     .catch(function () {})
-    .then(function () { window.location = 'login.php'; });
+    .then(function () { window.location = 'index.php'; });
 }
 
 /* ─── Toast ─── */
