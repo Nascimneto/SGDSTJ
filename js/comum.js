@@ -29,6 +29,20 @@ function senhaValida(s) {
   return !!s && s.length >= 8 && /[A-Za-z]/.test(s) && /\d/.test(s);
 }
 
+/**
+ * Cartão de estatística com três contagens lado a lado: Total / Pendente /
+ * Concluído. Partilhado por painel.js e estatisticas.js.
+ */
+function statDuplo(icone, cor, titulo, pendente, concluido) {
+  var total = pendente + concluido;
+  return '<div class="stat"><div class="stat-lbl"><i class="ti ' + icone + '" style="color:' + cor + '"></i> ' + titulo + '</div>'
+    + '<div style="display:flex;gap:12px">'
+    + '<div><div class="stat-num" style="font-size:18px;color:var(--blue)">' + total + '</div><div class="stat-sub">Total</div></div>'
+    + '<div><div class="stat-num" style="font-size:18px;color:var(--amber)">' + pendente + '</div><div class="stat-sub">Pendente</div></div>'
+    + '<div><div class="stat-num" style="font-size:18px;color:' + cor + '">' + concluido + '</div><div class="stat-sub">Concluído</div></div>'
+    + '</div></div>';
+}
+
 function pad(n) { return String(n).padStart(2, '0'); }
 
 function nowPT() {

@@ -19,17 +19,6 @@ function carregarPainel() {
   });
 }
 
-/** Cartão com três contagens lado a lado: Total / Pendente / Concluído. */
-function statDuplo(icone, cor, titulo, pendente, concluido) {
-  var total = pendente + concluido;
-  return '<div class="stat"><div class="stat-lbl"><i class="ti ' + icone + '" style="color:' + cor + '"></i> ' + titulo + '</div>'
-    + '<div style="display:flex;gap:12px">'
-    + '<div><div class="stat-num" style="font-size:18px;color:var(--blue)">' + total + '</div><div class="stat-sub">Total</div></div>'
-    + '<div><div class="stat-num" style="font-size:18px;color:var(--amber)">' + pendente + '</div><div class="stat-sub">Pendente</div></div>'
-    + '<div><div class="stat-num" style="font-size:18px;color:' + cor + '">' + concluido + '</div><div class="stat-sub">Concluído</div></div>'
-    + '</div></div>';
-}
-
 function renderPainel(resumo, conclusao, vistos) {
   var t = resumo.totais.total;
 

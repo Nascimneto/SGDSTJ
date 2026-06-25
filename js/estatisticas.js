@@ -56,9 +56,11 @@ function carregarEstatisticas() {
   Promise.all([
     apiGet('api/estatisticas/resumo.php?' + qs),
     apiGet('api/estatisticas/distribuicao.php?' + qs),
-    apiGet('api/estatisticas/funil.php?' + qs)
+    apiGet('api/estatisticas/funil.php?' + qs),
+    apiGet('api/conclusao/pendentes.php'),
+    apiGet('api/vistos/pendentes.php')
   ]).then(function (res) {
-    ULTIMOS_DADOS = { resumo: res[0], distribuicao: res[1], funil: res[2].funil };
+    ULTIMOS_DADOS = { resumo: res[0], distribuicao: res[1], funil: res[2].funil, conclusao: res[3], vistos: res[4] };
     renderEstatisticas(ULTIMOS_DADOS);
   }).catch(function (e) {
     G('estCorpo').innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i><p>Erro: ' + esc(e.message) + '</p></div>';
@@ -90,11 +92,10 @@ function renderEstatisticas(d) {
       }).join('')
     + '</div>';
 
-  G('estCorpo').innerHTML = '<div class="stat-grid">'
+  G('estCorpo').innerHTML = '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">'
     + '<div class="stat"><div class="stat-lbl"><i class="ti ti-files" style="color:var(--blue)"></i> Total</div><div class="stat-num" style="color:var(--blue)">' + d.resumo.totais.total + '</div><div class="stat-sub">Registados</div></div>'
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-check" style="color:var(--green)"></i> Com Conclusao</div><div class="stat-num" style="color:var(--green)">' + d.resumo.totais.com_conclusao + '</div><div class="stat-sub">Concluidos</div></div>'
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-calendar" style="color:var(--amber)"></i> Em Tabela</div><div class="stat-num" style="color:var(--amber)">' + d.resumo.totais.em_tabela + '</div><div class="stat-sub">Aguarda acordao</div></div>'
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-gavel" style="color:var(--purple)"></i> Acordaos</div><div class="stat-num" style="color:var(--purple)">' + d.resumo.totais.acordaos + '</div><div class="stat-sub">Proferidos</div></div>'
+    + statDuplo('ti-check', 'var(--green)', 'Conclusão', d.conclusao.pendentes.length, d.conclusao.concluidosCount)
+    + statDuplo('ti-stamp', 'var(--purple)', 'Visto', d.vistos.pendentes.length, d.vistos.concluidosCount)
     + '</div>'
     + '<div class="row2">'
     + '<div class="panel" style="padding:16px"><div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Distribuição por Estado</div><div class="chart-wrap"><canvas id="chartEstado"></canvas></div></div>'
