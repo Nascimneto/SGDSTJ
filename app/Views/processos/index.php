@@ -30,14 +30,13 @@
                 <option value="<?= sgd_e($esp) ?>"><?= sgd_e($esp) ?></option>
               <?php endforeach; ?>
             </select>
-            <input class="btn btn-sm" id="fDistribuicao" placeholder="Distribuição..." style="max-width:140px">
             <input type="date" class="btn btn-sm" id="fDataDe" title="Data de registo — de">
             <input type="date" class="btn btn-sm" id="fDataAte" title="Data de registo — até">
             <button class="btn btn-sm" id="btnLimparFiltros"><i class="ti ti-filter-off"></i></button>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="btn btn-sm" id="btnExportPdf" title="Gerar PDF"><i class="ti ti-file-type-pdf"></i> PDF</button>
-            <button class="btn btn-sm" id="btnExportXlsx" title="Gerar Excel"><i class="ti ti-file-type-xls"></i> Excel</button>
+            <button class="btn btn-sm btn-danger" id="btnExportPdf" title="Gerar PDF"><i class="ti ti-file-type-pdf"></i> PDF</button>
+            <button class="btn btn-sm btn-success" id="btnExportXlsx" title="Gerar Excel"><i class="ti ti-file-type-xls"></i> Excel</button>
           </div>
         </div>
         <div id="procTbl"><div class="empty"><i class="ti ti-loader-2"></i><p>A carregar...</p></div></div>

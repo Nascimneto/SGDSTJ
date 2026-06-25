@@ -12,8 +12,8 @@
       <span id="ttitle" style="font-size:15px;font-weight:600"><?= sgd_e($tituloPagina) ?></span>
       <div class="topbar-right">
         <button class="btn btn-sm" id="btnImprimir" title="Imprimir página"><i class="ti ti-printer"></i> Imprimir</button>
-        <button class="btn btn-sm" id="btnExportPdf" title="Gerar PDF"><i class="ti ti-file-type-pdf"></i> PDF</button>
-        <button class="btn btn-sm" id="btnExportXlsx" title="Gerar Excel"><i class="ti ti-file-type-xls"></i> Excel</button>
+        <button class="btn btn-sm btn-danger" id="btnExportPdf" title="Gerar PDF"><i class="ti ti-file-type-pdf"></i> PDF</button>
+        <button class="btn btn-sm btn-success" id="btnExportXlsx" title="Gerar Excel"><i class="ti ti-file-type-xls"></i> Excel</button>
       </div>
     </div>
     <div class="content" id="content">

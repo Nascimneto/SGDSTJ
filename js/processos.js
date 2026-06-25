@@ -12,7 +12,7 @@ var PROC_PAGE_SIZE = window.SGD_PAGE_SIZE || 15;
 var PARAM_VER_INICIAL = new URLSearchParams(window.location.search).get('ver');
 
 document.addEventListener('DOMContentLoaded', function () {
-  ['fQ', 'fDistribuicao'].forEach(function (id) {
+  ['fQ'].forEach(function (id) {
     var el = G(id);
     if (el) el.addEventListener('input', function () { PROC_PG = 1; recarregarProcessos(); });
   });
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var limpar = G('btnLimparFiltros');
   if (limpar) limpar.addEventListener('click', function () {
     G('fQ').value = ''; G('fEstado').value = ''; G('fEspecie').value = '';
-    G('fDistribuicao').value = ''; G('fDataDe').value = ''; G('fDataAte').value = '';
+    G('fDataDe').value = ''; G('fDataAte').value = '';
     PROC_PG = 1;
     recarregarProcessos();
   });
@@ -56,7 +56,6 @@ function paramsFiltro() {
   var q = GV('fQ').trim();             if (q)    p.set('q', q);
   var estado = GV('fEstado');          if (estado)   p.set('estado', estado);
   var especie = GV('fEspecie');        if (especie)  p.set('especie', especie);
-  var dist = GV('fDistribuicao').trim(); if (dist)   p.set('distribuicao', dist);
   var de = GV('fDataDe');              if (de)   p.set('data_de', de);
   var ate = GV('fDataAte');            if (ate)  p.set('data_ate', ate);
   return p.toString();
@@ -91,41 +90,21 @@ function irParaPaginaProc(p) { PROC_PG = p; renderTabela(); }
 /* ─── Tabela desktop ─── */
 function tblHTML(data) {
   if (!data.length) return '';
-  var hint = '<div style="font-size:11px;color:var(--tx3);padding:7px 16px 5px;display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border);background:var(--bg)">'
-    + '<i class="ti ti-arrows-horizontal" style="font-size:14px;color:var(--blue)"></i> Deslize para ver todas as colunas</div>';
   var colgroup = '<colgroup>'
     + '<col class="c-num"><col class="c-numext"><col class="c-date"><col class="c-esp"><col class="c-partes">'
     + '<col class="c-dist"><col class="c-orig">'
-    + '<col class="c-conc"><col class="c-notif">'
-    + '<col class="c-mp"><col class="c-adj1"><col class="c-adj2">'
-    + '<col class="c-tab">'
-    + '<col class="c-ac"><col class="c-nac">'
-    + '<col class="c-cust"><col class="c-arch">'
     + '<col class="c-est"><col class="c-act">'
     + '</colgroup>';
-  var head = '<div class="tbl-outer"><table class="pt">' + colgroup + '<thead>'
-    + '<tr>'
-    + '<th class="th0" rowspan="2" style="vertical-align:middle;min-width:110px">N&ordm; de Registo de Processo</th>'
-    + '<th rowspan="2" style="vertical-align:middle">N&ordm; de Processo</th>'
-    + '<th rowspan="2" style="vertical-align:middle">Data Registo</th>'
-    + '<th rowspan="2" style="vertical-align:middle">Esp&eacute;cie</th>'
-    + '<th rowspan="2" style="vertical-align:middle;min-width:120px">Intervenientes / Partes</th>'
-    + '<th rowspan="2" style="vertical-align:middle;min-width:85px">Distribui&ccedil;&atilde;o</th>'
-    + '<th rowspan="2" style="vertical-align:middle">Origem</th>'
-    + '<th class="tc" rowspan="2" style="vertical-align:middle">Conclus&atilde;o</th>'
-    + '<th class="tc" rowspan="2" style="vertical-align:middle">Notif./Cita&ccedil;&atilde;o</th>'
-    + '<th class="tm" colspan="3" style="text-align:center;border-bottom:1px solid rgba(255,255,255,.3)">VISTOS</th>'
-    + '<th class="tt"  rowspan="2" style="vertical-align:middle">Ins. Tabela</th>'
-    + '<th class="tac" rowspan="2" style="vertical-align:middle">Ac&oacute;rd&atilde;o</th>'
-    + '<th class="tac" rowspan="2" style="vertical-align:middle">Notif. Ac&oacute;rd&atilde;o</th>'
-    + '<th class="tar" rowspan="2" style="vertical-align:middle">Conta/Custas</th>'
-    + '<th class="tar" rowspan="2" style="vertical-align:middle">Arquivamento</th>'
-    + '<th rowspan="2" style="vertical-align:middle">Estado</th>'
-    + '<th rowspan="2" style="vertical-align:middle">Ac&ccedil;&otilde;es</th>'
-    + '</tr><tr>'
-    + '<th class="tm" style="font-size:9px;padding:3px 6px;border-top:1px solid rgba(255,255,255,.15)">MP</th>'
-    + '<th class="ta" style="font-size:9px;padding:3px 6px;border-top:1px solid rgba(255,255,255,.15)">ADJ.1</th>'
-    + '<th class="ta" style="font-size:9px;padding:3px 6px;border-top:1px solid rgba(255,255,255,.15)">ADJ.2</th>'
+  var head = '<div class="tbl-outer"><table class="pt">' + colgroup + '<thead><tr>'
+    + '<th class="th0" style="min-width:110px">N&ordm; de Registo de Processo</th>'
+    + '<th>N&ordm; de Processo</th>'
+    + '<th>Data Registo</th>'
+    + '<th>Esp&eacute;cie</th>'
+    + '<th style="min-width:120px">Intervenientes / Partes</th>'
+    + '<th style="min-width:85px">Distribui&ccedil;&atilde;o</th>'
+    + '<th>Origem</th>'
+    + '<th>Estado</th>'
+    + '<th>Ac&ccedil;&otilde;es</th>'
     + '</tr></thead><tbody>';
   var rows = data.map(function (d) {
     var delBtn = isAdm()
@@ -136,28 +115,18 @@ function tblHTML(data) {
       : '';
     return '<tr style="cursor:pointer" onclick="abrirDetalhe(' + d.id + ')">'
       + '<td class="td0 tdl">' + esc(d.numero_processo) + '</td>'
-      + '<td class="tdl" style="font-size:11px">' + esc(d.numero_processo_externo || '—') + '</td>'
-      + '<td class="tdd">' + esc(shortDate(d.data_registo)) + '</td>'
-      + '<td><span class="badge b-type">' + esc(d.especie) + '</span></td>'
-      + '<td class="tdl" style="max-width:140px;font-size:11px">' + esc(trunc(d.partes, 30)) + '</td>'
-      + '<td style="font-size:11px">' + esc(trunc(d.distribuicao || '—', 14)) + '</td>'
-      + '<td style="font-size:11px">' + esc(trunc(d.origem || '—', 12)) + '</td>'
-      + '<td class="tc">' + chk(d.conclusao) + '</td>'
-      + '<td class="tc">' + chk(d.notificacao_citacao) + '</td>'
-      + '<td class="tm">' + chk(d.visto_mp) + '</td>'
-      + '<td class="ta">' + chk(d.visto_adjunto1) + '</td>'
-      + '<td class="ta">' + chk(d.visto_adjunto2) + '</td>'
-      + '<td class="tt">' + chk(d.inscricao_tabela) + '</td>'
-      + '<td class="tac">' + chk(d.acordao) + '</td>'
-      + '<td class="tac">' + chk(d.notificacao_acordao) + '</td>'
-      + '<td class="tar">' + chk(d.conta_custas) + '</td>'
-      + '<td class="tar">' + chk(d.arquivamento) + '</td>'
-      + '<td onclick="event.stopPropagation()"><span class="badge ' + esc(d.estado_cor) + '">' + esc(d.estado) + '</span></td>'
+      + '<td class="tdl">' + esc(d.numero_processo_externo || '—') + '</td>'
+      + '<td class="tdl tdd">' + esc(shortDate(d.data_registo)) + '</td>'
+      + '<td class="tdl"><span class="badge b-type">' + esc(d.especie) + '</span></td>'
+      + '<td class="tdl" style="max-width:160px">' + esc(trunc(d.partes, 38)) + '</td>'
+      + '<td class="tdl">' + esc(trunc(d.distribuicao || '—', 18)) + '</td>'
+      + '<td class="tdl">' + esc(trunc(d.origem || '—', 16)) + '</td>'
+      + '<td class="tdl" onclick="event.stopPropagation()"><span class="badge ' + esc(d.estado_cor) + '">' + esc(d.estado) + '</span></td>'
       + '<td class="td-act" onclick="event.stopPropagation()"><div style="display:flex;gap:2px;justify-content:center">'
       + '<button class="btn btn-icon btn-xs" title="Ver" onclick="abrirDetalhe(' + d.id + ')"><i class="ti ti-eye"></i></button>'
       + editBtn + delBtn + '</div></td></tr>';
   }).join('');
-  return hint + head + rows + '</tbody></table></div>';
+  return head + rows + '</tbody></table></div>';
 }
 
 /* ─── Cards mobile ─── */

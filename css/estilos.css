@@ -80,7 +80,7 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .panel-title{ font-size:13px; font-weight:600; color:var(--tx); flex-shrink:0; }
 
 /* ── Toolbar de processos ── */
-.proc-tb   { display:flex; align-items:center; gap:7px; padding:9px 12px; border-bottom:1px solid var(--border); flex-wrap:wrap; row-gap:6px; }
+.proc-tb   { display:flex; align-items:center; gap:7px; padding:9px 12px; margin-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; row-gap:6px; }
 .proc-tb-l { display:flex; align-items:center; gap:7px; flex:1; min-width:0; flex-wrap:wrap; row-gap:6px; overflow:hidden; }
 
 /* ── Estatísticas ── */
@@ -108,37 +108,28 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .pt {
   width: 100%;
   border-collapse: collapse;
-  /* Largura total de todas as colunas ≈ 1170px */
-  min-width: 1170px;
-  font-size: 10px;
+  /* Largura total de todas as colunas ≈ 940px */
+  min-width: 940px;
+  font-size: 13px;
   table-layout: fixed;
 }
 
-/* ── Larguras fixas por coluna ── */
-.pt col.c-num    { width: 95px;  }   /* Nº de Registo de Processo */
-.pt col.c-numext { width: 70px;  }   /* Nº de Processo    */
-.pt col.c-date   { width: 72px;  }   /* Data Registo      */
-.pt col.c-esp    { width: 58px;  }   /* Espécie           */
-.pt col.c-partes { width: 120px; }   /* Intervenientes    */
-.pt col.c-dist   { width: 65px;  }   /* Distribuição      */
-.pt col.c-orig   { width: 58px;  }   /* Origem            */
-.pt col.c-conc   { width: 62px;  }   /* Conclusão         */
-.pt col.c-notif  { width: 62px;  }   /* Notif./Citação    */
-.pt col.c-mp     { width: 58px;  }   /* Visto MP          */
-.pt col.c-adj1   { width: 58px;  }   /* Visto Adj.1       */
-.pt col.c-adj2   { width: 58px;  }   /* Visto Adj.2       */
-.pt col.c-tab    { width: 62px;  }   /* Ins. Tabela       */
-.pt col.c-ac     { width: 62px;  }   /* Acórdão           */
-.pt col.c-nac    { width: 62px;  }   /* Notif. Acórdão    */
-.pt col.c-cust   { width: 62px;  }   /* Conta/Custas      */
-.pt col.c-arch   { width: 58px;  }   /* Arquivamento      */
-.pt col.c-est    { width: 68px;  }   /* Estado            */
-.pt col.c-act    { width: 78px;  }   /* Acções — 3 botões */
+/* ── Larguras fixas por coluna (9 colunas, mais espaço por coluna do que
+   quando a tabela tinha as 10 datas de controlo individuais) ── */
+.pt col.c-num    { width: 110px; }   /* Nº de Registo de Processo */
+.pt col.c-numext { width: 90px;  }   /* Nº de Processo    */
+.pt col.c-date   { width: 85px;  }   /* Data Registo      */
+.pt col.c-esp    { width: 80px;  }   /* Espécie           */
+.pt col.c-partes { width: 180px; }   /* Intervenientes    */
+.pt col.c-dist   { width: 100px; }   /* Distribuição      */
+.pt col.c-orig   { width: 100px; }   /* Origem            */
+.pt col.c-est    { width: 90px;  }   /* Estado            */
+.pt col.c-act    { width: 90px;  }   /* Acções — 3 botões */
 
 .pt th {
   text-align: center;
-  padding: 5px 3px;
-  font-size: 8px;
+  padding: 8px 5px;
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
   background: var(--sid);
@@ -151,9 +142,9 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .th0 { background:#1a3a52 !important; }
 
 .pt td {
-  padding: 5px 3px;
+  padding: 8px 5px;
   border: 1px solid var(--border);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--tx);
   vertical-align: middle;
   text-align: center;
@@ -161,33 +152,10 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 }
 .pt tr:nth-child(even) td { background:#FAFAF6; }
 .pt tr:hover td { background:#EFF6FF; cursor:pointer; }
-.td0 { font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--blue); font-size:9.5px; white-space:nowrap; text-align:left !important; overflow:hidden; text-overflow:ellipsis; }
+.td0 { font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--blue); font-size:12px; white-space:nowrap; text-align:left !important; overflow:hidden; text-overflow:ellipsis; }
 .tdl { text-align:left !important; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.tdd { white-space:nowrap; font-size:9.5px; color:var(--tx2); }
+.tdd { white-space:nowrap; font-size:12px; color:var(--tx2); }
 .td-act { white-space:nowrap; text-align:center !important; }
-
-/* ────────────────────────────────────────────
-   CORES DA TABELA — CABEÇALHOS E CÉLULAS
-   ──────────────────────────────────────────── */
-/* Cabeçalhos th — versão ESCURA */
-.pt th.tc  { background:#166534 !important; color:#fff !important; }
-.pt th.tm  { background:#92400E !important; color:#fff !important; }
-.pt th.ta  { background:#4C1D95 !important; color:#fff !important; }
-.pt th.tt  { background:#1E40AF !important; color:#fff !important; }
-.pt th.tac { background:#991B1B !important; color:#fff !important; }
-.pt th.tar { background:#374151 !important; color:#fff !important; }
-
-/* Células td — versão CLARA */
-.tc  { background:#F0FDF4 !important; }
-.tm  { background:#FFF7ED !important; }
-.ta  { background:#F5F3FF !important; }
-.tt  { background:#EFF6FF !important; }
-.tac { background:#FEF2F2 !important; }
-.tar { background:#F8F7F4 !important; }
-
-/* ── Ícones de check ── */
-.chk-y { display:inline-flex; align-items:center; gap:2px; font-size:9px; color:var(--green); }
-.chk-n { color:var(--tx3); font-size:11px; }
 
 /* ── Badges ── */
 .badge        { display:inline-flex; align-items:center; gap:2px; padding:2px 5px; border-radius:20px; font-size:9px; font-weight:600; white-space:nowrap; }

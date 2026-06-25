@@ -51,11 +51,6 @@ function i2p(iso) {
 
 function shortDate(dt) { return dt ? dt.split(' ')[0] : ''; }
 
-function chk(v) {
-  if (v) return '<span class="chk-y"><i class="ti ti-circle-check" style="font-size:13px"></i>' + esc(v) + '</span>';
-  return '<span class="chk-n"><i class="ti ti-circle" style="font-size:13px"></i></span>';
-}
-
 /* ─── Sessão (perfil vem do servidor via window.SGD_PERFIL, ver includes/head.php) ─── */
 function isAdm() { return window.SGD_PERFIL === 'Administrador'; }
 

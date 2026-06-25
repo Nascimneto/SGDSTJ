@@ -3,7 +3,7 @@
   <!-- Logótipo: liga sempre ao Painel Geral (página inicial da plataforma). -->
   <a class="sb-logo" href="painel.php" title="Ir para o Painel Geral" style="flex-direction:column;align-items:stretch;gap:7px;text-decoration:none;color:inherit;cursor:pointer">
     <div style="background:#fff;border-radius:7px;padding:6px 8px;display:flex;align-items:center;justify-content:center">
-      <img src="<?= sgd_asset('assets/img/logostj.png') ?>" alt="Supremo Tribunal de Justiça" style="height:24px;width:auto;display:block">
+      <img src="<?= sgd_asset('assets/img/logostj.jpg') ?>" alt="Supremo Tribunal de Justiça" style="height:24px;width:auto;display:block">
     </div>
     <div class="sb-sub" style="padding-left:2px">SGD — Gestão de Processos</div>
   </a>
