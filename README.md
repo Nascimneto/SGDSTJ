@@ -40,6 +40,22 @@ PageGuard::aplicar();
 require_once __DIR__ . '/app/Controllers/ProcessoController.php';
 (new ProcessoController())->index();
 ```
+
+**Porque há sempre dois ficheiros com nomes parecidos (ex: `auditoria.php` na raiz e
+`app/Views/auditoria/index.php`) — não são duplicados, fazem trabalhos diferentes:**
+- `auditoria.php` (raiz) é o **endereço/URL** que o browser pede
+  (`https://sgd-stj.sbs/auditoria.php`). É o "porteiro": confirma sessão válida
+  (`PageGuard::aplicar()`), confirma permissão (`PageGuard::exigirPerfil(['Administrador'])`,
+  quando aplicável) e só depois manda mostrar alguma coisa. **Sem este ficheiro a página não
+  tem URL — ninguém consegue chegar lá.**
+- `app/Views/auditoria/index.php` é só o HTML que esse "porteiro" manda mostrar depois de
+  confirmar tudo. **Nunca é pedido directamente pelo browser** (nem podia: `.htaccess` bloqueia
+  acesso directo a `app/`) — não tem nenhuma verificação de sessão/permissão própria, só sabe
+  desenhar a página assumindo que já passou pelo porteiro.
+
+Por isso os dois ficheiros nunca podem ser fundidos num só nem um dos dois apagado — um sem o
+outro deixa a aplicação sem funcionar (ou sem URL, ou sem ecrã para mostrar).
+
 - `app/Core/` — ligação à BD (`Database`), sessão/autenticação (`Session`, `Auth`), guards de página
   e de API (`PageGuard`, `ApiGuard`), auditoria (`Auditoria`), política de senha (`Senha`), helpers de
   template (`Helpers.php` — `sgd_e()`/`sgd_iniciais()`/`sgd_asset()` continuam funções globais, não
