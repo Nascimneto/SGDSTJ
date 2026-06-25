@@ -61,5 +61,6 @@
       </div>
       <i class="ti ti-logout sb-logout" id="logoutBtn" title="Sair"></i>
     </div>
+    <div class="sb-copy">&copy; <?= date('Y') ?> Osvanildo Nascimento</div>
   </div>
 </nav>
