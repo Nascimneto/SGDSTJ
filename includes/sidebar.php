@@ -61,6 +61,6 @@
       </div>
       <i class="ti ti-logout sb-logout" id="logoutBtn" title="Sair"></i>
     </div>
-    <div class="sb-copy">&copy; <?= date('Y') ?> O.N STJ &mdash; Todos os direitos reservados</div>
+    <div class="sb-copy">&copy; <?= date('Y') ?> O.N &amp; H.P STJ &mdash; Todos os direitos reservados</div>
   </div>
 </nav>
