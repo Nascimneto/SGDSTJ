@@ -51,6 +51,11 @@ function nowPT() {
     + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
 }
 
+function hojeISO() {
+  var d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
 function p2i(pt) {
   if (!pt) return '';
   var p = pt.split('/');
@@ -79,14 +84,28 @@ function doLogout() {
 
 /* ─── Toast ─── */
 var toastTimer;
+var TOAST_CORES = { green: 'var(--green)', red: 'var(--red)', amber: 'var(--amber)', blue: 'var(--blue)' };
 function showToast(msg, icon, type) {
   icon = icon || 'ti-circle-check';
-  G('toastI').className = 'ti ' + icon;
-  G('toastI').style.color = type === 'red' ? '#f87171' : '#4ade80';
-  G('toastM').textContent = msg;
-  G('toast').classList.add('show');
+  var t = type === 'red' ? 'red' : type === 'amber' ? 'amber' : type === 'blue' ? 'blue' : 'green';
+  var el  = G('toast');
+  var bar = G('toast-bar');
+
+  G('toastI').className      = 'ti ' + icon;
+  G('toastI').style.color    = TOAST_CORES[t];
+  G('toastM').textContent    = msg;
+
+  el.classList.remove('t-green', 't-red', 't-amber', 't-blue');
+  el.classList.add('t-' + t);
+
+  /* reinicia a animação da barra de progresso */
+  bar.style.animation = 'none';
+  bar.offsetWidth; /* força reflow */
+  bar.style.animation = '';
+
+  el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function () { G('toast').classList.remove('show'); }, 3000);
+  toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3000);
 }
 
 /* ─── Diálogo de confirmação ─── */

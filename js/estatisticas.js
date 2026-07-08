@@ -1,33 +1,33 @@
 /**
- * estatisticas.js — distribuição por estado/espécie/utilizador (em gráfico,
- * Chart.js, com tipo seleccionável), filtros por utilizador e intervalo de
- * datas, funil processual, quadro resumo, exportação PDF/Excel/Impressão.
+ * estatisticas.js — Relatórios por: Período, Juiz Relator, Espécie, Estado, Origem.
  */
-var SGD_COR_ESTADO = window.SGD_COR_ESTADO || { entry: '#2563EB', analysis: '#7C3AED', distributed: '#D97706', concluded: '#059669', archived: '#9CA3AF' };
-var PALETA = ['#2563EB', '#7C3AED', '#D97706', '#059669', '#DB2777', '#0891B2', '#9333EA', '#CA8A04', '#475569'];
-var ULTIMOS_DADOS = null;
-var TIPO_GRAFICO = 'bar';
-var CHARTS = { estado: null, especie: null, utilizador: null };
+var SGD_COR_ESTADO = window.SGD_COR_ESTADO || { entry:'#2563EB', analysis:'#7C3AED', distributed:'#D97706', concluded:'#059669', archived:'#9CA3AF' };
+var PALETA = ['#2563EB','#7C3AED','#D97706','#059669','#DB2777','#0891B2','#9333EA','#CA8A04','#475569'];
+var MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-// Plugin de rótulos (mostra o número em cada fatia no gráfico de pizza) —
-// carregado via <script> em estatisticas.php, só precisa de ser registado uma vez.
+var ULTIMOS_DADOS    = null;
+var TIPO_GRAFICO     = 'bar';
+var CHART_ACTIVO     = null;
+var relatorioActivo  = 'periodo';
+var escalaVolume     = 'mensal';
+
 if (window.Chart && window.ChartDataLabels) {
   window.Chart.register(window.ChartDataLabels);
 }
 
+var TABS = [
+  { cod:'periodo', icon:'ti-calendar',  label:'Por Período' },
+  { cod:'juiz',    icon:'ti-users',     label:'Por Juiz Relator' },
+  { cod:'especie', icon:'ti-category',  label:'Por Espécie' },
+  { cod:'estado',  icon:'ti-circle',    label:'Por Estado' },
+  { cod:'origem',  icon:'ti-building',  label:'Por Origem' },
+];
+
 document.addEventListener('DOMContentLoaded', function () {
   carregarEstatisticas();
 
-  var exportPdf  = G('btnExportPdf');
-  var exportXlsx = G('btnExportXlsx');
-  var imprimir   = G('btnImprimir');
-  if (exportPdf)  exportPdf.addEventListener('click', exportarEstatisticasPDF);
-  if (exportXlsx) exportXlsx.addEventListener('click', exportarEstatisticasExcel);
-  if (imprimir)   imprimir.addEventListener('click', function () { window.print(); });
-
-  ['fEstUtilizador', 'fEstDataDe', 'fEstDataAte'].forEach(function (id) {
-    var el = G(id);
-    if (el) el.addEventListener('change', carregarEstatisticas);
+  ['fEstUtilizador','fEstDataDe','fEstDataAte'].forEach(function (id) {
+    var el = G(id); if (el) el.addEventListener('change', carregarEstatisticas);
   });
 
   var limpar = G('btnLimparFiltrosEst');
@@ -36,200 +36,439 @@ document.addEventListener('DOMContentLoaded', function () {
     carregarEstatisticas();
   });
 
-  var tipoGrafico = G('fTipoGrafico');
-  if (tipoGrafico) tipoGrafico.addEventListener('change', function () {
-    TIPO_GRAFICO = tipoGrafico.value;
-    if (ULTIMOS_DADOS) renderGraficos(ULTIMOS_DADOS.distribuicao);
+  var tipoG = G('fTipoGrafico');
+  if (tipoG) tipoG.addEventListener('change', function () {
+    TIPO_GRAFICO = tipoG.value;
+    if (ULTIMOS_DADOS) renderTab(relatorioActivo, ULTIMOS_DADOS);
   });
+
+  var btnPdf = G('btnExportPdf'),  btnXls = G('btnExportXlsx'),  btnPrn = G('btnImprimir');
+  if (btnPdf) btnPdf.addEventListener('click', exportarPDF);
+  if (btnXls) btnXls.addEventListener('click', exportarExcel);
+  if (btnPrn) btnPrn.addEventListener('click', function () { window.print(); });
 });
 
-function paramsFiltroEstatisticas() {
+/* ─── Filtros e carregamento ─── */
+function paramsFiltros() {
   var p = new URLSearchParams();
-  var u = GV('fEstUtilizador');  if (u) p.set('utilizador', u);
+  var u = GV('fEstUtilizador');  if (u)  p.set('utilizador', u);
   var de = GV('fEstDataDe');     if (de) p.set('data_de', de);
-  var ate = GV('fEstDataAte');   if (ate) p.set('data_ate', ate);
+  var at = GV('fEstDataAte');    if (at) p.set('data_ate', at);
   return p.toString();
 }
 
 function carregarEstatisticas() {
-  var qs = paramsFiltroEstatisticas();
+  G('estCorpo').innerHTML = '<div class="empty"><i class="ti ti-loader-2"></i><p>A carregar...</p></div>';
+  var qs = paramsFiltros();
+  var qp = qs ? '?' + qs : '';
   Promise.all([
-    apiGet('api/estatisticas/resumo.php?' + qs),
-    apiGet('api/estatisticas/distribuicao.php?' + qs),
-    apiGet('api/estatisticas/funil.php?' + qs),
-    apiGet('api/conclusao/pendentes.php'),
-    apiGet('api/vistos/pendentes.php')
+    apiGet('api/estatisticas/distribuicao.php' + qp),
+    apiGet('api/estatisticas/volume.php?escala=' + escalaVolume + (qs ? '&' + qs : '')),
+    apiGet('api/estatisticas/produtividade.php' + qp),
   ]).then(function (res) {
-    ULTIMOS_DADOS = { resumo: res[0], distribuicao: res[1], funil: res[2].funil, conclusao: res[3], vistos: res[4] };
+    ULTIMOS_DADOS = { distribuicao: res[0], volume: res[1], produtividade: res[2] };
     renderEstatisticas(ULTIMOS_DADOS);
   }).catch(function (e) {
     G('estCorpo').innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i><p>Erro: ' + esc(e.message) + '</p></div>';
   });
 }
 
+/* ─── Layout de tabs ─── */
 function renderEstatisticas(d) {
-  var funilHtml = d.funil.map(function (f) {
-    return '<div class="tl-item"><div class="tl-d">' + (f.conversao !== null ? f.conversao + '%' : '&mdash;') + '</div>'
-      + '<div class="tl-t">' + esc(f.label) + ' &mdash; <b>' + f.total + '</b></div></div>';
-  }).join('');
-
-  var resumoRows = d.distribuicao.porEspecie.map(function (e) {
-    return '<tr><td class="tdl" style="padding:8px 12px">' + esc(e.especie) + '</td><td style="text-align:center;padding:8px 12px">' + e.total + '</td></tr>';
-  }).join('');
-  // Vista em "tabela compacta" para ecrãs estreitos — sem isto, o quadro
-  // desaparecia a partir de 767px (.tbl-outer fica display:none nesse
-  // breakpoint, ver css/estilos.css), tal como aconteceu em Histórico/Auditoria.
-  // Um único cabeçalho (cor igual à da tabela real, var(--sid)) em cima de
-  // todas as linhas — não um rótulo repetido por linha.
-  var resumoCards = '<div class="pc-card" style="padding:0;overflow:hidden">'
-    + '<div style="display:flex;background:var(--sid);padding:8px 14px;font-size:10px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.4px">'
-    + '<span style="flex:1">Espécie</span><span style="flex:0 0 50px;text-align:right">Total</span></div>'
-    + d.distribuicao.porEspecie.map(function (e, i) {
-        var zebra = i % 2 ? 'background:#FAFAF6;' : '';
-        return '<div style="display:flex;padding:9px 14px;border-bottom:1px solid var(--border);' + zebra + '">'
-          + '<span style="flex:1;font-size:13px">' + esc(e.especie) + '</span>'
-          + '<span style="flex:0 0 50px;text-align:right;font-weight:600;font-size:13px">' + e.total + '</span></div>';
+  var tabBar = '<div class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">'
+    + TABS.map(function (t) {
+        return '<button id="tab-' + t.cod + '" class="btn btn-sm' + (t.cod === relatorioActivo ? ' btn-primary' : '') + '">'
+          + '<i class="ti ' + t.icon + '"></i> ' + t.label + '</button>';
       }).join('')
+    + '</div><div id="relCorpo"></div>';
+
+  G('estCorpo').innerHTML = tabBar;
+
+  TABS.forEach(function (t) {
+    var btn = G('tab-' + t.cod);
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      relatorioActivo = t.cod;
+      TABS.forEach(function (x) {
+        var b = G('tab-' + x.cod);
+        if (b) b.className = 'btn btn-sm' + (x.cod === t.cod ? ' btn-primary' : '');
+      });
+      renderTab(t.cod, d);
+    });
+  });
+
+  renderTab(relatorioActivo, d);
+}
+
+function renderTab(tab, d) {
+  if (CHART_ACTIVO) { CHART_ACTIVO.destroy(); CHART_ACTIVO = null; }
+  var el = G('relCorpo');
+  if (!el) return;
+  if      (tab === 'periodo') { el.innerHTML = htmlTabPeriodo(d.volume);       attachEscala(); desenharGraficoPeriodo(d.volume); }
+  else if (tab === 'juiz')    { el.innerHTML = htmlTabJuiz(d.produtividade);   desenharGraficoJuiz(d.produtividade); }
+  else if (tab === 'especie') { el.innerHTML = htmlTabEspecie(d.distribuicao); desenharGraficoSimples('chartEspecie', d.distribuicao.porEspecie || [], 'especie'); }
+  else if (tab === 'estado')  { el.innerHTML = htmlTabEstado(d.distribuicao);  desenharGraficoSimples('chartEstado',  d.distribuicao.porEstado  || [], 'estado'); }
+  else if (tab === 'origem')  { el.innerHTML = htmlTabOrigem(d.distribuicao);  desenharGraficoSimples('chartOrigem',  d.distribuicao.porOrigem  || [], 'origem'); }
+}
+
+/* ═══ Tab: Por Período ═══ */
+function htmlTabPeriodo(vol) {
+  var dados  = (vol && vol.dados) || [];
+  var escala = escalaVolume;
+  var totalReg  = dados.reduce(function (a, d) { return a + (+d.registados  || 0); }, 0);
+  var totalConc = dados.reduce(function (a, d) { return a + (+d.concluidos  || 0); }, 0);
+  var saldo = totalReg - totalConc;
+
+  var linhas = dados.slice().reverse().map(function (d) {
+    var lbl = escala === 'anual' ? d.periodo
+      : (function () { var p = d.periodo.split('-'); return MESES_PT[parseInt(p[1]) - 1] + '/' + p[0]; }());
+    var s = (+d.registados || 0) - (+d.concluidos || 0);
+    return '<tr>'
+      + '<td class="tdl" style="padding:8px 12px">' + esc(lbl) + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;color:var(--blue);font-weight:600">' + d.registados + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;color:var(--green);font-weight:600">' + d.concluidos + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;font-weight:600;color:' + (s > 0 ? 'var(--amber)' : 'var(--green)') + '">' + (s > 0 ? '+' : '') + s + '</td>'
+      + '</tr>';
+  }).join('');
+
+  return '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">'
+    + statCard('ti-inbox',        'var(--blue)',  'Registados',  totalReg,  'No período seleccionado')
+    + statCard('ti-circle-check', 'var(--green)', 'Concluídos',  totalConc, 'No período seleccionado')
+    + statCard('ti-trending-up',  saldo > 0 ? 'var(--amber)' : 'var(--green)', 'Saldo', (saldo > 0 ? '+' : '') + saldo, 'Registados menos concluídos')
+    + '</div>'
+    + '<div class="panel" style="padding:16px;margin-bottom:12px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">'
+    + '<div style="font-size:13px;font-weight:600"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Registados vs Concluídos</div>'
+    + '<div style="display:flex;gap:4px">'
+    + '<button id="btn-escala-mensal" class="btn btn-xs' + (escala === 'mensal' ? ' btn-primary' : '') + '">Mensal</button>'
+    + '<button id="btn-escala-anual"  class="btn btn-xs' + (escala === 'anual'  ? ' btn-primary' : '') + '">Anual</button>'
+    + '</div></div>'
+    + '<div style="position:relative;height:220px"><canvas id="chartPeriodo"></canvas></div>'
+    + '<div style="display:flex;gap:14px;margin-top:8px;font-size:10px;color:var(--tx3)">'
+    + '<span><span style="display:inline-block;width:10px;height:8px;background:#2563EB;border-radius:2px;margin-right:4px;vertical-align:middle"></span>Registados</span>'
+    + '<span><span style="display:inline-block;width:10px;height:8px;background:#059669;border-radius:2px;margin-right:4px;vertical-align:middle"></span>Concluídos</span>'
+    + '</div></div>'
+    + '<div class="panel" style="padding:0">'
+    + '<div class="panel-hd"><i class="ti ti-table" style="color:var(--blue)"></i>'
+    + '<span class="panel-title">Detalhe por ' + (escala === 'anual' ? 'Ano' : 'Mês') + '</span></div>'
+    + '<div class="tbl-outer"><table class="pt" style="font-size:12px">'
+    + '<thead><tr><th class="th0">Período</th><th style="text-align:center">Registados</th><th style="text-align:center">Concluídos</th><th style="text-align:center">Saldo</th></tr></thead>'
+    + '<tbody>' + (linhas || '<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--tx3)">Sem dados.</td></tr>') + '</tbody>'
+    + '</table></div></div>';
+}
+
+function attachEscala() {
+  ['mensal','anual'].forEach(function (e) {
+    var btn = G('btn-escala-' + e);
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      if (escalaVolume === e) return;
+      escalaVolume = e;
+      var qs = paramsFiltros();
+      apiGet('api/estatisticas/volume.php?escala=' + e + (qs ? '&' + qs : ''))
+        .then(function (v) {
+          ULTIMOS_DADOS.volume = v;
+          if (CHART_ACTIVO) { CHART_ACTIVO.destroy(); CHART_ACTIVO = null; }
+          var el = G('relCorpo');
+          if (el) { el.innerHTML = htmlTabPeriodo(v); attachEscala(); desenharGraficoPeriodo(v); }
+        });
+    });
+  });
+}
+
+function desenharGraficoPeriodo(vol) {
+  var dados  = (vol && vol.dados) || [];
+  var canvas = G('chartPeriodo');
+  if (!canvas || !window.Chart || !dados.length) return;
+
+  var labels = dados.map(function (d) {
+    return escalaVolume === 'anual' ? d.periodo
+      : (function () { var p = d.periodo.split('-'); return MESES_PT[parseInt(p[1]) - 1] + '/' + p[0].slice(2); }());
+  });
+
+  CHART_ACTIVO = new window.Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label:'Registados', data: dados.map(function (d) { return +d.registados || 0; }), backgroundColor:'#2563EB', borderRadius:3 },
+        { label:'Concluídos', data: dados.map(function (d) { return +d.concluidos || 0; }), backgroundColor:'#059669', borderRadius:3 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{ font:{ size:10 } } },
+        datalabels: { display:false }
+      },
+      scales: { y:{ beginAtZero:true, ticks:{ precision:0 } } }
+    }
+  });
+}
+
+/* ═══ Tab: Por Juiz Relator ═══ */
+function htmlTabJuiz(prod) {
+  var rel = (prod && prod.relatores) || [];
+  var totalP = rel.reduce(function (a, r) { return a + (+r.total || 0); }, 0);
+  var taxaM  = rel.length ? Math.round(rel.reduce(function (a, r) { return a + (+r.taxa || 0); }, 0) / rel.length * 10) / 10 : 0;
+  var altG   = Math.min(Math.max(180, rel.length * 38), 420);
+
+  var linhas = rel.map(function (r) {
+    var cor = +r.taxa >= 70 ? 'var(--green)' : +r.taxa >= 40 ? 'var(--amber)' : 'var(--red)';
+    return '<tr>'
+      + '<td class="tdl" style="padding:8px 12px">' + esc(r.relator) + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;font-weight:600">' + r.total + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;color:var(--amber)">' + r.pendentes + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;color:var(--green)">' + r.findos + '</td>'
+      + '<td style="padding:8px 12px;min-width:120px"><div style="display:flex;align-items:center;gap:6px">'
+      + '<div style="flex:1;height:4px;background:var(--bg);border-radius:4px">'
+      + '<div style="width:' + Math.min(+r.taxa, 100) + '%;height:100%;background:' + cor + ';border-radius:4px"></div></div>'
+      + '<span style="font-size:11px;font-weight:600;color:' + cor + ';min-width:34px;text-align:right">' + r.taxa + '%</span>'
+      + '</div></td></tr>';
+  }).join('');
+
+  return '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">'
+    + statCard('ti-users',     'var(--blue)',  'Juízes Relatores',       rel.length,   null)
+    + statCard('ti-files',     'var(--amber)', 'Total de Processos',     totalP,       null)
+    + statCard('ti-chart-pie', 'var(--green)', 'Taxa Média de Conclusão', taxaM + '%', null)
+    + '</div>'
+    + '<div class="row2" style="margin-bottom:12px">'
+    + '<div class="panel" style="padding:16px">'
+    + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Processos por Juiz Relator</div>'
+    + '<div style="position:relative;height:' + altG + 'px"><canvas id="chartJuiz"></canvas></div>'
+    + '</div>'
+    + '<div class="panel" style="padding:0">'
+    + '<div class="panel-hd"><i class="ti ti-table" style="color:var(--blue)"></i><span class="panel-title">Detalhe por Juiz</span></div>'
+    + '<div class="tbl-outer"><table class="pt" style="font-size:12px">'
+    + '<thead><tr><th class="th0">Juiz Relator</th><th style="text-align:center">Total</th><th style="text-align:center">Pendentes</th><th style="text-align:center">Findos</th><th>Taxa</th></tr></thead>'
+    + '<tbody>' + (linhas || '<tr><td colspan="5" style="padding:14px;text-align:center;color:var(--tx3)">Sem dados.</td></tr>') + '</tbody>'
+    + '</table></div></div>'
     + '</div>';
-
-  G('estCorpo').innerHTML = '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">'
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-files" style="color:var(--blue)"></i> Total</div><div class="stat-num" style="color:var(--blue)">' + d.resumo.totais.total + '</div><div class="stat-sub">Registados</div></div>'
-    + statDuplo('ti-check', 'var(--green)', 'Conclusão', d.conclusao.pendentes.length, d.conclusao.concluidosCount)
-    + statDuplo('ti-stamp', 'var(--purple)', 'Visto', d.vistos.pendentes.length, d.vistos.concluidosCount)
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-calendar" style="color:var(--amber)"></i> Em Tabela</div><div class="stat-num" style="color:var(--amber)">' + d.resumo.totais.em_tabela + '</div><div class="stat-sub">Aguarda acordao</div></div>'
-    + '</div>'
-    + '<div class="row2">'
-    + '<div class="panel" style="padding:16px"><div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Distribuição por Estado</div><div class="chart-wrap"><canvas id="chartEstado"></canvas></div></div>'
-    + '<div class="panel" style="padding:16px"><div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-category" style="color:var(--purple)"></i> Distribuição por Espécie</div><div class="chart-wrap"><canvas id="chartEspecie"></canvas></div></div>'
-    + '</div>'
-    + '<div class="row2">'
-    + '<div class="panel" style="padding:16px"><div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-users" style="color:var(--green)"></i> Distribuição por Utilizador</div><div class="chart-wrap"><canvas id="chartUtilizador"></canvas></div></div>'
-    + '<div class="panel" style="padding:16px"><div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-filter" style="color:var(--amber)"></i> Funil Processual</div><div class="tl">' + funilHtml + '</div></div>'
-    + '</div>'
-    + '<div class="panel" style="padding:0;margin-top:9px"><div class="panel-hd"><i class="ti ti-table" style="color:var(--green)"></i><span class="panel-title">Quadro Resumo por Espécie</span></div>'
-    + '<div class="tbl-outer"><table class="pt" style="min-width:0;font-size:12px"><thead><tr><th class="th0">Espécie</th><th>Total</th></tr></thead><tbody>' + resumoRows + '</tbody></table></div>'
-    + '<div class="pc-list" style="padding:10px 14px">' + resumoCards + '</div></div>';
-
-  renderGraficos(d.distribuicao);
 }
 
-/** Constrói (ou recria) os três gráficos no tipo actualmente seleccionado (#fTipoGrafico). */
-function renderGraficos(distribuicao) {
-  desenharGrafico('estado', G('chartEstado'),
-    distribuicao.porEstado.map(function (e) { return e.label; }),
-    distribuicao.porEstado.map(function (e) { return e.total; }),
-    distribuicao.porEstado.map(function (e) { return SGD_COR_ESTADO[e.codigo] || '#888'; })
-  );
-  desenharGrafico('especie', G('chartEspecie'),
-    distribuicao.porEspecie.map(function (e) { return e.especie; }),
-    distribuicao.porEspecie.map(function (e) { return e.total; }),
-    distribuicao.porEspecie.map(function (e, i) { return PALETA[i % PALETA.length]; })
-  );
-  desenharGrafico('utilizador', G('chartUtilizador'),
-    distribuicao.porUtilizador.map(function (u) { return u.utilizador; }),
-    distribuicao.porUtilizador.map(function (u) { return u.total; }),
-    distribuicao.porUtilizador.map(function (u, i) { return PALETA[i % PALETA.length]; })
-  );
+function desenharGraficoJuiz(prod) {
+  var rel    = (prod && prod.relatores) || [];
+  var canvas = G('chartJuiz');
+  if (!canvas || !window.Chart || !rel.length) return;
+
+  CHART_ACTIVO = new window.Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: rel.map(function (r) { return r.relator; }),
+      datasets: [{ data: rel.map(function (r) { return +r.total || 0; }), backgroundColor: PALETA[0], borderRadius: 3 }]
+    },
+    options: {
+      indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { display:false },
+        datalabels: { display:true, color:'#374151', anchor:'end', align:'end', offset:2, font:{ size:11, weight:'600' }, formatter:function(v){ return v||''; }, clamp:true }
+      },
+      scales: { x:{ beginAtZero:true, ticks:{ precision:0 } } },
+      layout: { padding:{ right:34 } }
+    }
+  });
 }
 
-function desenharGrafico(chave, canvas, labels, valores, cores) {
-  if (!canvas || !window.Chart) return;
-  if (CHARTS[chave]) { CHARTS[chave].destroy(); }
+/* ═══ Tab: Por Espécie ═══ */
+function htmlTabEspecie(dist) {
+  var dados = (dist && dist.porEspecie) || [];
+  var total = dados.reduce(function (a, e) { return a + (+e.total || 0); }, 0);
+  var items = dados.map(function (e, i) { return { label: e.especie, total: +e.total || 0, cor: PALETA[i % PALETA.length] }; });
 
-  // Total do próprio gráfico (não da página) — a percentagem de cada fatia/barra
-  // é sempre relativa ao que está visível nesse gráfico, já filtrado.
-  var total = valores.reduce(function (a, b) { return a + b; }, 0);
-  var mostrarRotulos = TIPO_GRAFICO === 'pie' || TIPO_GRAFICO === 'bar';
+  return '<div class="row2" style="margin-bottom:12px">'
+    + '<div class="panel" style="padding:16px">'
+    + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-category" style="color:var(--purple)"></i> Distribuição por Espécie</div>'
+    + '<div style="position:relative;height:260px"><canvas id="chartEspecie"></canvas></div>'
+    + '</div>'
+    + tabelaDistribuicao('Espécie', items, total, 'var(--purple)')
+    + '</div>';
+}
 
-  CHARTS[chave] = new window.Chart(canvas, {
-    type: TIPO_GRAFICO,
+/* ═══ Tab: Por Estado ═══ */
+function htmlTabEstado(dist) {
+  var dados = (dist && dist.porEstado) || [];
+  var total = dados.reduce(function (a, e) { return a + (+e.total || 0); }, 0);
+  var items = dados.map(function (e) { return { label: e.label, total: +e.total || 0, cor: SGD_COR_ESTADO[e.codigo] || '#888', badge: 'b-' + e.codigo }; });
+
+  return '<div class="row2" style="margin-bottom:12px">'
+    + '<div class="panel" style="padding:16px">'
+    + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-circle" style="color:var(--blue)"></i> Distribuição por Estado</div>'
+    + '<div style="position:relative;height:260px"><canvas id="chartEstado"></canvas></div>'
+    + '</div>'
+    + tabelaDistribuicao('Estado', items, total, 'var(--blue)')
+    + '</div>';
+}
+
+/* ═══ Tab: Por Origem ═══ */
+function htmlTabOrigem(dist) {
+  var dados = (dist && dist.porOrigem) || [];
+  var total = dados.reduce(function (a, o) { return a + (+o.total || 0); }, 0);
+  var items = dados.map(function (o, i) { return { label: o.origem, total: +o.total || 0, cor: PALETA[i % PALETA.length] }; });
+  var altG  = Math.min(Math.max(180, dados.length * 38), 420);
+
+  return '<div class="row2" style="margin-bottom:12px">'
+    + '<div class="panel" style="padding:16px">'
+    + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-building" style="color:var(--amber)"></i> Distribuição por Origem</div>'
+    + '<div style="position:relative;height:' + altG + 'px"><canvas id="chartOrigem"></canvas></div>'
+    + '</div>'
+    + tabelaDistribuicao('Origem', items, total, 'var(--amber)')
+    + '</div>';
+}
+
+/* ─── Tabela de distribuição partilhada ─── */
+function tabelaDistribuicao(titulo, items, total, cor) {
+  var linhas = items.map(function (item) {
+    var pct = total ? Math.round(item.total / total * 100) : 0;
+    var lbl = item.badge
+      ? '<span class="badge ' + item.badge + '">' + esc(item.label) + '</span>'
+      : '<span style="display:inline-block;width:10px;height:10px;background:' + item.cor + ';border-radius:2px;margin-right:6px;vertical-align:middle"></span>' + esc(item.label);
+    return '<tr>'
+      + '<td class="tdl" style="padding:8px 12px">' + lbl + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;font-weight:600">' + item.total + '</td>'
+      + '<td style="padding:8px 12px;min-width:140px"><div style="display:flex;align-items:center;gap:6px">'
+      + '<div style="flex:1;height:4px;background:var(--bg);border-radius:4px">'
+      + '<div style="width:' + pct + '%;height:100%;background:' + item.cor + ';border-radius:4px"></div></div>'
+      + '<span style="font-size:11px;color:var(--tx2);min-width:30px;text-align:right">' + pct + '%</span>'
+      + '</div></td></tr>';
+  }).join('');
+
+  return '<div class="panel" style="padding:0">'
+    + '<div class="panel-hd"><i class="ti ti-table" style="color:' + cor + '"></i><span class="panel-title">Detalhe por ' + titulo + '</span></div>'
+    + '<div class="tbl-outer"><table class="pt" style="font-size:12px">'
+    + '<thead><tr><th class="th0">Descrição</th><th style="text-align:center">Total</th><th>Proporção</th></tr></thead>'
+    + '<tbody>' + (linhas || '<tr><td colspan="3" style="padding:14px;text-align:center;color:var(--tx3)">Sem dados.</td></tr>') + '</tbody>'
+    + '</table></div></div>';
+}
+
+/* ─── Gráfico genérico (espécie, estado, origem) ─── */
+function desenharGraficoSimples(canvasId, dados, tipo) {
+  var canvas = G(canvasId);
+  if (!canvas || !window.Chart || !dados.length) return;
+
+  var labels, valores, cores;
+  if (tipo === 'estado') {
+    labels = dados.map(function (e) { return e.label; });
+    valores = dados.map(function (e) { return +e.total || 0; });
+    cores   = dados.map(function (e) { return SGD_COR_ESTADO[e.codigo] || '#888'; });
+  } else if (tipo === 'especie') {
+    labels = dados.map(function (e) { return e.especie; });
+    valores = dados.map(function (e) { return +e.total || 0; });
+    cores   = dados.map(function (_, i) { return PALETA[i % PALETA.length]; });
+  } else { /* origem */
+    labels = dados.map(function (o) { return o.origem; });
+    valores = dados.map(function (o) { return +o.total || 0; });
+    cores   = dados.map(function (_, i) { return PALETA[i % PALETA.length]; });
+  }
+
+  var totalG  = valores.reduce(function (a, b) { return a + b; }, 0);
+  var isPie   = TIPO_GRAFICO === 'pie';
+  var isLine  = TIPO_GRAFICO === 'line';
+  var isHoriz = tipo === 'origem' && !isPie; /* origens são texto longo */
+  var chartType = isPie ? 'pie' : 'bar';
+  var maxV = Math.max.apply(null, valores) || 1;
+
+  CHART_ACTIVO = new window.Chart(canvas, {
+    type: chartType,
     data: {
       labels: labels,
       datasets: [{
         data: valores,
-        backgroundColor: TIPO_GRAFICO === 'line' ? 'rgba(37,99,235,.12)' : cores,
-        borderColor: TIPO_GRAFICO === 'line' ? '#2563EB' : cores,
-        borderWidth: TIPO_GRAFICO === 'line' ? 2 : 1,
-        fill: TIPO_GRAFICO === 'line',
-        tension: 0.3
+        backgroundColor: isPie ? cores : (isLine ? 'rgba(37,99,235,.12)' : cores),
+        borderColor: isLine ? '#2563EB' : cores,
+        borderWidth: isPie ? 1 : (isLine ? 2 : 1),
+        fill: isLine,
+        tension: 0.3,
+        borderRadius: chartType === 'bar' ? 3 : 0
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      indexAxis: (!isPie && isHoriz) ? 'y' : 'x',
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: TIPO_GRAFICO === 'pie', position: 'bottom', labels: { font: { size: 10 } } },
-        // Só a percentagem (sem o número) em cada fatia (pizza) ou barra; na
-        // linha não — muitos pontos próximos tornam-se ilegíveis.
+        legend: { display: isPie, position:'bottom', labels:{ font:{ size:10 } } },
         datalabels: {
-          display: mostrarRotulos,
-          color: TIPO_GRAFICO === 'pie' ? '#fff' : '#374151',
-          anchor: TIPO_GRAFICO === 'bar' ? 'end' : 'center',
-          align: TIPO_GRAFICO === 'bar' ? 'end' : 'center',
-          offset: TIPO_GRAFICO === 'bar' ? 4 : 0,
-          font: { size: 11, weight: '600' },
-          formatter: function (valor) {
-            if (!valor) return '';
-            return (total ? Math.round(valor / total * 100) : 0) + '%';
-          },
-          // clamp: mantém o rótulo dentro da área do gráfico (não cortado
-          // pelo canvas) quando a barra chega perto do topo.
+          display: isPie || TIPO_GRAFICO === 'bar',
+          color: isPie ? '#fff' : '#374151',
+          anchor: isPie ? 'center' : 'end',
+          align:  isPie ? 'center' : 'end',
+          offset: isPie ? 0 : 4,
+          font: { size:11, weight:'600' },
+          formatter: function (v) { return totalG ? Math.round(v / totalG * 100) + '%' : ''; },
           clamp: true
         }
       },
-      // Margem extra acima das barras para o rótulo não colar no rebordo do canvas.
-      layout: TIPO_GRAFICO === 'bar' ? { padding: { top: 18 } } : {},
-      scales: TIPO_GRAFICO === 'pie' ? {} : {
-        y: {
-          beginAtZero: true,
-          ticks: { precision: 0 },
-          // Tecto acima do valor máximo (não só o padding do layout) — dá
-          // espaço real ao rótulo da barra mais alta, que senão fica colado
-          // ou cortado no topo do gráfico.
-          suggestedMax: TIPO_GRAFICO === 'bar' ? Math.ceil(Math.max.apply(null, valores) * 1.2) || 1 : undefined
-        }
+      layout: isPie ? {} : (isHoriz ? { padding:{ right:38 } } : { padding:{ top:18 } }),
+      scales: isPie ? {} : {
+        x: isHoriz ? { beginAtZero:true, ticks:{ precision:0 } } : { ticks:{ precision:0 }, suggestedMax: !isLine ? Math.ceil(maxV * 1.2) : undefined },
+        y: isHoriz ? {} : { beginAtZero:true, ticks:{ precision:0 }, suggestedMax: (!isLine && !isHoriz) ? Math.ceil(maxV * 1.2) : undefined }
       }
     }
   });
 }
 
-function exportarEstatisticasPDF() {
-  if (!ULTIMOS_DADOS) return;
-  var doc = new window.jspdf.jsPDF();
-  doc.setFontSize(13);
-  doc.text('SGD — Estatísticas', 14, 12);
-  doc.autoTable({
-    head: [['Estado', 'Total']],
-    body: ULTIMOS_DADOS.distribuicao.porEstado.map(function (e) { return [e.label, e.total]; }),
-    startY: 18
-  });
-  doc.autoTable({
-    head: [['Espécie', 'Total']],
-    body: ULTIMOS_DADOS.distribuicao.porEspecie.map(function (e) { return [e.especie, e.total]; }),
-    startY: doc.lastAutoTable.finalY + 8
-  });
-  doc.autoTable({
-    head: [['Utilizador', 'Total']],
-    body: ULTIMOS_DADOS.distribuicao.porUtilizador.map(function (u) { return [u.utilizador, u.total]; }),
-    startY: doc.lastAutoTable.finalY + 8
-  });
-  doc.save('SGD_Estatisticas.pdf');
+/* ─── Helper: card de estatística ─── */
+function statCard(icon, cor, label, valor, sub) {
+  return '<div class="stat">'
+    + '<div class="stat-lbl"><i class="ti ' + icon + '" style="color:' + cor + '"></i> ' + label + '</div>'
+    + '<div class="stat-num" style="color:' + cor + '">' + valor + '</div>'
+    + (sub ? '<div class="stat-sub">' + sub + '</div>' : '')
+    + '</div>';
 }
 
-function exportarEstatisticasExcel() {
-  if (!ULTIMOS_DADOS) return;
+/* ─── Exportação ─── */
+function exportarPDF() {
+  if (!ULTIMOS_DADOS || !window.jspdf) return;
+  var doc = new window.jspdf.jsPDF();
+  doc.setFontSize(13);
+  doc.text('SGD — Relatório ' + labelTabActiva(), 14, 13);
+  var y = 20;
+  dadosExportacao().forEach(function (t) {
+    doc.autoTable({ head:[t.cabecalho], body:t.linhas, startY:y });
+    y = doc.lastAutoTable.finalY + 8;
+  });
+  doc.save('SGD_Relatorio_' + relatorioActivo + '.pdf');
+}
+
+function exportarExcel() {
+  if (!ULTIMOS_DADOS || !window.XLSX) return;
   var wb = window.XLSX.utils.book_new();
-  var wsEstado = window.XLSX.utils.aoa_to_sheet(
-    [['Estado', 'Total']].concat(ULTIMOS_DADOS.distribuicao.porEstado.map(function (e) { return [e.label, e.total]; }))
-  );
-  var wsEspecie = window.XLSX.utils.aoa_to_sheet(
-    [['Especie', 'Total']].concat(ULTIMOS_DADOS.distribuicao.porEspecie.map(function (e) { return [e.especie, e.total]; }))
-  );
-  var wsUtilizador = window.XLSX.utils.aoa_to_sheet(
-    [['Utilizador', 'Total']].concat(ULTIMOS_DADOS.distribuicao.porUtilizador.map(function (u) { return [u.utilizador, u.total]; }))
-  );
-  window.XLSX.utils.book_append_sheet(wb, wsEstado, 'Por Estado');
-  window.XLSX.utils.book_append_sheet(wb, wsEspecie, 'Por Especie');
-  window.XLSX.utils.book_append_sheet(wb, wsUtilizador, 'Por Utilizador');
-  window.XLSX.writeFile(wb, 'SGD_Estatisticas.xlsx');
+  dadosExportacao().forEach(function (t) {
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet([t.cabecalho].concat(t.linhas)), t.folha);
+  });
+  window.XLSX.writeFile(wb, 'SGD_Relatorio_' + relatorioActivo + '.xlsx');
+}
+
+function dadosExportacao() {
+  var d = ULTIMOS_DADOS;
+  if (relatorioActivo === 'periodo') {
+    var vd = (d.volume && d.volume.dados) || [];
+    return [{ folha:'Por Período', cabecalho:['Período','Registados','Concluídos','Saldo'],
+      linhas: vd.map(function (r) { return [r.periodo, +r.registados, +r.concluidos, (+r.registados) - (+r.concluidos)]; }) }];
+  }
+  if (relatorioActivo === 'juiz') {
+    var rel = (d.produtividade && d.produtividade.relatores) || [];
+    return [{ folha:'Por Juiz', cabecalho:['Juiz Relator','Total','Pendentes','Findos','Taxa %'],
+      linhas: rel.map(function (r) { return [r.relator, +r.total, +r.pendentes, +r.findos, +r.taxa]; }) }];
+  }
+  if (relatorioActivo === 'especie') {
+    var esp = (d.distribuicao && d.distribuicao.porEspecie) || [];
+    return [{ folha:'Por Espécie', cabecalho:['Espécie','Total'],
+      linhas: esp.map(function (e) { return [e.especie, +e.total]; }) }];
+  }
+  if (relatorioActivo === 'estado') {
+    var est = (d.distribuicao && d.distribuicao.porEstado) || [];
+    return [{ folha:'Por Estado', cabecalho:['Estado','Total'],
+      linhas: est.map(function (e) { return [e.label, +e.total]; }) }];
+  }
+  if (relatorioActivo === 'origem') {
+    var ori = (d.distribuicao && d.distribuicao.porOrigem) || [];
+    return [{ folha:'Por Origem', cabecalho:['Origem','Total'],
+      linhas: ori.map(function (o) { return [o.origem, +o.total]; }) }];
+  }
+  return [];
+}
+
+function labelTabActiva() {
+  var m = { periodo:'Por Período', juiz:'Por Juiz Relator', especie:'Por Espécie', estado:'Por Estado', origem:'Por Origem' };
+  return m[relatorioActivo] || '';
 }

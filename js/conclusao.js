@@ -26,8 +26,8 @@ function renderConclusao(res) {
 
   G('content').innerHTML = '<div style="display:flex;flex-direction:column;gap:14px">'
     + '<div class="row2" style="margin-bottom:0">'
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-check" style="color:var(--green)"></i> Pendentes</div><div class="stat-num" style="color:var(--green)">' + pendentes.length + '</div></div>'
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-circle-check" style="color:var(--green)"></i> Concluidos</div><div class="stat-num" style="color:var(--green)">' + res.concluidosCount + '</div></div>'
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-hourglass" style="color:var(--amber)"></i> Total Pendente</div><div class="stat-num" style="color:var(--amber)">' + pendentes.length + '</div><div class="stat-sub">Aguardam registo de conclusão</div></div>'
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-circle-check" style="color:var(--green)"></i> Total Findos</div><div class="stat-num" style="color:var(--green)">' + res.concluidosCount + '</div><div class="stat-sub">Com data de conclusão registada</div></div>'
     + '</div>'
     + '<div class="panel"><div class="panel-hd"><i class="ti ti-check" style="color:var(--green)"></i><span class="panel-title">Conclusão &mdash; Pendentes</span></div>'
     + '<div style="padding:14px"><div class="ib amber" style="margin-bottom:14px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i> Registe a data em que o processo foi concluido.</div>'

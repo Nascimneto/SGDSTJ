@@ -11,7 +11,8 @@
   </div>
 </div>
 
-<div id="toast">
-  <i id="toastI" class="ti ti-circle-check" style="color:#4ade80;font-size:17px;flex-shrink:0"></i>
+<div id="toast" class="t-green">
+  <i id="toastI" class="ti ti-circle-check" style="font-size:18px;flex-shrink:0;color:var(--green)"></i>
   <span id="toastM"></span>
+  <div id="toast-bar"></div>
 </div>

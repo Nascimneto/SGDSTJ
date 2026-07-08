@@ -119,7 +119,7 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
    quando a tabela tinha as 10 datas de controlo individuais) ── */
 .pt col.c-num    { width: 110px; }   /* Nº de Registo de Processo */
 .pt col.c-numext { width: 90px;  }   /* Nº de Processo    */
-.pt col.c-date   { width: 85px;  }   /* Data Registo      */
+.pt col.c-date   { width: 85px;  }   /* Data Entrada      */
 .pt col.c-esp    { width: 80px;  }   /* Espécie           */
 .pt col.c-partes { width: 180px; }   /* Intervenientes    */
 .pt col.c-dist   { width: 100px; }   /* Distribuição      */
@@ -157,6 +157,17 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .tdl { text-align:left !important; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tdd { white-space:nowrap; font-size:12px; color:var(--tx2); }
 .td-act { white-space:nowrap; text-align:center !important; }
+
+/* Tabelas de configurações — sem min-width rígido, scroll horizontal no contentor */
+.cfg-t { width:100%; border-collapse:collapse; font-size:13px; }
+.cfg-t th { text-align:left; padding:8px 12px; font-size:12px; font-weight:700; color:#fff;
+  background:var(--sid); border:1px solid rgba(255,255,255,.12);
+  text-transform:uppercase; letter-spacing:.1px; white-space:nowrap; }
+.cfg-t th.th0 { background:#1a3a52; }
+.cfg-t td { padding:8px 5px; border-bottom:1px solid var(--border); font-size:12px;
+  color:var(--tx); vertical-align:middle; }
+.cfg-t tr:nth-child(even) td { background:#FAFAF6; }
+.cfg-t tr:hover td { background:#EFF6FF; }
 
 /* ── Badges ── */
 .badge        { display:inline-flex; align-items:center; gap:2px; padding:2px 5px; border-radius:20px; font-size:9px; font-weight:600; white-space:nowrap; }
@@ -231,8 +242,17 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .obs-box { background:var(--amberl); border:1px solid #fde68a; border-radius:var(--rs); padding:9px 12px; font-size:12px; color:#92400e; margin-top:9px; }
 
 /* ── Toast ── */
-#toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--sid); color:#fff; padding:12px 18px; border-radius:var(--r); font-size:13px; z-index:1000; display:flex; align-items:center; gap:7px; box-shadow:var(--sh2); opacity:0; pointer-events:none; transition:opacity .3s; max-width:320px; }
-#toast.show { opacity:1; pointer-events:auto; }
+#toast { position:fixed; top:50%; left:50%; background:var(--white); border-radius:var(--r); border-left:4px solid var(--green); padding:13px 18px 16px 14px; font-size:13px; color:var(--tx); font-weight:500; z-index:2000; display:flex; align-items:center; gap:10px; box-shadow:0 8px 24px rgba(0,0,0,.13),0 2px 8px rgba(0,0,0,.07); min-width:240px; max-width:340px; opacity:0; pointer-events:none; transform:translate(-50%,-50%) scale(.94); transition:opacity .22s,transform .25s cubic-bezier(.4,0,.2,1); overflow:hidden; }
+#toast.show { opacity:1; pointer-events:auto; transform:translate(-50%,-50%) scale(1); }
+#toast.t-red   { border-left-color:var(--red); }
+#toast.t-amber { border-left-color:var(--amber); }
+#toast.t-blue  { border-left-color:var(--blue); }
+#toast-bar { position:absolute; bottom:0; left:0; height:3px; width:100%; background:var(--green); transform-origin:left; }
+#toast.t-red   #toast-bar { background:var(--red); }
+#toast.t-amber #toast-bar { background:var(--amber); }
+#toast.t-blue  #toast-bar { background:var(--blue); }
+@keyframes toast-shrink { from { transform:scaleX(1); } to { transform:scaleX(0); } }
+#toast.show #toast-bar { animation:toast-shrink 3s linear forwards; }
 
 /* ── Confirmar ── */
 #cfbg  { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:600; align-items:center; justify-content:center; }
@@ -319,12 +339,15 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
   .stat-num  { font-size:20px; }
   .pc-list   { display:flex; }
   .tbl-outer { display:none; }
+  /* Tabelas de configurações e estatísticas ficam visíveis — scroll horizontal em vez de esconder */
+  body[data-pagina="configuracoes"] .tbl-outer,
+  body[data-pagina="estatisticas"]  .tbl-outer { display:block; }
   .fg2, .fg3 { grid-template-columns:1fr; }
   .row2  { flex-direction:column; }
   .proc-tb   { flex-wrap:wrap; row-gap:7px; }
   .proc-tb-l { flex:1; min-width:180px; }
   .sw { max-width:100%; flex:1; min-width:100px; }
-  #toast { width:calc(100% - 32px); max-width:320px; }
+  #toast { min-width:0; max-width:calc(100vw - 32px); }
   .lcard { padding:20px 14px; }
   .topbar-right .btn-primary { padding:4px 9px; font-size:11px; }
 }

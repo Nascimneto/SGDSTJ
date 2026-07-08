@@ -60,6 +60,22 @@ class EstatisticaModel
         $stmtTotais->execute($params);
         $totais = $stmtTotais->fetch();
 
+        // Totais globais sem filtro de período: acumulado total, pendentes (tramitação
+        // activa) e findos (concluídos + arquivados) reflectem sempre o estado actual.
+        $stmtGlobal = $this->pdo->query(
+            "SELECT
+                COUNT(p.id) AS total_acumulado,
+                SUM(CASE WHEN est.codigo NOT IN ('concluded','archived') THEN 1 ELSE 0 END) AS pendentes,
+                SUM(CASE WHEN est.codigo IN ('concluded','archived') THEN 1 ELSE 0 END) AS findos
+             FROM processos p
+             JOIN estados_processo est ON est.id = p.estado_id"
+        );
+        $global = $stmtGlobal->fetch();
+
+        $totais['total_acumulado'] = (int)$global['total_acumulado'];
+        $totais['pendentes']       = (int)$global['pendentes'];
+        $totais['findos']          = (int)$global['findos'];
+
         return ['totais' => $totais, 'porEstado' => $porEstado];
     }
 
@@ -100,7 +116,93 @@ class EstatisticaModel
         $stmtUtilizador->execute($params);
         $porUtilizador = $stmtUtilizador->fetchAll();
 
-        return ['porEstado' => $porEstado, 'porEspecie' => $porEspecie, 'porUtilizador' => $porUtilizador];
+        $ondeWhere = $cond ? ' WHERE ' . implode(' AND ', $cond) : '';
+        $stmtOrigem = $this->pdo->prepare(
+            "SELECT COALESCE(NULLIF(TRIM(p.origem), ''), '(Sem origem)') AS origem, COUNT(p.id) AS total
+             FROM processos p"
+            . $ondeWhere .
+            " GROUP BY origem ORDER BY total DESC LIMIT 30"
+        );
+        $stmtOrigem->execute($params);
+        $porOrigem = $stmtOrigem->fetchAll();
+
+        return ['porEstado' => $porEstado, 'porEspecie' => $porEspecie, 'porUtilizador' => $porUtilizador, 'porOrigem' => $porOrigem];
+    }
+
+    /** Volumes mensais ou anuais: processos registados vs concluídos por período. */
+    public function volume(array $get): array
+    {
+        $escala    = ($get['escala'] ?? 'mensal') === 'anual' ? 'anual' : 'mensal';
+        $formato   = $escala === 'anual' ? '%Y' : '%Y-%m';
+        $intervalo = $escala === 'anual' ? '5 YEAR' : '13 MONTH';
+
+        $stmtReg = $this->pdo->prepare(
+            "SELECT DATE_FORMAT(data_registo, :fmt) AS periodo, COUNT(*) AS registados
+             FROM processos
+             WHERE data_registo >= DATE_SUB(CURDATE(), INTERVAL $intervalo)
+             GROUP BY periodo ORDER BY periodo"
+        );
+        $stmtReg->execute([':fmt' => $formato]);
+        $regMap = [];
+        foreach ($stmtReg->fetchAll() as $r) {
+            $regMap[$r['periodo']] = (int)$r['registados'];
+        }
+
+        $stmtConc = $this->pdo->prepare(
+            "SELECT DATE_FORMAT(conclusao, :fmt) AS periodo, COUNT(*) AS concluidos
+             FROM datas_controlo
+             WHERE conclusao IS NOT NULL AND conclusao >= DATE_SUB(CURDATE(), INTERVAL $intervalo)
+             GROUP BY periodo ORDER BY periodo"
+        );
+        $stmtConc->execute([':fmt' => $formato]);
+        $concMap = [];
+        foreach ($stmtConc->fetchAll() as $r) {
+            $concMap[$r['periodo']] = (int)$r['concluidos'];
+        }
+
+        $periodos = array_unique(array_merge(array_keys($regMap), array_keys($concMap)));
+        sort($periodos);
+
+        $dados = [];
+        foreach ($periodos as $p) {
+            $dados[] = [
+                'periodo'    => $p,
+                'registados' => $regMap[$p] ?? 0,
+                'concluidos' => $concMap[$p] ?? 0,
+            ];
+        }
+
+        return ['escala' => $escala, 'dados' => $dados];
+    }
+
+    /** Produtividade por Juiz Relator (campo distribuicao): total, pendentes, findos, taxa. */
+    public function produtividade(array $get): array
+    {
+        [$cond, $params] = $this->condicoes($get);
+        $ondeWhere = $cond ? ' WHERE ' . implode(' AND ', $cond) : '';
+
+        $stmt = $this->pdo->prepare(
+            "SELECT
+                COALESCE(NULLIF(TRIM(p.distribuicao), ''), '(Não distribuído)') AS relator,
+                COUNT(p.id) AS total,
+                SUM(CASE WHEN est.codigo NOT IN ('concluded','archived') THEN 1 ELSE 0 END) AS pendentes,
+                SUM(CASE WHEN est.codigo IN ('concluded','archived') THEN 1 ELSE 0 END) AS findos
+             FROM processos p
+             JOIN estados_processo est ON est.id = p.estado_id$ondeWhere
+             GROUP BY relator
+             ORDER BY total DESC"
+        );
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        foreach ($rows as &$r) {
+            $r['total']    = (int)$r['total'];
+            $r['pendentes'] = (int)$r['pendentes'];
+            $r['findos']   = (int)$r['findos'];
+            $r['taxa']     = $r['total'] > 0 ? round($r['findos'] / $r['total'] * 100, 1) : 0.0;
+        }
+
+        return ['relatores' => $rows];
     }
 
     public function funil(array $get): array

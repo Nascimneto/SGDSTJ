@@ -93,19 +93,41 @@ no "Quadro Resumo por Espécie" em Estatísticas (`js/estatisticas.js`) — corr
 com um único cabeçalho "Espécie"/"Total" (cor igual à dos `<th>` da tabela real, `var(--sid)`) acima de
 todas as linhas, em vez de repetir o rótulo em cada uma.
 
-## Estatísticas
-`api/estatisticas/{resumo,distribuicao,funil}.php` aceitam os filtros opcionais `?utilizador=<id>`,
-`?data_de=` e `?data_ate=` (sobre `processos.data_registo`) — aplicados directamente às tabelas
-(`processos`/`datas_controlo`/`estados_processo`/`especies_processo`/`utilizadores`), já não às views
-`v_relatorio_geral`/`v_distribuicao_especie` (sem parâmetros, não dava para filtrar). `distribuicao.php`
-passou a devolver também `porUtilizador` (total de processos registados por cada utilizador). Os três
-gráficos de distribuição (Estado/Espécie/Utilizador) usam Chart.js, com um selector único (#fTipoGrafico
-em `estatisticas.php`) para trocar entre barras/pizza/linha sem voltar a consultar a API. Nos gráficos
-de barras e pizza, cada fatia/barra mostra a percentagem (`chartjs-plugin-datalabels`, calculada sobre
-o total desse gráfico, já filtrado) — na linha não, para não poluir pontos próximos. Nas barras, o eixo Y
-tem `suggestedMax` acima do valor máximo para o rótulo não ficar colado/cortado no topo do canvas.
-Botão "Imprimir" usa `window.print()` com a barra de filtros e a navegação escondidas via `.no-print`
-(`css/estilos.css`, `@media print`).
+## Painel Geral
+`painel.php` / `js/painel.js` agrega dados de 4 APIs em `Promise.all` e apresenta:
+- **3 cards de topo**: Total de Processos Entrados (com filtro de período: todo / este ano / este mês),
+  Total Pendentes (estados ≠ concluded/archived) e Total Findos (concluded + archived) — os dois últimos
+  reflectem sempre o acumulado global, independentemente do filtro de período.
+- **Distribuição por estado**: gráfico de barras horizontais (SVG puro, sem CDN) com o total de cada estado.
+- **Processos recentes**: tabela compacta com os 8 processos mais recentes, com link directo ao detalhe
+  (`processos.php?ver=<numero_processo>`).
+- **Gráfico volumétrico**: barras agrupadas SVG (Registados vs Concluídos) por mês (13 meses) ou por ano
+  (5 anos), com toggle Mensal/Anual.
+- **Produtividade por Juiz Relator**: tabela com total, pendentes, findos e taxa de conclusão (barra
+  proporcional verde/amber/vermelho) por `distribuicao`.
+
+Todos os gráficos do painel usam SVG puro — sem dependência de Chart.js nem de qualquer CDN.
+
+## Estatísticas e Relatórios
+`estatisticas.php` / `js/estatisticas.js` reorganizados em 5 tabs independentes, cada um com gráfico
+(Chart.js) e tabela detalhada, filtráveis por utilizador e intervalo de datas:
+
+| Tab | API | Gráfico | Exportação |
+|---|---|---|---|
+| **Por Período** | `volume.php` (Mensal/Anual) | Barras agrupadas fixas | Período, Reg., Conc., Saldo |
+| **Por Juiz Relator** | `produtividade.php` | Barras horizontais fixas | Juiz, Total, Pendentes, Findos, Taxa % |
+| **Por Espécie** | `distribuicao.php → porEspecie` | Barras/Pizza/Linha (selector) | Espécie, Total |
+| **Por Estado** | `distribuicao.php → porEstado` | Barras/Pizza/Linha (selector) | Estado, Total |
+| **Por Origem** | `distribuicao.php → porOrigem` | Barras horizontais/Pizza/Linha | Origem, Total |
+
+`EstatisticaModel::distribuicao()` devolve agora também `porOrigem`: agrupamento por `processos.origem`
+(campo texto livre; fallback "Sem origem"; LIMIT 30), com os mesmos filtros de data/utilizador.
+`EstatisticaModel::volume()` e `EstatisticaModel::produtividade()` servem tanto o Painel como a tab
+correspondente de Estatísticas. Os botões **PDF** e **Excel** exportam apenas o tab activo.
+O selector `#fTipoGrafico` (Barras/Pizza/Linha) actua sobre os tabs Espécie, Estado e Origem; os tabs
+Período e Juiz usam tipo de gráfico fixo (adequado a dados de série temporal e texto longo,
+respectivamente). Botão "Imprimir" usa `window.print()` com a barra de filtros e os tabs escondidos
+via `.no-print`.
 
 ## Estrutura de ficheiros
 ```
@@ -133,7 +155,31 @@ SGD/
 ```
 
 ## Módulos
-Painel Geral · Lista de Processos · Conclusão · Vistos · Estatísticas · Utilizadores · Configurações.
+Painel Geral · Lista de Processos · Conclusão · Vistos · Estatísticas e Relatórios · Utilizadores · Configurações.
+
+## Configurações (parametrização do sistema)
+`configuracoes.php` / `js/configuracoes.js` — exclusivo do perfil Administrador, organizado em 5 tabs:
+
+| Tab | Conteúdo | Endpoints |
+|---|---|---|
+| **Dados Institucionais** | Nome, endereço e email do tribunal; prefixo de numeração e processos/página | `api/configuracoes/atualizar.php` |
+| **Espécies Processuais** | Tabela CRUD: criar, editar nome (inline), activar/desactivar, eliminar (só se sem processos associados) | `especies-listar`, `criar`, `atualizar`, `toggle`, `eliminar` |
+| **Estados do Processo** | Editar só a etiqueta de apresentação; código interno (`entry`, `analysis`, …) e classe CSS do badge são fixos | `estados-listar`, `estados-atualizar` |
+| **Perfis de Utilizador** | Editar só a descrição; código (`Administrador`, `Secretaria`, `Visualizador`) e flags de permissão são fixos e mostrados como badges | `perfis-listar`, `perfis-atualizar` |
+| **Departamentos** | CRUD: criar (nome + sigla), editar inline (nome e sigla simultâneos), activar/desactivar, eliminar (só se sem utilizadores associados); coluna "Utilizadores" mostra quantos utilizam cada departamento | `departamentos-listar`, `criar`, `atualizar`, `toggle`, `eliminar` |
+| **Sistema** | Segurança (sessão, tentativas de login, bloqueio, auditoria); exportação de todos os processos em CSV | `api/configuracoes/atualizar.php` |
+
+Edição inline funciona por linha: botão lápis mostra `<input>` e esconde `<span>`, botão guardar envia ao servidor e actualiza o DOM sem recarregar; botão cancelar repõe o valor original (guardado em `data-*`). Departamentos editam nome e sigla em simultâneo na mesma linha. A eliminação de espécies/departamentos usa `cfDlg()` de confirmação antes de chamar o endpoint; o backend recusa com HTTP 409 se existirem processos/utilizadores associados.
+
+**Campos obrigatórios nos processos**: Estado de Processo e Distribuição (Juiz Relator) são campos
+obrigatórios tanto na criação como na edição — validados no frontend (`js/processo-form.js`,
+com `err-input` nos campos em falta) e no backend (`ProcessoModel::criar()`/`atualizar()`).
+
+**Notificações (toast)**: `showToast(msg, icon, type)` em `js/comum.js` apresenta uma notificação
+centrada no ecrã com fundo branco, borda colorida esquerda e barra de progresso de 3 s. O parâmetro
+`type` aceita `'red'` (erro), `'amber'` (aviso) e `'blue'` (informação); omitido = verde (sucesso).
+O HTML em `includes/modais.php` inclui `#toast-bar`; o CSS em `css/estilos.css` anima a barra via
+`@keyframes toast-shrink` (reinicia correctamente se um novo toast aparecer antes do anterior fechar).
 
 ## Parâmetros de URL que abrem algo automaticamente
 `processos.php?novo=1` (abre "Novo Processo") e `processos.php?ver=<numero>` (abre o detalhe desse
@@ -151,14 +197,39 @@ O logótipo na sidebar (`includes/sidebar.php`, partilhado por todas as páginas
 sempre a `painel.php` — a página inicial da plataforma depois do login.
 
 ## Permissões
-- **Administrador**: acesso total (CRUD processos + gestão de utilizadores + configurações)
-- **Outros perfis**: registar, editar e visualizar processos + trocar a própria senha em "O Meu Perfil"
-  (nome e nome de utilizador só são editáveis pelo Administrador, em Utilizadores)
+O sistema tem exactamente três perfis:
+
+| Funcionalidade | Administrador | Secretaria | Visualizador |
+|---|:---:|:---:|:---:|
+| Consultar processos | ✓ | ✓ | ✓ |
+| Exportar relatórios (Estatísticas) | ✓ | ✓ | ✓ |
+| Registar processo | ✓ | ✓ | — |
+| Editar processo | ✓ | ✓ | — |
+| Eliminar processo | ✓ | — | — |
+| Conclusão / Vistos | ✓ | ✓ | — |
+| Criar / Editar / Eliminar utilizadores | ✓ | — | — |
+| Parametrizar o sistema (Configurações) | ✓ | — | — |
+| Consultar Auditoria e Histórico | ✓ | — | — |
+
+A lógica de controlo de acesso usa dois mecanismos ortogonais:
+- `Auth::podeEditar()` / `PageGuard::exigirEscrita()` / `ApiGuard::exigirEscrita()` — bloqueiam o
+  perfil Visualizador de qualquer operação de escrita (criar/editar processo, registar conclusão ou
+  vistos). Administrador e Secretaria passam sempre.
+- `PageGuard::exigirPerfil(['Administrador'])` / `ApiGuard::exigirPerfil(['Administrador'])` — reservam
+  páginas e endpoints exclusivos do Administrador (utilizadores, configurações, auditoria, eliminar
+  processo).
+
+A sidebar adapta-se automaticamente: "Controlo Processual" (Conclusão/Vistos) só aparece quando
+`sgd_pode_editar()` é verdadeiro; "Utilizadores", "Configurações", "Histórico" e "Auditoria" só
+aparecem quando `sgd_perfil() === 'Administrador'`.
+
+Nome e nome de utilizador só são editáveis pelo Administrador (em Utilizadores); cada utilizador pode
+trocar apenas a própria senha em "O Meu Perfil".
 
 ## Tecnologias
 - Backend: PHP 8 (PDO, prepared statements), MariaDB/MySQL
 - Frontend: HTML5 + CSS3 + JavaScript (sem frameworks), `fetch` para a API
-- Gráficos: Chart.js 4 (Estatísticas — barras/pizza/linha seleccionáveis)
+- Gráficos: SVG puro (Painel — sem CDN); Chart.js 4 (Estatísticas — barras/pizza/linha seleccionáveis)
 - Exportação: jsPDF + jsPDF-AutoTable (PDF), SheetJS/xlsx (Excel), impressão via `window.print()`
 - Ícones: Tabler Icons v2.44 · Fontes: IBM Plex Sans/Mono (Google Fonts)
 

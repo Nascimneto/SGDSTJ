@@ -15,7 +15,7 @@ class EstatisticaController
     {
         View::render('estatisticas/index', [
             'paginaActiva' => 'estatisticas',
-            'tituloPagina' => 'Estatísticas',
+            'tituloPagina' => 'Estatísticas e Relatórios',
             // Lista de utilizadores para o filtro — não exige perfil Administrador
             // (api/estatisticas/distribuicao.php já devolve esta lista, agregada
             // por utilizador, a qualquer perfil autenticado).
@@ -39,5 +39,17 @@ class EstatisticaController
     public function funil(): void
     {
         echo json_encode(['funil' => $this->model->funil($_GET)]);
+    }
+
+    /** GET api/estatisticas/volume.php */
+    public function volume(): void
+    {
+        echo json_encode($this->model->volume($_GET));
+    }
+
+    /** GET api/estatisticas/produtividade.php */
+    public function produtividade(): void
+    {
+        echo json_encode($this->model->produtividade($_GET));
     }
 }

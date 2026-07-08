@@ -87,7 +87,8 @@ function renderUtilizadores() {
 function buildFormUser(u) {
   var perfis = window.SGD_PERFIS || [];
   var deptos = window.SGD_DEPARTAMENTOS || [];
-  var rOpts = perfis.map(function (r) { return '<option ' + (u && u.perfil === r ? 'selected' : '') + '>' + esc(r) + '</option>'; }).join('');
+  var rOpts = (u ? '' : '<option value="">— Selecionar perfil —</option>')
+    + perfis.map(function (r) { return '<option ' + (u && u.perfil === r ? 'selected' : '') + '>' + esc(r) + '</option>'; }).join('');
   var dOpts = '<option value="">—</option>' + deptos.map(function (d) { return '<option ' + (u && u.departamento === d ? 'selected' : '') + '>' + esc(d) + '</option>'; }).join('');
   // Na criação não há campo de senha: o servidor atribui sempre a senha
   // inicial fixa (stj@2026) e obriga a troca no primeiro acesso.
@@ -139,6 +140,7 @@ function guardarUser(modo, id) {
   // sempre a inicial fixa, atribuída pelo servidor.
   var senha = modo === 'edit' ? GV('up') : '';
   if (!nome || !user) { showToast('Preencha nome e utilizador', 'ti-alert-circle', 'red'); return; }
+  if (!GV('ur')) { showToast('Selecione o Perfil do utilizador', 'ti-alert-circle', 'red'); return; }
   // Mesma regra validada no servidor (api/utilizadores/atualizar.php);
   // valida aqui só para dar feedback imediato sem ida ao servidor.
   if (senha && !senhaValida(senha)) {

@@ -17,11 +17,9 @@ $pdo = Database::pdo();
 // produção, UtilizadorModel::criar() já gera uma senha aleatória por
 // utilizador (ver app/Models/UtilizadorModel.php).
 $utilizadoresSeed = [
-    ['username' => 'admin',      'nome' => 'Administrador',     'perfil' => 'Administrador', 'dept' => 'SEC', 'email' => 'admin@supremo.cv',     'activo' => 1],
-    ['username' => 'secretaria', 'nome' => 'Maria Santos',      'perfil' => 'Secretario',    'dept' => 'SEC', 'email' => 'msantos@supremo.cv',   'activo' => 1],
-    ['username' => 'juiz1',      'nome' => 'Dr. Joao Ferreira', 'perfil' => 'Magistrado',    'dept' => 'TRB', 'email' => 'jferreira@supremo.cv', 'activo' => 1],
-    ['username' => 'tecnico',    'nome' => 'Ana Costa',         'perfil' => 'Tecnico',       'dept' => 'SEC', 'email' => 'acosta@supremo.cv',    'activo' => 0],
-    ['username' => 'visualizador', 'nome' => 'Carlos Pereira',  'perfil' => 'Visualizador',  'dept' => 'SEC', 'email' => 'cpereira@supremo.cv',  'activo' => 1],
+    ['username' => 'admin',        'nome' => 'Administrador',  'perfil' => 'Administrador', 'dept' => 'SEC', 'email' => 'admin@supremo.cv',    'activo' => 1],
+    ['username' => 'secretaria',   'nome' => 'Maria Santos',   'perfil' => 'Secretaria',    'dept' => 'SEC', 'email' => 'msantos@supremo.cv',  'activo' => 1],
+    ['username' => 'visualizador', 'nome' => 'Carlos Pereira', 'perfil' => 'Visualizador',  'dept' => 'SEC', 'email' => 'cpereira@supremo.cv', 'activo' => 1],
 ];
 
 $idsPorUsername = [];

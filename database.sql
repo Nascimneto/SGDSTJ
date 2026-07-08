@@ -141,6 +141,8 @@ CREATE TABLE processos (
     numero_processo        VARCHAR(20)    NOT NULL UNIQUE,
     -- Número de processo (livre, tal como vem de fora — ex: do tribunal de origem)
     numero_processo_externo VARCHAR(50)   NULL,
+    -- Data de entrada do processo (editável — distinta de data_registo, que é o carimbo automático de registo no sistema)
+    data_entrada           DATE           NOT NULL DEFAULT (CURRENT_DATE),
     data_registo           TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     especie_id             INT            NOT NULL,
     partes                 VARCHAR(500)   NOT NULL,
@@ -163,14 +165,19 @@ CREATE TABLE processos (
 CREATE TABLE datas_controlo (
     processo_id             INT       NOT NULL PRIMARY KEY,
     notificacao_citacao     DATE      NULL,
+    notificacao1            DATE      NULL,
+    notificacao2            DATE      NULL,
     conclusao               DATE      NULL,
     visto_mp                DATE      NULL,
     visto_adjunto1          DATE      NULL,
     visto_adjunto2          DATE      NULL,
     inscricao_tabela        DATE      NULL,
     acordao                 DATE      NULL,
+    acordao2                DATE      NULL,
+    acordao3                DATE      NULL,
     notificacao_acordao     DATE      NULL,
     conta_custas            DATE      NULL,
+    conta_custas2           DATE      NULL,
     arquivamento            DATE      NULL,
     -- Quem registou cada data (nunca vem do payload do cliente — sempre da sessão)
     registado_conclusao_por     INT NULL,
@@ -179,6 +186,8 @@ CREATE TABLE datas_controlo (
     registado_visto_adj2_por    INT NULL,
     registado_tabela_por        INT NULL,
     registado_acordao_por       INT NULL,
+    registado_acordao2_por      INT NULL,
+    registado_acordao3_por      INT NULL,
     registado_arquivo_por       INT NULL,
     atualizado_em           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_dc_processo   FOREIGN KEY (processo_id) REFERENCES processos(id) ON DELETE CASCADE,
@@ -188,6 +197,8 @@ CREATE TABLE datas_controlo (
     CONSTRAINT fk_dc_adj2_por   FOREIGN KEY (registado_visto_adj2_por) REFERENCES utilizadores(id),
     CONSTRAINT fk_dc_tab_por    FOREIGN KEY (registado_tabela_por)     REFERENCES utilizadores(id),
     CONSTRAINT fk_dc_ac_por     FOREIGN KEY (registado_acordao_por)    REFERENCES utilizadores(id),
+    CONSTRAINT fk_dc_ac2_por    FOREIGN KEY (registado_acordao2_por)   REFERENCES utilizadores(id),
+    CONSTRAINT fk_dc_ac3_por    FOREIGN KEY (registado_acordao3_por)   REFERENCES utilizadores(id),
     CONSTRAINT fk_dc_arch_por   FOREIGN KEY (registado_arquivo_por)    REFERENCES utilizadores(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -286,6 +297,7 @@ SELECT
     p.id,
     p.numero_processo,
     p.numero_processo_externo,
+    DATE_FORMAT(p.data_entrada, '%d/%m/%Y')         AS data_entrada,
     DATE_FORMAT(p.data_registo, '%d/%m/%Y %H:%i')   AS data_registo,
     ep.nome                                          AS especie,
     p.partes,
@@ -296,14 +308,19 @@ SELECT
     est.cor_css                                       AS estado_cor,
     p.observacoes,
     DATE_FORMAT(dc.notificacao_citacao, '%d/%m/%Y')  AS notificacao_citacao,
+    DATE_FORMAT(dc.notificacao1,        '%d/%m/%Y')  AS notificacao1,
+    DATE_FORMAT(dc.notificacao2,        '%d/%m/%Y')  AS notificacao2,
     DATE_FORMAT(dc.conclusao,           '%d/%m/%Y')  AS conclusao,
     DATE_FORMAT(dc.visto_mp,            '%d/%m/%Y')  AS visto_mp,
     DATE_FORMAT(dc.visto_adjunto1,      '%d/%m/%Y')  AS visto_adjunto1,
     DATE_FORMAT(dc.visto_adjunto2,      '%d/%m/%Y')  AS visto_adjunto2,
     DATE_FORMAT(dc.inscricao_tabela,    '%d/%m/%Y')  AS inscricao_tabela,
     DATE_FORMAT(dc.acordao,             '%d/%m/%Y')  AS acordao,
+    DATE_FORMAT(dc.acordao2,            '%d/%m/%Y')  AS acordao2,
+    DATE_FORMAT(dc.acordao3,            '%d/%m/%Y')  AS acordao3,
     DATE_FORMAT(dc.notificacao_acordao, '%d/%m/%Y')  AS notificacao_acordao,
     DATE_FORMAT(dc.conta_custas,        '%d/%m/%Y')  AS conta_custas,
+    DATE_FORMAT(dc.conta_custas2,       '%d/%m/%Y')  AS conta_custas2,
     DATE_FORMAT(dc.arquivamento,        '%d/%m/%Y')  AS arquivamento,
     u_reg.nome_completo                              AS registado_por,
     u_atu.nome_completo                              AS atualizado_por,
@@ -505,12 +522,9 @@ DELIMITER ;
 
 -- 7.1 Perfis
 INSERT INTO perfis (codigo, descricao, pode_criar_utilizadores, pode_eliminar_processos, pode_gerir_sistema) VALUES
-    ('Administrador', 'Acesso total ao sistema',                    1, 1, 1),
-    ('Magistrado',    'Magistrado / Juiz — acesso a processos',     0, 0, 0),
-    ('Secretario',    'Secretaria — registo e gestão de processos', 0, 0, 0),
-    ('Tecnico',       'Técnico de apoio — consulta e registo',      0, 0, 0),
-    ('Utilizador',    'Utilizador básico — só consulta',            0, 0, 0),
-    ('Visualizador',  'Só visualização — não pode registar, editar nem actualizar processos', 0, 0, 0);
+    ('Administrador', 'Acesso total — utilizadores, configurações e auditoria',           1, 1, 1),
+    ('Secretaria',    'Secretaria — registo, edição e consulta de processos e relatórios', 0, 0, 0),
+    ('Visualizador',  'Só consulta — visualizar processos e exportar relatórios',          0, 0, 0);
 
 -- 7.2 Departamentos
 INSERT INTO departamentos (nome, sigla) VALUES

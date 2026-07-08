@@ -98,7 +98,7 @@ function tblHTML(data) {
   var head = '<div class="tbl-outer"><table class="pt">' + colgroup + '<thead><tr>'
     + '<th class="th0" style="min-width:110px">N&ordm; de Registo de Processo</th>'
     + '<th>N&ordm; de Processo</th>'
-    + '<th>Data Registo</th>'
+    + '<th>Data Entrada</th>'
     + '<th>Esp&eacute;cie</th>'
     + '<th style="min-width:120px">Intervenientes / Partes</th>'
     + '<th style="min-width:85px">Distribui&ccedil;&atilde;o</th>'
@@ -108,21 +108,21 @@ function tblHTML(data) {
     + '</tr></thead><tbody>';
   var rows = data.map(function (d) {
     var delBtn = isAdm()
-      ? '<button class="btn btn-icon btn-xs" title="Eliminar" style="color:var(--red)" onclick="event.stopPropagation();delDoc(' + d.id + ',\'' + esc(d.numero_processo) + '\')"><i class="ti ti-trash"></i></button>'
+      ? '<button class="btn btn-icon btn-xs" title="Eliminar" style="color:var(--red)" onclick="delDoc(' + d.id + ',\'' + esc(d.numero_processo) + '\')"><i class="ti ti-trash"></i></button>'
       : '';
     var editBtn = podeEditar()
       ? '<button class="btn btn-icon btn-xs" title="Editar" onclick="abrirEditar(' + d.id + ')"><i class="ti ti-edit"></i></button>'
       : '';
-    return '<tr style="cursor:pointer" onclick="abrirDetalhe(' + d.id + ')">'
+    return '<tr>'
       + '<td class="td0 tdl">' + esc(d.numero_processo) + '</td>'
       + '<td class="tdl">' + esc(d.numero_processo_externo || '—') + '</td>'
-      + '<td class="tdl tdd">' + esc(shortDate(d.data_registo)) + '</td>'
+      + '<td class="tdl tdd">' + esc(d.data_entrada) + '</td>'
       + '<td class="tdl"><span class="badge b-type">' + esc(d.especie) + '</span></td>'
       + '<td class="tdl" style="max-width:160px">' + esc(trunc(d.partes, 38)) + '</td>'
       + '<td class="tdl">' + esc(trunc(d.distribuicao || '—', 18)) + '</td>'
       + '<td class="tdl">' + esc(trunc(d.origem || '—', 16)) + '</td>'
-      + '<td class="tdl" onclick="event.stopPropagation()"><span class="badge ' + esc(d.estado_cor) + '">' + esc(d.estado) + '</span></td>'
-      + '<td class="td-act" onclick="event.stopPropagation()"><div style="display:flex;gap:2px;justify-content:center">'
+      + '<td class="tdl"><span class="badge ' + esc(d.estado_cor) + '">' + esc(d.estado) + '</span></td>'
+      + '<td class="td-act"><div style="display:flex;gap:2px;justify-content:center">'
       + '<button class="btn btn-icon btn-xs" title="Ver" onclick="abrirDetalhe(' + d.id + ')"><i class="ti ti-eye"></i></button>'
       + editBtn + delBtn + '</div></td></tr>';
   }).join('');
@@ -140,7 +140,7 @@ function mobileCards(data) {
       ? '<button class="btn btn-sm" onclick="abrirEditar(' + d.id + ')"><i class="ti ti-edit"></i> Editar</button>'
       : '';
     var fields = [
-      ['Conclusao', d.conclusao], ['Notif./Citacao', d.notificacao_citacao],
+      ['Conclusao', d.conclusao], ['Notif./Citacao', d.notificacao_citacao], ['Notif. 1', d.notificacao1], ['Notif. 2', d.notificacao2],
       ['Visto MP', d.visto_mp], ['Visto Adj.1', d.visto_adjunto1], ['Visto Adj.2', d.visto_adjunto2],
       ['Ins. Tabela', d.inscricao_tabela], ['Acordao', d.acordao],
       ['Notif. Acordao', d.notificacao_acordao], ['Conta/Custas', d.conta_custas], ['Arquivamento', d.arquivamento]
@@ -158,7 +158,7 @@ function mobileCards(data) {
       + '<span class="badge ' + esc(d.estado_cor) + '" style="flex-shrink:0">' + esc(d.estado) + '</span></div>'
       + '<div class="pc-meta"><span class="badge b-type">' + esc(d.especie) + '</span>'
       + '<span style="font-size:11px;color:var(--tx2)">' + esc(d.origem) + '</span>'
-      + '<span style="font-size:11px;color:var(--tx2)">' + esc(shortDate(d.data_registo)) + '</span></div>'
+      + '<span style="font-size:11px;color:var(--tx2)">' + esc(d.data_entrada) + '</span></div>'
       + '<div class="pc-body" id="pcc_' + d.id + '">'
       + '<div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;margin-bottom:8px">Distribuicao: ' + esc(d.distribuicao || '—') + '</div>'
       + '<div class="pc-grid">' + grid + '</div>'
@@ -176,16 +176,16 @@ function toggleCard(id) { var b = G(id); if (b) b.classList.toggle('open'); }
 
 /* ─── Exportação PDF / Excel (jsPDF + autotable, SheetJS) ─── */
 function colunasExport() {
-  return ['N Registo Processo', 'N Processo', 'Data Registo', 'Especie', 'Partes', 'Distribuicao', 'Origem',
-    'Conclusao', 'Notif/Citacao', 'Visto MP', 'Visto Adj1', 'Visto Adj2',
-    'Ins Tabela', 'Acordao', 'Notif Acordao', 'Conta Custas', 'Arquivamento', 'Estado'];
+  return ['N Registo Processo', 'N Processo', 'Data Entrada', 'Especie', 'Partes', 'Distribuicao', 'Origem',
+    'Conclusao', 'Notif/Citacao', 'Notif 1', 'Notif 2', 'Visto MP', 'Visto Adj1', 'Visto Adj2',
+    'Ins Tabela', 'Acordao', '2 Acordao', '3 Acordao', 'Notif Acordao', 'Conta Custas', '2 Conta Custas', 'Arquivamento', 'Estado'];
 }
 
 function linhasExport() {
   return TODOS_PROCESSOS.map(function (d) {
-    return [d.numero_processo, d.numero_processo_externo || '', d.data_registo, d.especie, d.partes, d.distribuicao || '', d.origem,
-      d.conclusao || '', d.notificacao_citacao || '', d.visto_mp || '', d.visto_adjunto1 || '', d.visto_adjunto2 || '',
-      d.inscricao_tabela || '', d.acordao || '', d.notificacao_acordao || '', d.conta_custas || '', d.arquivamento || '', d.estado];
+    return [d.numero_processo, d.numero_processo_externo || '', d.data_entrada, d.especie, d.partes, d.distribuicao || '', d.origem,
+      d.conclusao || '', d.notificacao_citacao || '', d.notificacao1 || '', d.notificacao2 || '', d.visto_mp || '', d.visto_adjunto1 || '', d.visto_adjunto2 || '',
+      d.inscricao_tabela || '', d.acordao || '', d.acordao2 || '', d.acordao3 || '', d.notificacao_acordao || '', d.conta_custas || '', d.conta_custas2 || '', d.arquivamento || '', d.estado];
   });
 }
 

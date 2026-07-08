@@ -36,8 +36,8 @@ function renderVistos(res) {
 
   G('content').innerHTML = '<div style="display:flex;flex-direction:column;gap:14px">'
     + '<div class="row2" style="margin-bottom:0">'
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-eye-check" style="color:var(--purple)"></i> Pendentes</div><div class="stat-num" style="color:var(--purple)">' + pendentes.length + '</div></div>'
-    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-circle-check" style="color:var(--green)"></i> Concluidos</div><div class="stat-num" style="color:var(--green)">' + res.concluidosCount + '</div></div>'
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-eye-check" style="color:var(--purple)"></i> Processos Pendentes de Visto</div><div class="stat-num" style="color:var(--purple)">' + pendentes.length + '</div><div class="stat-sub">Aguardam registo de vistos</div></div>'
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-circle-check" style="color:var(--green)"></i> Processos Concluídos</div><div class="stat-num" style="color:var(--green)">' + res.concluidosCount + '</div><div class="stat-sub">Com todos os vistos registados</div></div>'
     + '</div>'
     + '<div class="panel"><div class="panel-hd"><i class="ti ti-eye-check" style="color:var(--purple)"></i><span class="panel-title">Vistos &mdash; Pendentes</span></div>'
     + '<div style="padding:14px"><div class="ib amber" style="margin-bottom:14px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i> Registe os vistos do Ministerio Publico e dos Juizes Adjuntos.</div>'
