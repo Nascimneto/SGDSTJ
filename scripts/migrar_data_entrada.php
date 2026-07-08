@@ -1,7 +1,9 @@
 <?php
 /**
- * Migração: adiciona os campos "Data de Entrada" (processos.data_entrada) e
- * "Notificação 1" (datas_controlo.notificacao1), e actualiza a vista
+ * Migração: adiciona os campos "Data de Entrada" (processos.data_entrada),
+ * "Notificação 1/2" (datas_controlo.notificacao1/2), "Acórdão 2/3"
+ * (datas_controlo.acordao2/3), "Conta de Custas 2" (datas_controlo.conta_custas2)
+ * e respectivas colunas "registado_...por", e actualiza a vista
  * v_processos_completos para os expor. Não apaga nem altera dados existentes.
  *
  * Só pode ser executado via CLI: php scripts/migrar_data_entrada.php
@@ -58,6 +60,41 @@ try {
         echo "✓ datas_controlo.notificacao2 criada.\n";
     } else {
         echo "  datas_controlo.notificacao2 já existe (ignorado).\n";
+    }
+
+    if (!sgd_tem_coluna($pdo, $bd, 'datas_controlo', 'acordao2')) {
+        $pdo->exec(
+            "ALTER TABLE datas_controlo
+             ADD COLUMN acordao2 DATE NULL AFTER acordao,
+             ADD COLUMN registado_acordao2_por INT NULL AFTER registado_acordao_por,
+             ADD CONSTRAINT fk_dc_ac2_por FOREIGN KEY (registado_acordao2_por) REFERENCES utilizadores(id)"
+        );
+        echo "✓ datas_controlo.acordao2 / registado_acordao2_por criadas.\n";
+    } else {
+        echo "  datas_controlo.acordao2 já existe (ignorado).\n";
+    }
+
+    if (!sgd_tem_coluna($pdo, $bd, 'datas_controlo', 'acordao3')) {
+        $pdo->exec(
+            "ALTER TABLE datas_controlo
+             ADD COLUMN acordao3 DATE NULL AFTER acordao2,
+             ADD COLUMN registado_acordao3_por INT NULL AFTER registado_acordao2_por,
+             ADD CONSTRAINT fk_dc_ac3_por FOREIGN KEY (registado_acordao3_por) REFERENCES utilizadores(id)"
+        );
+        echo "✓ datas_controlo.acordao3 / registado_acordao3_por criadas.\n";
+    } else {
+        echo "  datas_controlo.acordao3 já existe (ignorado).\n";
+    }
+
+    if (!sgd_tem_coluna($pdo, $bd, 'datas_controlo', 'conta_custas2')) {
+        $pdo->exec(
+            "ALTER TABLE datas_controlo
+             ADD COLUMN conta_custas2 DATE NULL
+             AFTER conta_custas"
+        );
+        echo "✓ datas_controlo.conta_custas2 criada.\n";
+    } else {
+        echo "  datas_controlo.conta_custas2 já existe (ignorado).\n";
     }
 
     $pdo->exec('DROP VIEW IF EXISTS v_processos_completos');
