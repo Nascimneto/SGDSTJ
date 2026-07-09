@@ -43,6 +43,7 @@ function renderVistos(res) {
     + '<div style="padding:14px"><div class="ib amber" style="margin-bottom:14px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i> Registe os vistos do Ministerio Publico e dos Juizes Adjuntos.</div>'
     + (pendentes.length === 0 ? '<div class="empty" style="padding:24px"><i class="ti ti-mood-happy"></i><p>Sem processos pendentes</p></div>' : rows)
     + '</div></div></div>';
+  fadeIn(G('content'));
 }
 
 function guardarVistos(id) {

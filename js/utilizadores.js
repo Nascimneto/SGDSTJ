@@ -80,6 +80,7 @@ function renderUtilizadores() {
     + '</tr></thead><tbody>' + tableRows + '</tbody></table></div>'
     + '<div id="uCards" style="display:none;flex-direction:column;gap:10px;padding:14px">' + mobileU + '</div>'
     + '</div>';
+  fadeIn(G('content'));
   syncCards();
 }
 

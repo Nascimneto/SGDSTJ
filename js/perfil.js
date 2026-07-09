@@ -29,6 +29,7 @@ function renderPerfil() {
     + '<button class="btn btn-primary" onclick="saveProf()"><i class="ti ti-device-floppy"></i> ' + (obrigatorio ? 'Trocar Senha e Entrar' : 'Trocar Senha') + '</button>'
     + '</div>'
     + '</div></div>';
+  fadeIn(G('content'));
 }
 
 /** Cancelar fora do fluxo obrigatório: não há nada para descartar, só sair da página. */

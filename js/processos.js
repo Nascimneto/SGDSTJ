@@ -82,6 +82,7 @@ function renderTabela() {
   G('procTbl').innerHTML = tblHTML(pg.items) + mobileCards(pg.items)
     + (pg.total === 0 ? '<div class="empty"><i class="ti ti-file-off"></i><p>Nenhum processo encontrado</p></div>' : '')
     + mkPager(pg, 'irParaPaginaProc');
+  fadeIn(G('procTbl'));
   syncCards();
 }
 

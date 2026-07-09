@@ -88,6 +88,7 @@ function renderPainel(resumo, processos, volume, prod) {
     /* produtividade por juiz relator */
     renderProdutividade(prod && prod.relatores ? prod.relatores : []),
   ].join('');
+  fadeIn(G('content'));
 
   /* listeners dos botões */
   ['tudo','ano','mes'].forEach(function (p) {

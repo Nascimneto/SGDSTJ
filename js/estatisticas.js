@@ -109,6 +109,7 @@ function renderTab(tab, d) {
   else if (tab === 'especie') { el.innerHTML = htmlTabEspecie(d.distribuicao); desenharGraficoSimples('chartEspecie', d.distribuicao.porEspecie || [], 'especie'); }
   else if (tab === 'estado')  { el.innerHTML = htmlTabEstado(d.distribuicao);  desenharGraficoSimples('chartEstado',  d.distribuicao.porEstado  || [], 'estado'); }
   else if (tab === 'origem')  { el.innerHTML = htmlTabOrigem(d.distribuicao);  desenharGraficoSimples('chartOrigem',  d.distribuicao.porOrigem  || [], 'origem'); }
+  fadeIn(el);
 }
 
 /* ═══ Tab: Por Período ═══ */

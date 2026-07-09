@@ -52,8 +52,8 @@ function carregarTab(tab) {
   if (!el) return;
   el.innerHTML = '<div class="empty" style="padding:24px"><i class="ti ti-loader-2"></i></div>';
 
-  if (tab === 'institucional') { renderInstitucional(); return; }
-  if (tab === 'sistema')       { renderSistema(); return; }
+  if (tab === 'institucional') { renderInstitucional(); fadeIn(el); return; }
+  if (tab === 'sistema')       { renderSistema(); fadeIn(el); return; }
 
   var api = { especies:      'api/configuracoes/especies-listar.php',
               estados:       'api/configuracoes/estados-listar.php',
@@ -65,6 +65,7 @@ function carregarTab(tab) {
     if (tab === 'estados')       renderEstados(res.estados   || []);
     if (tab === 'perfis')        renderPerfis(res.perfis     || []);
     if (tab === 'departamentos') renderDepartamentos(res.departamentos || []);
+    fadeIn(el);
   }).catch(function (e) {
     G('cfgCorpo').innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i><p>Erro: ' + esc(e.message) + '</p></div>';
   });

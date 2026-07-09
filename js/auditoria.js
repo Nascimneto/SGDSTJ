@@ -95,6 +95,7 @@ function renderHistoricoProcessos() {
 
   if (!pg.items.length) {
     G('audTbl').innerHTML = '<div class="empty"><i class="ti ti-file-off"></i><p>Sem registos para os filtros seleccionados</p></div>';
+    fadeIn(G('audTbl'));
     return;
   }
 
@@ -126,6 +127,7 @@ function renderHistoricoProcessos() {
     + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
     + '<div class="pc-list">' + cards + '</div>'
     + mkPager(pg, 'irParaPaginaAuditoria');
+  fadeIn(G('audTbl'));
 }
 
 function renderAuditoriaSistema() {
@@ -134,6 +136,7 @@ function renderAuditoriaSistema() {
 
   if (!pg.items.length) {
     G('audTbl').innerHTML = '<div class="empty"><i class="ti ti-file-off"></i><p>Sem registos para os filtros seleccionados</p></div>';
+    fadeIn(G('audTbl'));
     return;
   }
 
@@ -165,6 +168,7 @@ function renderAuditoriaSistema() {
     + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
     + '<div class="pc-list">' + cards + '</div>'
     + mkPager(pg, 'irParaPaginaAuditoria');
+  fadeIn(G('audTbl'));
 }
 
 function irParaPaginaAuditoria(p) { AUD_PG = p; renderAuditoria(); }

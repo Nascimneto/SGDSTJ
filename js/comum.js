@@ -15,6 +15,18 @@ function trunc(s, n) {
   return s && s.length > n ? s.substring(0, n) + '...' : (s || '');
 }
 
+/**
+ * Aplica um fade-in suave a um contentor cujo innerHTML acabou de ser
+ * substituído (ex: esqueleto "A carregar..." -> dados reais), para evitar
+ * o "pisca" de uma troca instantânea de conteúdo.
+ */
+function fadeIn(el) {
+  if (!el) return;
+  el.classList.remove('fade-in');
+  void el.offsetWidth; /* força reflow para reiniciar a animação */
+  el.classList.add('fade-in');
+}
+
 function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
