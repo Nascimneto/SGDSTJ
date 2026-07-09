@@ -159,6 +159,10 @@ class ProcessoModel
             return ['erro' => 'Processo não encontrado.', 'codigo' => 404];
         }
 
+        $estStmtAntigo = $this->pdo->prepare('SELECT estado_id FROM processos WHERE id = ?');
+        $estStmtAntigo->execute([$id]);
+        $estadoIdAntigo = (int)$estStmtAntigo->fetchColumn();
+
         $especie               = trim((string)($dados['especie'] ?? ''));
         $origem                = trim((string)($dados['origem'] ?? ''));
         $partes                = trim((string)($dados['partes'] ?? ''));
@@ -231,6 +235,33 @@ class ProcessoModel
             $estadoCodigo = 'archived';
         }
 
+        // Sincroniza as datas de controlo com o estado final: se o estado ficar
+        // 'concluded'/'archived' (por regra automática acima OU por alteração manual
+        // no próprio campo de estado) e a data de conclusão/arquivamento ainda não
+        // tiver sido registada, preenche-a agora. Evita que o Painel/Estatísticas
+        // mostrem o processo como concluído/arquivado enquanto as telas de
+        // Pendentes (que filtram pelas datas de datas_controlo) continuem a listá-lo.
+        if ($estadoCodigo === 'concluded' && !array_key_exists('conclusao', $dados)) {
+            $conclusaoStmt = $this->pdo->prepare('SELECT conclusao FROM datas_controlo WHERE processo_id = ?');
+            $conclusaoStmt->execute([$id]);
+            if (!$conclusaoStmt->fetchColumn()) {
+                $dcSets[]   = 'conclusao = ?';
+                $dcParams[] = date('Y-m-d');
+                $dcSets[]   = 'registado_conclusao_por = ?';
+                $dcParams[] = $uid;
+            }
+        }
+        if ($estadoCodigo === 'archived' && !array_key_exists('arquivamento', $dados)) {
+            $arquivamentoStmt = $this->pdo->prepare('SELECT arquivamento FROM datas_controlo WHERE processo_id = ?');
+            $arquivamentoStmt->execute([$id]);
+            if (!$arquivamentoStmt->fetchColumn()) {
+                $dcSets[]   = 'arquivamento = ?';
+                $dcParams[] = date('Y-m-d');
+                $dcSets[]   = 'registado_arquivo_por = ?';
+                $dcParams[] = $uid;
+            }
+        }
+
         $estadoId = null;
         if ($estadoCodigo !== '') {
             $estStmt = $this->pdo->prepare('SELECT id FROM estados_processo WHERE codigo = ?');
@@ -258,9 +289,32 @@ class ProcessoModel
                 $this->pdo->prepare('UPDATE datas_controlo SET ' . implode(', ', $dcSets) . ' WHERE processo_id = ?')->execute($dcParams);
             }
 
-            $this->pdo->prepare(
-                'INSERT INTO historico_processo (processo_id, descricao, tipo_evento, utilizador_id) VALUES (?, ?, ?, ?)'
-            )->execute([$id, 'Editado por ' . $nomeUtilizador, 'EDICAO', $uid]);
+            // Um único registo de histórico por edição: se o estado mudou, guarda a
+            // transição (tipo 'ESTADO'); caso contrário, o registo genérico de edição.
+            // (Antes disto havia também um trigger de BD que duplicava este evento —
+            // ver scripts/remover_trigger_historico_estado.php.)
+            if ($estadoId && (int)$estadoId !== $estadoIdAntigo) {
+                $labelStmt = $this->pdo->prepare('SELECT codigo, label FROM estados_processo WHERE id = ?');
+                $labelStmt->execute([$estadoIdAntigo]);
+                $antigo = $labelStmt->fetch() ?: ['codigo' => null, 'label' => '—'];
+                $labelStmt->execute([$estadoId]);
+                $novo = $labelStmt->fetch() ?: ['codigo' => null, 'label' => '—'];
+
+                $this->pdo->prepare(
+                    'INSERT INTO historico_processo (processo_id, descricao, tipo_evento, estado_anterior, estado_novo, utilizador_id) VALUES (?, ?, ?, ?, ?, ?)'
+                )->execute([
+                    $id,
+                    'Estado alterado: ' . $antigo['label'] . ' -> ' . $novo['label'] . ' (por ' . $nomeUtilizador . ')',
+                    'ESTADO',
+                    $antigo['codigo'],
+                    $novo['codigo'],
+                    $uid,
+                ]);
+            } else {
+                $this->pdo->prepare(
+                    'INSERT INTO historico_processo (processo_id, descricao, tipo_evento, utilizador_id) VALUES (?, ?, ?, ?)'
+                )->execute([$id, 'Editado por ' . $nomeUtilizador, 'EDICAO', $uid]);
+            }
 
             $this->pdo->commit();
         } catch (Throwable $e) {

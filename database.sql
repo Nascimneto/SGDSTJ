@@ -490,24 +490,11 @@ BEGIN
     INSERT INTO datas_controlo (processo_id) VALUES (NEW.id);
 END$$
 
--- 6.3 Registar histórico ao mudar estado
-CREATE TRIGGER trg_historico_estado
-AFTER UPDATE ON processos
-FOR EACH ROW
-BEGIN
-    DECLARE v_estado_ant VARCHAR(20);
-    DECLARE v_estado_nov VARCHAR(20);
-
-    IF OLD.estado_id <> NEW.estado_id THEN
-        SELECT codigo INTO v_estado_ant FROM estados_processo WHERE id = OLD.estado_id;
-        SELECT codigo INTO v_estado_nov FROM estados_processo WHERE id = NEW.estado_id;
-
-        INSERT INTO historico_processo (processo_id, descricao, tipo_evento, estado_anterior, estado_novo, utilizador_id)
-        VALUES (NEW.id,
-                CONCAT('Estado alterado: ', v_estado_ant, ' -> ', v_estado_nov),
-                'ESTADO', v_estado_ant, v_estado_nov, NEW.atualizado_por);
-    END IF;
-END$$
+-- 6.3 (removido) Registar histórico ao mudar estado — passou a ser feito em
+-- ProcessoModel::atualizar() (PHP), que grava um único registo de histórico
+-- por edição (evento 'ESTADO' com o label do estado, ou 'EDICAO' quando o
+-- estado não muda). O trigger duplicava esse registo. Ver
+-- scripts/remover_trigger_historico_estado.php para bases já instaladas.
 
 DELIMITER ;
 
