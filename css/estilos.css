@@ -127,6 +127,14 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .pt col.c-est    { width: 90px;  }   /* Estado            */
 .pt col.c-act    { width: 90px;  }   /* Acções — 3 botões */
 
+/* Tabelas de detalhe das Estatísticas (Por Período/Juiz/Espécie/Estado/Origem):
+   têm poucas colunas e devem encolher com o contentor, em vez de herdar o
+   min-width:940px pensado para a tabela grande de Processos — sem isto, o
+   .tbl-outer ficava sempre com scroll horizontal mesmo cabendo no ecrã. */
+.pt.pt-stat { min-width: 0; table-layout: auto; }
+.pt.pt-stat th, .pt.pt-stat td { white-space: normal; }
+.td-prog { min-width: 110px; }
+
 .pt th {
   text-align: center;
   padding: 8px 5px;
@@ -377,6 +385,8 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
   body[data-pagina="estatisticas"]  .tbl-outer { display:block; }
   .fg2, .fg3 { grid-template-columns:1fr; }
   .row2  { flex-direction:column; }
+  .td-prog { min-width:56px; }
+  .pt-stat td, .pt-stat th { padding-left:6px !important; padding-right:6px !important; }
   .proc-tb   { flex-wrap:wrap; row-gap:7px; }
   .proc-tb-l { flex:1; min-width:180px; }
   .sw { max-width:100%; flex:1; min-width:100px; }
