@@ -13,28 +13,42 @@
 <body>
 
 <div id="login">
-  <div class="lcard">
-    <div class="ltop">
-      <img src="assets/img/logostj.jpg" alt="Supremo Tribunal de Justiça" style="height:60px;width:auto;display:block;margin:0 auto 14px">
-      <h1 style="font-size:17px;font-weight:600;margin-bottom:3px;color:var(--tx2)">Supremo Tribunal de Cabo Verde</h1>
-      <h1 style="font-size:26px;font-weight:700;margin-bottom:4px">SGD</h1>
-      <p style="font-size:13px;color:var(--tx2)">Sistema de Gestão de Processos</p>
+  <div class="l-visual">
+    <div class="l-visual-ov"></div>
+    <div class="l-visual-content">
+      <img src="assets/img/logostj.jpg" alt="Supremo Tribunal de Justiça" class="l-visual-logo">
+      <h2>Supremo Tribunal de Justiça</h2>
+      <p>República de Cabo Verde</p>
+      <div class="l-visual-tag">Sistema de Gestão de Processos</div>
     </div>
-    <div class="lerr" id="lerr">Utilizador ou senha incorrectos.</div>
+  </div>
 
-    <div class="fg">
-      <label class="required">Utilizador</label>
-      <input id="lu" type="text" autocomplete="off" placeholder="Introduza o utilizador">
+  <div class="l-form-side">
+    <div class="lcard">
+      <div class="ltop l-form-top">
+        <img src="assets/img/logostj.jpg" alt="Supremo Tribunal de Justiça" style="height:52px;width:auto;display:block;margin:0 auto 12px">
+        <h1 style="font-size:15px;font-weight:600;margin-bottom:3px;color:var(--tx2)">Supremo Tribunal de Cabo Verde</h1>
+      </div>
+      <div class="ltop">
+        <h1 style="font-size:24px;font-weight:700;margin-bottom:4px">Benvindo ao SGDSTJ</h1>
+        <p style="font-size:13px;color:var(--tx2)">Introduza as suas credenciais para aceder ao SGD</p>
+      </div>
+      <div class="lerr" id="lerr">Utilizador ou senha incorrectos.</div>
+
+      <div class="fg">
+        <label class="required">Utilizador</label>
+        <input id="lu" type="text" autocomplete="off" placeholder="Introduza o utilizador">
+      </div>
+
+      <div class="fg">
+        <label class="required">Senha</label>
+        <input id="lp" type="password" autocomplete="current-password" placeholder="Introduza a senha">
+      </div>
+
+      <button class="btn btn-primary btn-block" id="loginBtn" style="padding:13px;margin-top:6px">
+        <i class="ti ti-login"></i> Entrar no Sistema
+      </button>
     </div>
-
-    <div class="fg">
-      <label class="required">Senha</label>
-      <input id="lp" type="password" autocomplete="current-password" placeholder="Introduza a senha">
-    </div>
-
-    <button class="btn btn-primary btn-block" id="loginBtn" style="padding:13px;margin-top:6px">
-      <i class="ti ti-login"></i> Entrar no Sistema
-    </button>
   </div>
 </div>
 

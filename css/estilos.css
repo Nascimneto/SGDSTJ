@@ -295,16 +295,49 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .row2 > *{ flex:1; min-width:0; }
 
 /* ── Login ── */
-#login { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--sid); padding:20px; }
-.lcard { background:var(--white); border-radius:var(--rl); padding:42px 38px; width:min(440px,100%); box-shadow:var(--sh2); }
-.ltop  { text-align:center; margin-bottom:28px; }
+#login { display:flex; min-height:100vh; background:var(--white); }
+
+/* Painel esquerdo — visual institucional (foto do tribunal a colocar depois em
+   assets/img/tribunal.jpg; até lá mostra apenas o gradiente + padrão) */
+.l-visual {
+  flex:1 1 46%; position:relative; min-height:100vh; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  background:
+    linear-gradient(160deg, rgba(15,30,45,.2) 0%, rgba(15,30,45,.55) 60%, rgba(11,22,34,.85) 100%),
+    url('../assets/img/tribunal.jpg') center/cover no-repeat,
+    linear-gradient(160deg,#132A40 0%,#0F1E2D 55%,#0B1622 100%);
+}
+.l-visual::before {
+  content:''; position:absolute; inset:0;
+  background-image:radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px);
+  background-size:24px 24px;
+}
+.l-visual-ov { position:absolute; inset:0; background:linear-gradient(180deg, rgba(15,30,45,.15), rgba(11,22,34,.55)); }
+.l-visual-content { position:relative; z-index:2; text-align:center; color:#fff; padding:40px; max-width:380px; }
+.l-visual-logo { height:84px; width:auto; margin:0 auto 24px; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+.l-visual-content h2 { font-size:22px; font-weight:700; margin-bottom:6px; }
+.l-visual-content p { font-size:14px; color:rgba(255,255,255,.75); }
+.l-visual-tag { margin-top:30px; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#93B4E8; font-weight:600; }
+
+/* Painel direito — formulário */
+.l-form-side { flex:1 1 54%; display:flex; align-items:center; justify-content:center; padding:40px 24px; }
+.l-form-top  { display:none; }
+
+.lcard { width:min(400px,100%); }
+.ltop  { text-align:center; margin-bottom:24px; }
 .lico  { width:50px; height:50px; background:var(--sid); border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
 .lerr  { background:var(--redl); color:var(--red); border:1px solid #fca5a5; padding:10px 13px; border-radius:var(--rs); font-size:13px; margin-bottom:13px; display:none; }
 .lerr.show { display:block; }
 .lhint { background:var(--bg); border-radius:var(--rs); padding:8px 12px; font-size:11px; color:var(--tx2); margin-top:12px; text-align:center; }
 .lcard .fg label { font-size:13px; }
-.lcard .fg input { font-size:14px; padding:10px 12px; }
+.lcard .fg input { font-size:14px; padding:11px 13px; }
 .lcard .btn-block { font-size:15px; }
+
+@media(max-width:860px) {
+  .l-visual    { display:none; }
+  .l-form-side { flex:1 1 100%; }
+  .l-form-top  { display:block; margin-bottom:14px; }
+}
 
 /* ═══ IMPRESSÃO ═══ */
 /* .no-print: elementos de navegação/filtro que não fazem sentido numa folha
