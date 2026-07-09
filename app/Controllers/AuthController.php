@@ -95,6 +95,9 @@ class AuthController
         $_SESSION['username'] = $user['username'];
         // Lido por Auth::deveTrocarSenha() (app/Core/PageGuard.php) para forçar a troca.
         $_SESSION['obrigar_troca_senha'] = (bool)$user['obrigar_troca_senha'];
+        // Timestamp (segundos) usado por includes/head.php para avisar o utilizador
+        // no browser antes da sessão expirar — ver renovar().
+        $_SESSION['sessao_expira_em'] = time() + $expiraMin * 60;
 
         echo json_encode([
             'ok'          => true,
@@ -102,6 +105,34 @@ class AuthController
             'nome'        => $user['nome_completo'],
             'trocarSenha' => (bool)$user['obrigar_troca_senha'],
         ]);
+    }
+
+    /**
+     * POST api/auth/renovar.php — chamado pelo aviso de sessão a expirar no
+     * browser (ver js/comum.js) para prolongar a sessão sem obrigar a novo
+     * login. Chamador já correu ApiGuard::aplicar() (sessão válida garantida).
+     */
+    public function renovar(): void
+    {
+        if (!ApiGuard::exigirMetodo('POST')) {
+            return;
+        }
+        [, $this->configuracoes] = $this->modelos();
+        $expiraMin = (int)$this->configuracoes->obter('sessao_expira_min', 60);
+        $expiraEm  = time() + $expiraMin * 60;
+        $_SESSION['sessao_expira_em'] = $expiraEm;
+
+        $params = session_get_cookie_params();
+        setcookie(session_name(), session_id(), [
+            'expires'  => $expiraEm,
+            'path'     => $params['path'],
+            'domain'   => $params['domain'],
+            'secure'   => $params['secure'],
+            'httponly' => $params['httponly'],
+            'samesite' => $params['samesite'],
+        ]);
+
+        echo json_encode(['ok' => true, 'expiraEm' => $expiraEm * 1000]);
     }
 
     /** POST api/auth/logout.php */

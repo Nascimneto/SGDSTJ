@@ -129,6 +129,37 @@ function cfDlg(title, msg, cb) {
   G('cfbg').classList.add('open');
 }
 
+/* ─── Aviso de sessão a expirar ───
+ * Agenda um aviso (reutilizando o diálogo de confirmação) alguns minutos
+ * antes da sessão expirar, para o utilizador não perder um formulário
+ * aberto (ex: edição de processo) sem aviso. "Continuar sessão" chama
+ * api/auth/renovar.php, que prolonga a sessão no servidor e reagenda o
+ * aviso; sem resposta, a sessão expira normalmente e o próximo pedido à
+ * API é redireccionado para o login por js/api.js.
+ */
+var AVISO_SESSAO_MS = 2 * 60 * 1000;
+
+function agendarAvisoSessao(expiraEmMs) {
+  clearTimeout(window._avisoSessaoTimer);
+  var faltam = expiraEmMs - Date.now() - AVISO_SESSAO_MS;
+  window._avisoSessaoTimer = setTimeout(mostrarAvisoSessao, Math.max(0, faltam));
+}
+
+function mostrarAvisoSessao() {
+  cfDlg('Sessão a expirar', 'A sua sessão está prestes a expirar. Deseja continuar sessão?', renovarSessao);
+}
+
+function renovarSessao() {
+  apiPost('api/auth/renovar.php', {}).then(function (res) {
+    agendarAvisoSessao(res.expiraEm);
+    showToast('Sessão renovada.', 'ti-shield-check');
+  }).catch(function () {});
+}
+
+if (typeof window.SGD_SESSAO_EXPIRA_EM === 'number') {
+  agendarAvisoSessao(window.SGD_SESSAO_EXPIRA_EM);
+}
+
 /* ─── Sidebar (mobile) ─── */
 function openSB()  { G('sidebar').classList.add('open');    G('overlay').classList.add('show'); }
 function closeSB() { G('sidebar').classList.remove('open'); G('overlay').classList.remove('show'); }

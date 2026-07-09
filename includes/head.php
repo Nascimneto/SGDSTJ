@@ -13,4 +13,9 @@
   // Lido por perfil.js para restringir o formulário só à troca de senha
   // enquanto sgd_deve_trocar_senha() estiver activo (ver app/Core/PageGuard.php).
   window.SGD_TROCAR_SENHA = <?= json_encode(sgd_deve_trocar_senha()) ?>;
+  // Lidos por js/comum.js para avisar antes da sessão expirar (ver AuthController::renovar()).
+  // Sem "sessao_expira_em" na sessão (login anterior a esta funcionalidade) assume-se
+  // que expira daqui a 30min — corrige-se sozinho no próximo login/renovação.
+  window.SGD_SESSAO_EXPIRA_EM = <?= json_encode((($_SESSION['sessao_expira_em'] ?? (time() + 1800))) * 1000) ?>;
+  window.SGD_AGORA = <?= json_encode(time() * 1000) ?>;
 </script>

@@ -31,7 +31,7 @@
       </div>
       <div class="ltop">
         <h1 style="font-size:24px;font-weight:700;margin-bottom:4px">Benvindo ao SGDSTJ</h1>
-        <p style="font-size:13px;color:var(--tx2)">Introduza as suas credenciais para aceder ao SGD</p>
+        <p style="font-size:13px;color:var(--tx2)">Introduza as suas credenciais para aceder ao SGDSTJ</p>
       </div>
       <div class="lerr" id="lerr">Utilizador ou senha incorrectos.</div>
 

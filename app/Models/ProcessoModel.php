@@ -226,12 +226,24 @@ class ProcessoModel
             }
         }
 
+        $dcAntigoStmt = $this->pdo->prepare('SELECT acordao, acordao2, acordao3, arquivamento, conclusao FROM datas_controlo WHERE processo_id = ?');
+        $dcAntigoStmt->execute([$id]);
+        $dcAntigo = $dcAntigoStmt->fetch() ?: ['acordao' => null, 'acordao2' => null, 'acordao3' => null, 'arquivamento' => null, 'conclusao' => null];
+
         // Regras automáticas de estado (preservam o comportamento original de wfSave()):
-        // registar acórdão conclui o processo; registar arquivamento arquiva-o.
-        if (!empty($dados['acordao']) || !empty($dados['acordao2']) || !empty($dados['acordao3'])) {
+        // registar (ou alterar) um acórdão conclui o processo; registar/alterar o
+        // arquivamento arquiva-o. Só dispara quando a data está de facto a ser
+        // registada/alterada nesta submissão — não quando o formulário completo
+        // reenvia, sem alterações, uma data já gravada numa edição anterior (o que
+        // impedia mudar manualmente o estado de um processo já concluído/arquivado).
+        $acordaoAlterado = (!empty($dados['acordao']) && $dados['acordao'] !== $dcAntigo['acordao'])
+            || (!empty($dados['acordao2']) && $dados['acordao2'] !== $dcAntigo['acordao2'])
+            || (!empty($dados['acordao3']) && $dados['acordao3'] !== $dcAntigo['acordao3']);
+        if ($acordaoAlterado) {
             $estadoCodigo = 'concluded';
         }
-        if (!empty($dados['arquivamento'])) {
+        $arquivamentoAlterado = !empty($dados['arquivamento']) && $dados['arquivamento'] !== $dcAntigo['arquivamento'];
+        if ($arquivamentoAlterado) {
             $estadoCodigo = 'archived';
         }
 
@@ -241,25 +253,17 @@ class ProcessoModel
         // tiver sido registada, preenche-a agora. Evita que o Painel/Estatísticas
         // mostrem o processo como concluído/arquivado enquanto as telas de
         // Pendentes (que filtram pelas datas de datas_controlo) continuem a listá-lo.
-        if ($estadoCodigo === 'concluded' && !array_key_exists('conclusao', $dados)) {
-            $conclusaoStmt = $this->pdo->prepare('SELECT conclusao FROM datas_controlo WHERE processo_id = ?');
-            $conclusaoStmt->execute([$id]);
-            if (!$conclusaoStmt->fetchColumn()) {
-                $dcSets[]   = 'conclusao = ?';
-                $dcParams[] = date('Y-m-d');
-                $dcSets[]   = 'registado_conclusao_por = ?';
-                $dcParams[] = $uid;
-            }
+        if ($estadoCodigo === 'concluded' && !array_key_exists('conclusao', $dados) && !$dcAntigo['conclusao']) {
+            $dcSets[]   = 'conclusao = ?';
+            $dcParams[] = date('Y-m-d');
+            $dcSets[]   = 'registado_conclusao_por = ?';
+            $dcParams[] = $uid;
         }
-        if ($estadoCodigo === 'archived' && !array_key_exists('arquivamento', $dados)) {
-            $arquivamentoStmt = $this->pdo->prepare('SELECT arquivamento FROM datas_controlo WHERE processo_id = ?');
-            $arquivamentoStmt->execute([$id]);
-            if (!$arquivamentoStmt->fetchColumn()) {
-                $dcSets[]   = 'arquivamento = ?';
-                $dcParams[] = date('Y-m-d');
-                $dcSets[]   = 'registado_arquivo_por = ?';
-                $dcParams[] = $uid;
-            }
+        if ($estadoCodigo === 'archived' && !array_key_exists('arquivamento', $dados) && !$dcAntigo['arquivamento']) {
+            $dcSets[]   = 'arquivamento = ?';
+            $dcParams[] = date('Y-m-d');
+            $dcSets[]   = 'registado_arquivo_por = ?';
+            $dcParams[] = $uid;
         }
 
         $estadoId = null;
