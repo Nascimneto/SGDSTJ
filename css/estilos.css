@@ -177,8 +177,11 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .cfg-t tr:nth-child(even) td { background:#FAFAF6; }
 .cfg-t tr:hover td { background:#EFF6FF; }
 
-/* ── Badges ── */
-.badge        { display:inline-flex; align-items:center; gap:2px; padding:2px 5px; border-radius:20px; font-size:9px; font-weight:600; white-space:nowrap; }
+/* ── Badges ──
+   .badge tem uma cor por omissão (cinza neutro) para estados criados
+   dinamicamente em Configurações, que não têm uma regra .b-<codigo>
+   própria — as regras .b-entry/.b-analysis/... abaixo sobrepõem-na. */
+.badge        { display:inline-flex; align-items:center; gap:2px; padding:2px 5px; border-radius:20px; font-size:9px; font-weight:600; white-space:nowrap; background:#F1F5F9; color:#475569; }
 .b-entry      { background:var(--bluel);   color:var(--blue);   }
 .b-analysis   { background:var(--purplel); color:var(--purple); }
 .b-distributed{ background:var(--amberl);  color:var(--amber);  }

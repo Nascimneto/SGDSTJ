@@ -122,6 +122,79 @@ class ConfiguracaoModel
         return [];
     }
 
+    /**
+     * Cria um novo estado intermédio do fluxo processual. O código interno
+     * é gerado a partir da etiqueta (nunca escolhido pelo utilizador — ver
+     * gerarCodigoEstado()), porque 'entry'/'concluded'/'archived' têm regras
+     * de negócio próprias noutros pontos da aplicação; um estado novo entra
+     * sempre como intermédio, contado como "pendente" nas estatísticas.
+     * @return array{erro?:string,codigo?:int,id?:int}
+     */
+    public function criarEstado(string $label): array
+    {
+        $label = trim($label);
+        if ($label === '') return ['erro' => 'A etiqueta não pode ser vazia.', 'codigo' => 400];
+
+        $dup = $this->pdo->prepare('SELECT id FROM estados_processo WHERE label = ?');
+        $dup->execute([$label]);
+        if ($dup->fetchColumn()) return ['erro' => 'Já existe um estado com essa etiqueta.', 'codigo' => 409];
+
+        $codigo = $this->gerarCodigoEstado($label);
+
+        $maxOrdem = (int)$this->pdo->query('SELECT COALESCE(MAX(ordem),0) FROM estados_processo')->fetchColumn();
+        $this->pdo->prepare('INSERT INTO estados_processo (codigo, label, ordem) VALUES (?, ?, ?)')
+            ->execute([$codigo, $label, $maxOrdem + 1]);
+
+        return ['id' => (int)$this->pdo->lastInsertId()];
+    }
+
+    /** @return array{erro?:string,codigo?:int} */
+    public function eliminarEstado(int $id): array
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM processos WHERE estado_id = ?');
+        $stmt->execute([$id]);
+        if ((int)$stmt->fetchColumn() > 0) {
+            return ['erro' => 'Não é possível eliminar: existem processos com este estado.', 'codigo' => 409];
+        }
+        $this->pdo->prepare('DELETE FROM estados_processo WHERE id = ?')->execute([$id]);
+        return [];
+    }
+
+    /**
+     * Mapa explícito de acentos -> ASCII para gerarCodigoEstado(). Não se usa
+     * iconv(..., 'ASCII//TRANSLIT', ...) porque o resultado varia consoante o
+     * SO/libc (testado: produz lixo tipo "t_ec" para "Técnica" no Windows).
+     */
+    private const ACENTOS = [
+        'á'=>'a','à'=>'a','ã'=>'a','â'=>'a','ä'=>'a', 'Á'=>'a','À'=>'a','Ã'=>'a','Â'=>'a','Ä'=>'a',
+        'é'=>'e','è'=>'e','ê'=>'e','ë'=>'e',           'É'=>'e','È'=>'e','Ê'=>'e','Ë'=>'e',
+        'í'=>'i','ì'=>'i','î'=>'i','ï'=>'i',           'Í'=>'i','Ì'=>'i','Î'=>'i','Ï'=>'i',
+        'ó'=>'o','ò'=>'o','õ'=>'o','ô'=>'o','ö'=>'o', 'Ó'=>'o','Ò'=>'o','Õ'=>'o','Ô'=>'o','Ö'=>'o',
+        'ú'=>'u','ù'=>'u','û'=>'u','ü'=>'u',           'Ú'=>'u','Ù'=>'u','Û'=>'u','Ü'=>'u',
+        'ç'=>'c','Ç'=>'c', 'ñ'=>'n','Ñ'=>'n',
+    ];
+
+    /** Gera um código interno único (slug ASCII, até 20 caracteres) a partir da etiqueta. */
+    private function gerarCodigoEstado(string $label): string
+    {
+        $base = strtolower(strtr(trim($label), self::ACENTOS));
+        $base = trim((string)preg_replace('/[^a-z0-9]+/', '_', $base), '_');
+        $base = $base !== '' ? substr($base, 0, 16) : 'estado';
+
+        $existeStmt = $this->pdo->prepare('SELECT COUNT(*) FROM estados_processo WHERE codigo = ?');
+        $codigo = $base;
+        $i = 2;
+        while (true) {
+            $existeStmt->execute([$codigo]);
+            if (!(int)$existeStmt->fetchColumn()) {
+                return $codigo;
+            }
+            $sufixo = '_' . $i;
+            $codigo = substr($base, 0, 20 - strlen($sufixo)) . $sufixo;
+            $i++;
+        }
+    }
+
     /* ═══ Perfis de Utilizador ═══ */
 
     public function listarPerfisCfg(): array

@@ -235,8 +235,14 @@ function espEliminar(id) {
 }
 
 /* ═══ Tab: Estados do Processo ═══ */
+/* Estados de origem (entry/concluded/archived) têm regras de negócio
+ * próprias no resto da aplicação — só os estados criados manualmente pelo
+ * botão "Novo Estado" podem ser eliminados. */
+var EST_ORIGEM = ['entry', 'analysis', 'distributed', 'concluded', 'archived'];
+
 function renderEstados(estados) {
   var linhas = estados.map(function (e) {
+    var podeEliminar = EST_ORIGEM.indexOf(e.codigo) === -1;
     return '<tr id="est-row-' + e.id + '" data-id="' + e.id + '" data-label="' + esc(e.label) + '">'
       + '<td style="padding:8px 12px;font-family:var(--mono,monospace);font-size:11px;color:var(--tx3);font-weight:600">' + esc(e.codigo) + '</td>'
       + '<td style="padding:8px 12px"><span class="badge b-' + esc(e.codigo) + '">' + esc(e.label) + '</span></td>'
@@ -248,18 +254,55 @@ function renderEstados(estados) {
       + '<button class="btn btn-xs est-btn-edit" title="Editar etiqueta" onclick="estEditar(' + e.id + ')"><i class="ti ti-pencil"></i></button>'
       + '<button class="btn btn-xs btn-primary est-btn-save" style="display:none" onclick="estGuardar(' + e.id + ')"><i class="ti ti-device-floppy"></i></button>'
       + '<button class="btn btn-xs est-btn-cancel" style="display:none" onclick="estCancelar(' + e.id + ')"><i class="ti ti-x"></i></button>'
+      + (podeEliminar ? '<button class="btn btn-xs btn-danger" title="Eliminar" onclick="estEliminar(' + e.id + ')"><i class="ti ti-trash"></i></button>' : '')
       + '</td></tr>';
   }).join('');
 
   G('cfgCorpo').innerHTML = '<div class="panel" style="padding:0">'
     + '<div class="panel-hd"><i class="ti ti-circle" style="color:var(--blue)"></i><span class="panel-title">Estados do Processo</span>'
-    + '<span style="margin-left:auto;font-size:11px;color:var(--tx3)">O código interno é fixo — só a etiqueta de apresentação é editável.</span></div>'
+    + '<button class="btn btn-sm btn-primary no-print" style="margin-left:auto" onclick="estMostrarForm()"><i class="ti ti-plus"></i> Novo Estado</button></div>'
+    + '<div id="est-nova-form" style="display:none;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bluel)">'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    + '<input id="est-nova-label" placeholder="Etiqueta do novo estado (ex: Em Revisão)" style="flex:1;min-width:180px;max-width:280px">'
+    + '<button class="btn btn-sm btn-primary" onclick="estCriar()"><i class="ti ti-plus"></i> Criar</button>'
+    + '<button class="btn btn-sm" onclick="estOcultarForm()">Cancelar</button>'
+    + '</div></div>'
     + '<div class="tbl-outer"><table class="cfg-t">'
-    + '<thead><tr><th style="width:120px">Código</th><th style="width:120px">Badge actual</th><th class="th0">Etiqueta</th><th style="width:100px">Acções</th></tr></thead>'
+    + '<thead><tr><th style="width:120px">Código</th><th style="width:120px">Badge actual</th><th class="th0">Etiqueta</th><th style="width:130px">Acções</th></tr></thead>'
     + '<tbody>' + linhas + '</tbody>'
     + '</table></div></div>'
     + '<div class="ib amber" style="margin-top:10px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i>'
-    + 'Os estados definem o fluxo processual. Só altere a etiqueta de apresentação para adaptar a terminologia ao tribunal.</div>';
+    + 'Os estados definem o fluxo processual. Pode alterar a etiqueta de apresentação de qualquer estado e adicionar novos estados intermédios; '
+    + 'os estados de origem (Entrada, Concluído, Arquivado, etc.) não podem ser eliminados.</div>';
+}
+
+function estMostrarForm() {
+  var f = G('est-nova-form');
+  if (f) { f.style.display = ''; G('est-nova-label').focus(); }
+}
+function estOcultarForm() {
+  var f = G('est-nova-form');
+  if (f) { f.style.display = 'none'; G('est-nova-label').value = ''; }
+}
+
+function estCriar() {
+  var label = (G('est-nova-label').value || '').trim();
+  if (!label) { showToast('Escreva a etiqueta do novo estado', 'ti-alert-circle', 'red'); return; }
+  apiPost('api/configuracoes/estados-criar.php', { label: label })
+    .then(function () {
+      showToast('Estado criado!', 'ti-circle-check');
+      carregarTab('estados');
+    }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
+}
+
+function estEliminar(id) {
+  cfDlg('Eliminar Estado', 'Esta acção é irreversível. Só é possível eliminar estados sem processos associados.', function () {
+    apiPost('api/configuracoes/estados-eliminar.php', { id: id })
+      .then(function () {
+        showToast('Estado eliminado!', 'ti-circle-check');
+        carregarTab('estados');
+      }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
+  });
 }
 
 function estEditar(id) {

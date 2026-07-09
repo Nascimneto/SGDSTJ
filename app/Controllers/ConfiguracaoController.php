@@ -87,6 +87,24 @@ class ConfiguracaoController
         echo json_encode(['ok' => true]);
     }
 
+    public function estadosCriar(): void
+    {
+        if (!ApiGuard::exigirMetodo('POST')) return;
+        $d = json_decode(file_get_contents('php://input'), true) ?? [];
+        $r = $this->model()->criarEstado((string)($d['label'] ?? ''));
+        if (isset($r['erro'])) { http_response_code($r['codigo']); echo json_encode(['erro' => $r['erro']]); return; }
+        echo json_encode($r);
+    }
+
+    public function estadosEliminar(): void
+    {
+        if (!ApiGuard::exigirMetodo('POST')) return;
+        $d = json_decode(file_get_contents('php://input'), true) ?? [];
+        $r = $this->model()->eliminarEstado((int)($d['id'] ?? 0));
+        if (isset($r['erro'])) { http_response_code($r['codigo']); echo json_encode(['erro' => $r['erro']]); return; }
+        echo json_encode(['ok' => true]);
+    }
+
     /* ── Perfis ── */
     public function perfisListar(): void { echo json_encode(['perfis' => $this->model()->listarPerfisCfg()]); }
 
