@@ -15,6 +15,11 @@ class ConclusaoModel
         return $this->pdo->query('SELECT * FROM v_pendentes_conclusao')->fetchAll();
     }
 
+    public function obterTamanhoPagina(): int
+    {
+        return (int)($this->pdo->query("SELECT valor FROM configuracoes WHERE chave = 'conclusao_pagina'")->fetchColumn() ?: 15);
+    }
+
     public function contarConcluidos(): int
     {
         return (int)$this->pdo->query(

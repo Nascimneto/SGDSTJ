@@ -4,7 +4,8 @@ class ConfiguracaoModel
     /** Lista branca de chaves editáveis — nunca aceitar chaves arbitrárias do payload. */
     private const PERMITIDAS = [
         'tribunal_nome', 'tribunal_endereco', 'tribunal_email', 'prefixo_numeracao',
-        'processos_pagina', 'sessao_expira_min', 'max_tentativas_login', 'bloqueio_min', 'registo_auditoria',
+        'processos_pagina', 'conclusao_pagina', 'vistos_pagina',
+        'sessao_expira_min', 'max_tentativas_login', 'bloqueio_min', 'registo_auditoria',
     ];
 
     public function __construct(private PDO $pdo) {}

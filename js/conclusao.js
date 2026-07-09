@@ -1,17 +1,29 @@
 /**
  * conclusao.js — registo e gestão de datas de conclusão, pendências.
  */
+var CONC_DADOS     = null;
+var CONC_PG        = 1;
+var CONC_PAGE_SIZE = window.SGD_PAGE_SIZE || 15;
+
 document.addEventListener('DOMContentLoaded', carregarConclusao);
 
 function carregarConclusao() {
-  apiGet('api/conclusao/pendentes.php').then(renderConclusao).catch(function (e) {
+  apiGet('api/conclusao/pendentes.php').then(function (res) {
+    CONC_DADOS = res;
+    CONC_PG = 1;
+    renderConclusao();
+  }).catch(function (e) {
     G('content').innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i><p>Erro: ' + esc(e.message) + '</p></div>';
   });
 }
 
-function renderConclusao(res) {
+function irParaPaginaConclusao(p) { CONC_PG = p; renderConclusao(); }
+
+function renderConclusao() {
+  var res = CONC_DADOS;
   var pendentes = res.pendentes;
-  var rows = pendentes.map(function (d) {
+  var pg = paginate(pendentes, CONC_PG, CONC_PAGE_SIZE);
+  var rows = pg.items.map(function (d) {
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--sh)">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'
       + '<div><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:var(--blue)">' + esc(d.numero_processo) + '</span>'
@@ -31,7 +43,7 @@ function renderConclusao(res) {
     + '</div>'
     + '<div class="panel"><div class="panel-hd"><i class="ti ti-check" style="color:var(--green)"></i><span class="panel-title">Conclusão &mdash; Pendentes</span></div>'
     + '<div style="padding:14px"><div class="ib amber" style="margin-bottom:14px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i> Registe a data em que o processo foi concluido.</div>'
-    + (pendentes.length === 0 ? '<div class="empty" style="padding:24px"><i class="ti ti-mood-happy"></i><p>Sem processos pendentes</p></div>' : rows)
+    + (pendentes.length === 0 ? '<div class="empty" style="padding:24px"><i class="ti ti-mood-happy"></i><p>Sem processos pendentes</p></div>' : rows + mkPager(pg, 'irParaPaginaConclusao'))
     + '</div></div></div>';
   fadeIn(G('content'));
 }

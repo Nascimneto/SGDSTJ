@@ -17,6 +17,7 @@ class VistoController
         View::render('vistos/index', [
             'paginaActiva' => 'vistos',
             'tituloPagina' => 'Vistos',
+            'pageSize'     => $this->model()->obterTamanhoPagina(),
         ]);
     }
 

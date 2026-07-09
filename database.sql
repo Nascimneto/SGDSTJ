@@ -550,6 +550,8 @@ INSERT INTO configuracoes (chave, valor, descricao) VALUES
     ('tribunal_email',      'tribunal@supremo.cv',            'Email institucional'),
     ('prefixo_numeracao',   'SGD',                            'Prefixo dos números de processo'),
     ('processos_pagina',    '15',                             'Processos por página na listagem'),
+    ('conclusao_pagina',    '15',                             'Processos por página em Conclusão'),
+    ('vistos_pagina',       '15',                             'Processos por página em Vistos'),
     ('sessao_expira_min',   '60',                             'Minutos até expiração de sessão'),
     ('max_tentativas_login','5',                              'Tentativas de login antes de bloquear'),
     ('bloqueio_min',        '15',                             'Minutos de bloqueio após exceder tentativas de login'),

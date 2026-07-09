@@ -1,13 +1,23 @@
 /**
  * vistos.js — Visto MP, Adjunto 1, Adjunto 2, com registo por utilizador.
  */
+var VIS_DADOS     = null;
+var VIS_PG        = 1;
+var VIS_PAGE_SIZE = window.SGD_PAGE_SIZE || 15;
+
 document.addEventListener('DOMContentLoaded', carregarVistos);
 
 function carregarVistos() {
-  apiGet('api/vistos/pendentes.php').then(renderVistos).catch(function (e) {
+  apiGet('api/vistos/pendentes.php').then(function (res) {
+    VIS_DADOS = res;
+    VIS_PG = 1;
+    renderVistos();
+  }).catch(function (e) {
     G('content').innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i><p>Erro: ' + esc(e.message) + '</p></div>';
   });
 }
+
+function irParaPaginaVistos(p) { VIS_PG = p; renderVistos(); }
 
 function campoVisto(label, valor, registadoPor, inputId) {
   if (valor) {
@@ -18,9 +28,11 @@ function campoVisto(label, valor, registadoPor, inputId) {
   return '<div class="fg" style="margin-bottom:0"><label>' + label + '</label><input type="date" id="' + inputId + '"></div>';
 }
 
-function renderVistos(res) {
+function renderVistos() {
+  var res = VIS_DADOS;
   var pendentes = res.pendentes;
-  var rows = pendentes.map(function (d) {
+  var pg = paginate(pendentes, VIS_PG, VIS_PAGE_SIZE);
+  var rows = pg.items.map(function (d) {
     return '<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--sh)">'
       + '<div><span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:var(--blue)">' + esc(d.numero_processo) + '</span>'
       + '<div style="font-size:13px;font-weight:500;margin-top:3px">' + esc(trunc(d.partes, 55)) + '</div>'
@@ -41,7 +53,7 @@ function renderVistos(res) {
     + '</div>'
     + '<div class="panel"><div class="panel-hd"><i class="ti ti-eye-check" style="color:var(--purple)"></i><span class="panel-title">Vistos &mdash; Pendentes</span></div>'
     + '<div style="padding:14px"><div class="ib amber" style="margin-bottom:14px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i> Registe os vistos do Ministerio Publico e dos Juizes Adjuntos.</div>'
-    + (pendentes.length === 0 ? '<div class="empty" style="padding:24px"><i class="ti ti-mood-happy"></i><p>Sem processos pendentes</p></div>' : rows)
+    + (pendentes.length === 0 ? '<div class="empty" style="padding:24px"><i class="ti ti-mood-happy"></i><p>Sem processos pendentes</p></div>' : rows + mkPager(pg, 'irParaPaginaVistos'))
     + '</div></div></div>';
   fadeIn(G('content'));
 }

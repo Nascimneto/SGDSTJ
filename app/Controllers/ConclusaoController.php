@@ -17,6 +17,7 @@ class ConclusaoController
         View::render('conclusao/index', [
             'paginaActiva' => 'conclusao',
             'tituloPagina' => 'Conclusão',
+            'pageSize'     => $this->model()->obterTamanhoPagina(),
         ]);
     }
 

@@ -30,6 +30,11 @@ class VistoModel
         )->fetchAll();
     }
 
+    public function obterTamanhoPagina(): int
+    {
+        return (int)($this->pdo->query("SELECT valor FROM configuracoes WHERE chave = 'vistos_pagina'")->fetchColumn() ?: 15);
+    }
+
     public function contarConcluidos(): int
     {
         return (int)$this->pdo->query(

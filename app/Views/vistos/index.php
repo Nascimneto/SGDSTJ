@@ -14,6 +14,9 @@
   </div>
 </div>
 <?php include __DIR__ . '/../../../includes/modais.php'; ?>
+<script>
+  window.SGD_PAGE_SIZE = <?= json_encode($pageSize) ?>;
+</script>
 <script src="<?= sgd_asset('js/comum.js') ?>"></script>
 <script src="<?= sgd_asset('js/api.js') ?>"></script>
 <script src="<?= sgd_asset('js/vistos.js') ?>"></script>

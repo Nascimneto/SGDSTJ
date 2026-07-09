@@ -86,6 +86,8 @@ function renderInstitucional() {
     + '<div style="font-size:13px;font-weight:600;margin-bottom:16px"><i class="ti ti-list-numbers" style="color:var(--purple)"></i> Numeração de Processos</div>'
     + '<div class="fg"><label>Prefixo de Numeração</label><input id="cf_prefixo" value="' + esc(c.prefixo_numeracao || '') + '" style="max-width:120px" placeholder="ex: STJ"></div>'
     + '<div class="fg"><label>Processos por Página</label><input type="number" id="cf_pagina" value="' + esc(c.processos_pagina || '15') + '" min="5" max="100" style="max-width:90px"></div>'
+    + '<div class="fg"><label>Conclusão por Página</label><input type="number" id="cf_pagina_conclusao" value="' + esc(c.conclusao_pagina || '15') + '" min="5" max="100" style="max-width:90px"></div>'
+    + '<div class="fg"><label>Vistos por Página</label><input type="number" id="cf_pagina_vistos" value="' + esc(c.vistos_pagina || '15') + '" min="5" max="100" style="max-width:90px"></div>'
     + '<button class="btn btn-primary" onclick="guardarNumeracao()"><i class="ti ti-device-floppy"></i> Guardar</button>'
     + '</div></div>';
 }
@@ -103,10 +105,13 @@ function guardarInstitucional() {
 
 function guardarNumeracao() {
   apiPost('api/configuracoes/atualizar.php', {
-    prefixo_numeracao: GV('cf_prefixo'), processos_pagina: GV('cf_pagina')
+    prefixo_numeracao: GV('cf_prefixo'), processos_pagina: GV('cf_pagina'),
+    conclusao_pagina: GV('cf_pagina_conclusao'), vistos_pagina: GV('cf_pagina_vistos')
   }).then(function () {
     CFG_GERAL.prefixo_numeracao = GV('cf_prefixo');
     CFG_GERAL.processos_pagina = GV('cf_pagina');
+    CFG_GERAL.conclusao_pagina = GV('cf_pagina_conclusao');
+    CFG_GERAL.vistos_pagina = GV('cf_pagina_vistos');
     showToast('Numeração guardada!', 'ti-circle-check');
   }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
 }
