@@ -266,7 +266,8 @@ trocar apenas a própria senha em "O Meu Perfil".
 - RBAC aplicado no servidor (`app/Core/PageGuard.php`, `app/Core/ApiGuard.php`), nunca só no cliente
 - Rate limiting de login (`max_tentativas_login`/`bloqueio_min`, parametrizável em Configurações)
 - Política de senha (`app/Core/Senha.php`): mínimo 8 caracteres, com pelo menos uma letra e um número
-- Senha inicial fixa e igual para todos (`stj@2026`) na criação de utilizador — nunca escolhida pelo Administrador
+- Senha inicial aleatória por utilizador na criação (nunca um valor fixo — ver nota em "Configuração
+  inicial") — nunca escolhida pelo Administrador
 - "O Meu Perfil" (`perfil.php`/`api/perfil/atualizar.php`) só permite ao próprio trocar a senha — nome
   e utilizador nunca são editáveis por esta via, só pelo Administrador (`api/utilizadores/atualizar.php`)
 - Toda a acção administrativa sobre utilizadores e configurações fica registada em `auditoria_sistema`
@@ -275,6 +276,20 @@ trocar apenas a própria senha em "O Meu Perfil".
   ou "Resetar senha" — a conta fica marcada com `obrigar_troca_senha`; `PageGuard::aplicar()`
   (`app/Core/PageGuard.php`) bloqueia o acesso a qualquer página até o utilizador trocar a senha em
   `perfil.php`, que só dá acesso ao resto da plataforma depois da troca
+- Aviso de sessão a expirar (`js/comum.js`, ~2min antes de `sessao_expira_em`, reutilizando o diálogo
+  de confirmação com botões renomeados para "Sim"/"Não"): **Sim** chama `api/auth/renovar.php` e fica
+  na página onde o utilizador está (ex: não perde a edição de um processo a meio); **Não** vai para
+  `painel.php`. A antecedência do aviso nunca excede metade do tempo restante da sessão — sem isto,
+  sessões configuradas mais curtas que os 2 minutos de antecedência (ex: `sessao_expira_min` baixo,
+  usado para testar a funcionalidade) faziam o aviso reaparecer de imediato a cada fecho, dando a
+  sensação de que os botões não faziam nada. Se a renovação falhar por qualquer motivo (sessão já
+  realmente expirada, rede em baixo), o utilizador é sempre avisado e reencaminhado para `index.php`
+  em vez do diálogo fechar sem dar nenhum feedback.
+- `UtilizadorModel::eliminar()` apanha a violação de chave estrangeira (código SQLSTATE `23000`) quando
+  o utilizador a eliminar tem processos/histórico/ficheiros associados, devolvendo um erro 409 claro em
+  vez de deixar cair um erro fatal do PHP sem resposta JSON válida — sem isto, o pedido continuava a
+  parecer bem-sucedido para o browser (o PHP não define automaticamente o estado HTTP num erro não
+  apanhado) e a interface mostrava "Utilizador eliminado" mesmo sem nada ter sido apagado
 - `.htaccess` bloqueia acesso directo a `.sql`/`.env`/`.md` e às pastas `includes/`, `app/`, `scripts/`
 - `.htaccess` força HTTPS (redireccionamento 301 de `http://` para `https://`) em produção
 - `.env` está em `.gitignore` — nunca é versionado; usar `.env.example` como modelo

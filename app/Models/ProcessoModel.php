@@ -55,10 +55,11 @@ class ProcessoModel
             $params[':q6'] = $qVal;
         }
 
-        $sql = 'SELECT id, numero_processo, numero_processo_externo, data_entrada, data_registo, especie, partes, distribuicao, origem,
+        $sql = 'SELECT id, numero_processo, numero_processo_externo, data_entrada, data_registo, especie, partes, distribuicao, redistribuicao, origem,
                        estado, estado_codigo, estado_cor, observacoes,
                        notificacao_citacao, notificacao1, notificacao2, conclusao, visto_mp, visto_adjunto1, visto_adjunto2,
-                       inscricao_tabela, acordao, acordao2, acordao3, notificacao_acordao, conta_custas, conta_custas2, arquivamento
+                       inscricao_tabela, acordao, acordao2, acordao3, notificacao_acordao, notificacao_acordao2, notificacao_acordao3,
+                       conta_custas, conta_custas2, notificacao_conta_custas, notificacao_conta_custas2, arquivamento
                 FROM v_processos_completos';
 
         if ($where) {
@@ -97,6 +98,7 @@ class ProcessoModel
         $origem                = trim((string)($dados['origem'] ?? ''));
         $partes                = trim((string)($dados['partes'] ?? ''));
         $distribuicao          = trim((string)($dados['distribuicao'] ?? ''));
+        $redistribuicao        = trim((string)($dados['redistribuicao'] ?? ''));
         $numeroProcessoExterno = trim((string)($dados['numero_processo_externo'] ?? ''));
         $observacoes           = trim((string)($dados['observacoes'] ?? ''));
         $dataEntrada           = trim((string)($dados['data_entrada'] ?? '')) ?: date('Y-m-d');
@@ -128,9 +130,9 @@ class ProcessoModel
             ?: $this->pdo->query("SELECT id FROM estados_processo WHERE codigo = 'entry'")->fetchColumn();
 
         $this->pdo->prepare(
-            'INSERT INTO processos (especie_id, partes, origem, distribuicao, estado_id, numero_processo_externo, data_entrada, observacoes, registado_por)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        )->execute([$especieId, $partes, $origem, $distribuicao ?: null, $estadoId, $numeroProcessoExterno, $dataEntrada, $observacoes ?: null, $uid]);
+            'INSERT INTO processos (especie_id, partes, origem, distribuicao, redistribuicao, estado_id, numero_processo_externo, data_entrada, observacoes, registado_por)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([$especieId, $partes, $origem, $distribuicao ?: null, $redistribuicao ?: null, $estadoId, $numeroProcessoExterno, $dataEntrada, $observacoes ?: null, $uid]);
 
         $novoId = (int)$this->pdo->lastInsertId();
 
@@ -167,6 +169,7 @@ class ProcessoModel
         $origem                = trim((string)($dados['origem'] ?? ''));
         $partes                = trim((string)($dados['partes'] ?? ''));
         $distribuicao          = trim((string)($dados['distribuicao'] ?? ''));
+        $redistribuicao        = trim((string)($dados['redistribuicao'] ?? ''));
         $observacoes           = trim((string)($dados['observacoes'] ?? ''));
         $estadoCodigo          = trim((string)($dados['estado'] ?? ''));
         $numeroProcessoExterno = trim((string)($dados['numero_processo_externo'] ?? ''));
@@ -206,10 +209,14 @@ class ProcessoModel
             'acordao'             => 'registado_acordao_por',
             'acordao2'            => 'registado_acordao2_por',
             'acordao3'            => 'registado_acordao3_por',
-            'notificacao_acordao' => null,
-            'conta_custas'        => null,
-            'conta_custas2'       => null,
-            'arquivamento'        => 'registado_arquivo_por',
+            'notificacao_acordao'  => null,
+            'notificacao_acordao2' => null,
+            'notificacao_acordao3' => null,
+            'conta_custas'              => null,
+            'conta_custas2'             => null,
+            'notificacao_conta_custas'  => null,
+            'notificacao_conta_custas2' => null,
+            'arquivamento'              => 'registado_arquivo_por',
         ];
 
         $dcSets   = [];
@@ -275,8 +282,8 @@ class ProcessoModel
 
         $this->pdo->beginTransaction();
         try {
-            $sets   = ['especie_id = ?', 'partes = ?', 'origem = ?', 'distribuicao = ?', 'observacoes = ?', 'numero_processo_externo = ?', 'atualizado_por = ?'];
-            $params = [$especieId, $partes, $origem, $distribuicao ?: null, $observacoes ?: null, $numeroProcessoExterno ?: null, $uid];
+            $sets   = ['especie_id = ?', 'partes = ?', 'origem = ?', 'distribuicao = ?', 'redistribuicao = ?', 'observacoes = ?', 'numero_processo_externo = ?', 'atualizado_por = ?'];
+            $params = [$especieId, $partes, $origem, $distribuicao ?: null, $redistribuicao ?: null, $observacoes ?: null, $numeroProcessoExterno ?: null, $uid];
             if ($estadoId) {
                 $sets[]   = 'estado_id = ?';
                 $params[] = $estadoId;

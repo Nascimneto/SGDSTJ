@@ -24,6 +24,7 @@ function buildFormCriar() {
     + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" placeholder="Ex: Autor vs Reu..."></div>'
     + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><input id="f_dist" placeholder="Nome do magistrado..."></div>'
     + '<div class="fg"><label class="required">Estado de Processo</label><select id="f_st">' + stOpts + '</select></div></div>'
+    + '<div class="fg2"><div class="fg"><label>Redistribuição</label><input id="f_redist" placeholder="Nome do novo magistrado (se aplicável)..."></div><div></div></div>'
     + '</div>'
     + '<div class="fsec"><div class="fsec-t"><i class="ti ti-notes" style="color:var(--green)"></i> Observações</div>'
     + '<div class="fg"><textarea id="f_obs" maxlength="1500" placeholder="Notas adicionais (máx. 1500 caracteres)..."></textarea></div></div>'
@@ -49,6 +50,7 @@ function buildFormEditar(p) {
     + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" value="' + esc(p.partes || '') + '"></div>'
     + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><input id="f_dist" value="' + esc(p.distribuicao || '') + '"></div>'
     + '<div class="fg"><label class="required">Estado de Processo</label><select id="f_st">' + stOpts + '</select></div></div>'
+    + '<div class="fg2"><div class="fg"><label>Redistribuição</label><input id="f_redist" value="' + esc(p.redistribuicao || '') + '" placeholder="Nome do novo magistrado (se aplicável)..."></div><div></div></div>'
     + '</div>'
     + '<div class="fsec"><div class="fsec-t"><i class="ti ti-calendar-event" style="color:var(--amber)"></i> Datas de Controlo Processual</div>'
     + '<div class="fg3"><div class="fg"><label>Notificacao / Citacao</label><input type="date" id="f_notif" value="' + iv('notificacao_citacao') + '"></div>'
@@ -62,9 +64,13 @@ function buildFormEditar(p) {
     + '<div class="fg"><label>Acordao</label><input type="date" id="f_acord" value="' + iv('acordao') + '"></div></div>'
     + '<div class="fg2"><div class="fg"><label>2&ordm; Ac&oacute;rd&atilde;o</label><input type="date" id="f_acord2" value="' + iv('acordao2') + '"></div>'
     + '<div class="fg"><label>3&ordm; Ac&oacute;rd&atilde;o</label><input type="date" id="f_acord3" value="' + iv('acordao3') + '"></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Notificacao do Acordao</label><input type="date" id="f_nacord" value="' + iv('notificacao_acordao') + '"></div><div></div></div>'
+    + '<div class="fg3"><div class="fg"><label>Notificacao do Acordao</label><input type="date" id="f_nacord" value="' + iv('notificacao_acordao') + '"></div>'
+    + '<div class="fg"><label>Notificacao do 2&ordm; Acordao</label><input type="date" id="f_nacord2" value="' + iv('notificacao_acordao2') + '"></div>'
+    + '<div class="fg"><label>Notificacao do 3&ordm; Acordao</label><input type="date" id="f_nacord3" value="' + iv('notificacao_acordao3') + '"></div></div>'
     + '<div class="fg2"><div class="fg"><label>Conta e Custas</label><input type="date" id="f_custas" value="' + iv('conta_custas') + '"></div>'
     + '<div class="fg"><label>2&ordm; Conta e Custas</label><input type="date" id="f_custas2" value="' + iv('conta_custas2') + '"></div></div>'
+    + '<div class="fg2"><div class="fg"><label>Notificacao de Conta e Custas</label><input type="date" id="f_ncustas" value="' + iv('notificacao_conta_custas') + '"></div>'
+    + '<div class="fg"><label>Notificacao 2&ordm; Conta e Custas</label><input type="date" id="f_ncustas2" value="' + iv('notificacao_conta_custas2') + '"></div></div>'
     + '<div class="fg2"><div class="fg"><label>Arquivamento</label><input type="date" id="f_arch" value="' + iv('arquivamento') + '"></div><div></div></div></div>'
     + '<div class="fsec"><div class="fsec-t"><i class="ti ti-notes" style="color:var(--green)"></i> Observações</div>'
     + '<div class="fg"><textarea id="f_obs" maxlength="1500" placeholder="Notas adicionais (máx. 1500 caracteres)...">' + esc(p.observacoes || '') + '</textarea></div></div>';
@@ -99,6 +105,7 @@ function lerCamposComuns() {
     origem: GV('f_orig').trim(),
     partes: GV('f_partes').trim(),
     distribuicao: GV('f_dist').trim(),
+    redistribuicao: GV('f_redist').trim(),
     numero_processo_externo: GV('f_num_externo').trim(),
     data_entrada: GV('f_data_entrada'),
     observacoes: GV('f_obs').trim()
@@ -147,9 +154,13 @@ function guardarEditar(id) {
   dados.acordao             = GV('f_acord');
   dados.acordao2            = GV('f_acord2');
   dados.acordao3            = GV('f_acord3');
-  dados.notificacao_acordao = GV('f_nacord');
-  dados.conta_custas        = GV('f_custas');
-  dados.conta_custas2       = GV('f_custas2');
+  dados.notificacao_acordao  = GV('f_nacord');
+  dados.notificacao_acordao2 = GV('f_nacord2');
+  dados.notificacao_acordao3 = GV('f_nacord3');
+  dados.conta_custas               = GV('f_custas');
+  dados.conta_custas2              = GV('f_custas2');
+  dados.notificacao_conta_custas   = GV('f_ncustas');
+  dados.notificacao_conta_custas2  = GV('f_ncustas2');
   dados.arquivamento        = GV('f_arch');
 
   apiPost('api/processos/atualizar.php', dados).then(function () {
@@ -181,13 +192,16 @@ function abrirDetalhe(id) {
       + dr('N&ordm; Registo de Processo', '<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:600;color:var(--blue)">' + esc(p.numero_processo) + '</span>')
       + dr('Data de Registo', esc(p.data_registo)) + dr('Data de Entrada', esc(p.data_entrada)) + dr('Especie', '<span class="badge b-type">' + esc(p.especie) + '</span>')
       + dr('Partes', esc(p.partes)) + dr('Origem', esc(p.origem || '—')) + dr('Distribuicao', esc(p.distribuicao || '—'))
+      + dr('Redistribuicao', esc(p.redistribuicao || '—'))
       + (p.numero_processo_externo ? dr('N&ordm; Processo', esc(p.numero_processo_externo)) : '')
       + dr('Estado', '<span class="badge ' + esc(p.estado_cor) + '">' + esc(p.estado) + '</span>')
       + '<div class="dsec am" style="margin-top:14px">Datas de Controlo</div>'
       + dd('Notificacao/Citacao', p.notificacao_citacao) + dd('Notificacao 1', p.notificacao1) + dd('Notificacao 2', p.notificacao2) + dd('Conclusao', p.conclusao)
       + dd('Visto MP', p.visto_mp) + dd('Visto Adj.1', p.visto_adjunto1) + dd('Visto Adj.2', p.visto_adjunto2)
       + dd('Ins. Tabela', p.inscricao_tabela) + dd('Acordao', p.acordao) + dd('2&ordm; Acordao', p.acordao2) + dd('3&ordm; Acordao', p.acordao3)
-      + dd('Notif. Acordao', p.notificacao_acordao) + dd('Conta/Custas', p.conta_custas) + dd('2&ordm; Conta/Custas', p.conta_custas2)
+      + dd('Notif. Acordao', p.notificacao_acordao) + dd('Notif. 2&ordm; Acordao', p.notificacao_acordao2) + dd('Notif. 3&ordm; Acordao', p.notificacao_acordao3)
+      + dd('Conta/Custas', p.conta_custas) + dd('2&ordm; Conta/Custas', p.conta_custas2)
+      + dd('Notif. Conta/Custas', p.notificacao_conta_custas) + dd('Notif. 2&ordm; Conta/Custas', p.notificacao_conta_custas2)
       + dd('Arquivamento', p.arquivamento)
       + (p.observacoes ? '<div class="obs-box" style="margin-top:10px"><b>OBS:</b> ' + esc(p.observacoes) + '</div>' : '')
       + '</div>'
@@ -219,6 +233,7 @@ function dtSt(id) {
     id: id, estado: s,
     especie: PROCESSO_ACTUAL.especie, origem: PROCESSO_ACTUAL.origem,
     partes: PROCESSO_ACTUAL.partes, distribuicao: PROCESSO_ACTUAL.distribuicao,
+    redistribuicao: PROCESSO_ACTUAL.redistribuicao,
     observacoes: PROCESSO_ACTUAL.observacoes,
     numero_processo_externo: PROCESSO_ACTUAL.numero_processo_externo
   }).then(function () {

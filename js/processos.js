@@ -92,12 +92,13 @@ function irParaPaginaProc(p) { PROC_PG = p; renderTabela(); }
 function tblHTML(data) {
   if (!data.length) return '';
   var colgroup = '<colgroup>'
-    + '<col class="c-num"><col class="c-numext"><col class="c-date"><col class="c-esp"><col class="c-partes">'
+    + '<col class="c-num"><col class="c-datareg"><col class="c-numext"><col class="c-date"><col class="c-esp"><col class="c-partes">'
     + '<col class="c-dist"><col class="c-orig">'
     + '<col class="c-est"><col class="c-act">'
     + '</colgroup>';
   var head = '<div class="tbl-outer"><table class="pt">' + colgroup + '<thead><tr>'
     + '<th class="th0" style="min-width:110px">N&ordm; de Registo de Processo</th>'
+    + '<th>Data de Registo</th>'
     + '<th>N&ordm; de Processo</th>'
     + '<th>Data Entrada</th>'
     + '<th>Esp&eacute;cie</th>'
@@ -116,6 +117,7 @@ function tblHTML(data) {
       : '';
     return '<tr>'
       + '<td class="td0 tdl">' + esc(d.numero_processo) + '</td>'
+      + '<td class="tdl tdd">' + esc(d.data_registo) + '</td>'
       + '<td class="tdl">' + esc(d.numero_processo_externo || '—') + '</td>'
       + '<td class="tdl tdd">' + esc(d.data_entrada) + '</td>'
       + '<td class="tdl"><span class="badge b-type">' + esc(d.especie) + '</span></td>'
@@ -177,16 +179,18 @@ function toggleCard(id) { var b = G(id); if (b) b.classList.toggle('open'); }
 
 /* ─── Exportação PDF / Excel (jsPDF + autotable, SheetJS) ─── */
 function colunasExport() {
-  return ['N Registo Processo', 'N Processo', 'Data Entrada', 'Especie', 'Partes', 'Distribuicao', 'Origem',
+  return ['N Registo Processo', 'Data de Registo', 'N Processo', 'Data Entrada', 'Especie', 'Partes', 'Distribuicao', 'Origem',
     'Conclusao', 'Notif/Citacao', 'Notif 1', 'Notif 2', 'Visto MP', 'Visto Adj1', 'Visto Adj2',
-    'Ins Tabela', 'Acordao', '2 Acordao', '3 Acordao', 'Notif Acordao', 'Conta Custas', '2 Conta Custas', 'Arquivamento', 'Estado'];
+    'Ins Tabela', 'Acordao', '2 Acordao', '3 Acordao', 'Notif Acordao', 'Notif 2 Acordao', 'Notif 3 Acordao',
+    'Conta Custas', '2 Conta Custas', 'Notif Conta Custas', 'Notif 2 Conta Custas', 'Arquivamento', 'Estado'];
 }
 
 function linhasExport() {
   return TODOS_PROCESSOS.map(function (d) {
-    return [d.numero_processo, d.numero_processo_externo || '', d.data_entrada, d.especie, d.partes, d.distribuicao || '', d.origem,
+    return [d.numero_processo, d.data_registo || '', d.numero_processo_externo || '', d.data_entrada, d.especie, d.partes, d.distribuicao || '', d.origem,
       d.conclusao || '', d.notificacao_citacao || '', d.notificacao1 || '', d.notificacao2 || '', d.visto_mp || '', d.visto_adjunto1 || '', d.visto_adjunto2 || '',
-      d.inscricao_tabela || '', d.acordao || '', d.acordao2 || '', d.acordao3 || '', d.notificacao_acordao || '', d.conta_custas || '', d.conta_custas2 || '', d.arquivamento || '', d.estado];
+      d.inscricao_tabela || '', d.acordao || '', d.acordao2 || '', d.acordao3 || '', d.notificacao_acordao || '', d.notificacao_acordao2 || '', d.notificacao_acordao3 || '',
+      d.conta_custas || '', d.conta_custas2 || '', d.notificacao_conta_custas || '', d.notificacao_conta_custas2 || '', d.arquivamento || '', d.estado];
   });
 }
 

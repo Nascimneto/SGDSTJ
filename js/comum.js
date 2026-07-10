@@ -120,12 +120,20 @@ function showToast(msg, icon, type) {
   toastTimer = setTimeout(function () { el.classList.remove('show'); }, 3000);
 }
 
-/* ─── Diálogo de confirmação ─── */
+/* ─── Diálogo de confirmação ───
+ * opts (opcional): { simTxt, naoTxt, naoCb } — textos dos botões e acção ao
+ * clicar em "Não"/Cancelar (por omissão só fecha, sem acção nenhuma).
+ */
 var cfCb = null;
-function cfDlg(title, msg, cb) {
+var cfNoCb = null;
+function cfDlg(title, msg, cb, opts) {
+  opts = opts || {};
   G('cfT').textContent = title;
   G('cfP').innerHTML = msg;
+  G('cfYes').textContent = opts.simTxt || 'Confirmar';
+  G('cfNo').textContent = opts.naoTxt || 'Cancelar';
   cfCb = cb;
+  cfNoCb = opts.naoCb || null;
   G('cfbg').classList.add('open');
 }
 
@@ -141,19 +149,34 @@ var AVISO_SESSAO_MS = 2 * 60 * 1000;
 
 function agendarAvisoSessao(expiraEmMs) {
   clearTimeout(window._avisoSessaoTimer);
-  var faltam = expiraEmMs - Date.now() - AVISO_SESSAO_MS;
-  window._avisoSessaoTimer = setTimeout(mostrarAvisoSessao, Math.max(0, faltam));
+  var restante = expiraEmMs - Date.now();
+  // Sessões configuradas mais curtas que AVISO_SESSAO_MS (ex: ambiente de
+  // testes com "sessao_expira_min" a 1-2min) não devem fazer o aviso disparar
+  // de imediato a cada renovação/navegação, dando a sensação de que nunca
+  // fecha — nesse caso avisa a meio do tempo restante em vez disso.
+  var antecedencia = Math.min(AVISO_SESSAO_MS, Math.max(0, restante) / 2);
+  window._avisoSessaoTimer = setTimeout(mostrarAvisoSessao, Math.max(0, restante - antecedencia));
 }
 
 function mostrarAvisoSessao() {
-  cfDlg('Sessão a expirar', 'A sua sessão está prestes a expirar. Deseja continuar sessão?', renovarSessao);
+  cfDlg('Sessão a expirar', 'A sua sessão está prestes a expirar. Deseja continuar sessão?', renovarSessao, {
+    simTxt: 'Sim',
+    naoTxt: 'Não',
+    naoCb: function () { window.location = 'painel.php'; }
+  });
 }
 
 function renovarSessao() {
   apiPost('api/auth/renovar.php', {}).then(function (res) {
     agendarAvisoSessao(res.expiraEm);
     showToast('Sessão renovada.', 'ti-shield-check');
-  }).catch(function () {});
+  }).catch(function (e) {
+    // Falha a renovar (sessão já expirada no servidor, rede em baixo, etc.):
+    // sem isto o diálogo fechava e não acontecia mais nada visível para
+    // o utilizador — reencaminha sempre para o login em vez de ficar preso.
+    showToast(e && e.message ? e.message : 'Não foi possível renovar a sessão.', 'ti-alert-circle', 'red');
+    window.location = 'index.php';
+  });
 }
 
 if (typeof window.SGD_SESSAO_EXPIRA_EM === 'number') {
@@ -232,10 +255,15 @@ document.addEventListener('DOMContentLoaded', function () {
   var cfYes = G('cfYes'), cfNo = G('cfNo'), cfbg = G('cfbg');
   if (cfYes) cfYes.addEventListener('click', function () {
     cfbg.classList.remove('open');
+    cfNoCb = null;
     if (cfCb) { var f = cfCb; cfCb = null; f(); }
   });
-  if (cfNo) cfNo.addEventListener('click', function () { cfbg.classList.remove('open'); cfCb = null; });
-  if (cfbg) cfbg.addEventListener('click', function (e) { if (e.target === this) { this.classList.remove('open'); cfCb = null; } });
+  if (cfNo) cfNo.addEventListener('click', function () {
+    cfbg.classList.remove('open');
+    cfCb = null;
+    if (cfNoCb) { var f = cfNoCb; cfNoCb = null; f(); }
+  });
+  if (cfbg) cfbg.addEventListener('click', function (e) { if (e.target === this) { this.classList.remove('open'); cfCb = null; cfNoCb = null; } });
 
   document.querySelectorAll('.modal-bg').forEach(function (bg) {
     bg.addEventListener('click', function (e) {

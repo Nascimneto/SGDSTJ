@@ -151,7 +151,17 @@ class UtilizadorModel
             return ['erro' => 'Utilizador não encontrado.', 'codigo' => 404];
         }
 
-        $this->pdo->prepare('DELETE FROM utilizadores WHERE id = ?')->execute([$id]);
+        try {
+            $this->pdo->prepare('DELETE FROM utilizadores WHERE id = ?')->execute([$id]);
+        } catch (PDOException $e) {
+            // Chave estrangeira (processos, histórico, ficheiros, etc. registados
+            // por este utilizador) impede a eliminação — orienta para desactivar
+            // em vez de deixar cair num erro fatal sem resposta JSON válida.
+            if ($e->getCode() === '23000') {
+                return ['erro' => 'Não é possível eliminar: existem processos ou registos associados a este utilizador. Desactive-o em vez de eliminar.', 'codigo' => 409];
+            }
+            throw $e;
+        }
 
         Auditoria::registar(
             $this->pdo,

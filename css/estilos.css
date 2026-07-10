@@ -109,22 +109,29 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .pt {
   width: 100%;
   border-collapse: collapse;
-  /* Largura total de todas as colunas ≈ 940px */
-  min-width: 940px;
+  /* Largura total de todas as colunas ≈ 1081px */
+  min-width: 1081px;
   font-size: 13px;
   table-layout: fixed;
 }
 
-/* ── Larguras fixas por coluna (9 colunas, mais espaço por coluna do que
-   quando a tabela tinha as 10 datas de controlo individuais) ── */
-.pt col.c-num    { width: 110px; }   /* Nº de Registo de Processo */
-.pt col.c-numext { width: 90px;  }   /* Nº de Processo    */
-.pt col.c-date   { width: 85px;  }   /* Data Entrada      */
-.pt col.c-esp    { width: 80px;  }   /* Espécie           */
-.pt col.c-partes { width: 180px; }   /* Intervenientes    */
-.pt col.c-dist   { width: 100px; }   /* Distribuição      */
-.pt col.c-orig   { width: 100px; }   /* Origem            */
-.pt col.c-est    { width: 90px;  }   /* Estado            */
+/* ── Larguras fixas por coluna (9 colunas). Redistribuídas dando mais
+   espaço às colunas de conteúdo variável mais longo — Nº de Processo
+   (texto livre, até 50 caracteres) e Espécie (nomes como "Providencia
+   Cautelar"/"Mandado de Seguranca" não cabiam nos 80px anteriores) — à
+   custa das colunas de formato curto e fixo (Data, sempre "dd/mm/aaaa";
+   Estado, rótulos curtos em badge), que não precisavam do espaço que
+   tinham. Acções fica igual: precisa de caber sempre até 3 botões-ícone
+   (Ver/Editar/Eliminar) para o perfil Administrador. ── */
+.pt col.c-num    { width: 120px; }   /* Nº de Registo de Processo */
+.pt col.c-datareg { width: 118px; }  /* Data de Registo — formato fixo */
+.pt col.c-numext { width: 130px; }   /* Nº de Processo (texto livre) */
+.pt col.c-date   { width: 78px;  }   /* Data Entrada — formato fixo */
+.pt col.c-esp    { width: 110px; }   /* Espécie           */
+.pt col.c-partes { width: 170px; }   /* Intervenientes    */
+.pt col.c-dist   { width: 95px;  }   /* Distribuição      */
+.pt col.c-orig   { width: 95px;  }   /* Origem            */
+.pt col.c-est    { width: 75px;  }   /* Estado — badge curto */
 .pt col.c-act    { width: 90px;  }   /* Acções — 3 botões */
 
 /* Tabelas de detalhe das Estatísticas (Por Período/Juiz/Espécie/Estado/Origem):
@@ -137,23 +144,25 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 
 .pt th {
   text-align: center;
-  padding: 8px 5px;
-  font-size: 13px;
+  padding: 8px 4px;
+  font-size: 10.5px;
+  line-height: 1.25;
   font-weight: 700;
   color: #fff;
   background: var(--sid);
   border: 1px solid rgba(255,255,255,.12);
   text-transform: uppercase;
-  letter-spacing: .1px;
-  white-space: nowrap;
-  overflow: hidden;
+  letter-spacing: 0;
+  /* Cabeçalhos mais longos (ex: "Nº de Registo de Processo") quebram em
+     2 linhas em vez de ficarem cortados sem aviso (sem ellipsis em <th>). */
+  white-space: normal;
 }
 .th0 { background:#1a3a52 !important; }
 
 .pt td {
-  padding: 14px 5px;
+  padding: 12px 4px;
   border: 1px solid var(--border);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--tx);
   vertical-align: middle;
   text-align: center;
@@ -161,9 +170,9 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 }
 .pt tr:nth-child(even) td { background:#FAFAF6; }
 .pt tr:hover td { background:#EFF6FF; cursor:pointer; }
-.td0 { font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--blue); font-size:12px; white-space:nowrap; text-align:left !important; overflow:hidden; text-overflow:ellipsis; }
+.td0 { font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--blue); font-size:11px; white-space:nowrap; text-align:left !important; overflow:hidden; text-overflow:ellipsis; }
 .tdl { text-align:left !important; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.tdd { white-space:nowrap; font-size:12px; color:var(--tx2); }
+.tdd { white-space:nowrap; font-size:11px; color:var(--tx2); }
 .td-act { white-space:nowrap; text-align:center !important; }
 
 /* Tabelas de configurações — sem min-width rígido, scroll horizontal no contentor */
