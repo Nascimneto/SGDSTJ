@@ -165,6 +165,7 @@ CREATE TABLE processos (
 -- 3.2 Datas de controlo processual (relação 1:1 com processo)
 CREATE TABLE datas_controlo (
     processo_id             INT       NOT NULL PRIMARY KEY,
+    redistribuicao_data     DATE      NULL,
     notificacao_citacao     DATE      NULL,
     notificacao1            DATE      NULL,
     notificacao2            DATE      NULL,
@@ -313,6 +314,7 @@ SELECT
     est.codigo                                       AS estado_codigo,
     est.cor_css                                       AS estado_cor,
     p.observacoes,
+    DATE_FORMAT(dc.redistribuicao_data, '%d/%m/%Y')  AS redistribuicao_data,
     DATE_FORMAT(dc.notificacao_citacao, '%d/%m/%Y')  AS notificacao_citacao,
     DATE_FORMAT(dc.notificacao1,        '%d/%m/%Y')  AS notificacao1,
     DATE_FORMAT(dc.notificacao2,        '%d/%m/%Y')  AS notificacao2,

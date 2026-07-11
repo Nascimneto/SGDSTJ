@@ -53,6 +53,7 @@ function buildFormEditar(p) {
     + '<div class="fg2"><div class="fg"><label>Redistribuição</label><input id="f_redist" value="' + esc(p.redistribuicao || '') + '" placeholder="Nome do novo magistrado (se aplicável)..."></div><div></div></div>'
     + '</div>'
     + '<div class="fsec"><div class="fsec-t"><i class="ti ti-calendar-event" style="color:var(--amber)"></i> Datas de Controlo Processual</div>'
+    + '<div class="fg2"><div class="fg"><label>Redistribuicao</label><input type="date" id="f_redist_data" value="' + iv('redistribuicao_data') + '"></div><div></div></div>'
     + '<div class="fg3"><div class="fg"><label>Notificacao / Citacao</label><input type="date" id="f_notif" value="' + iv('notificacao_citacao') + '"></div>'
     + '<div class="fg"><label>Notificacao 1</label><input type="date" id="f_notif1" value="' + iv('notificacao1') + '"></div>'
     + '<div class="fg"><label>Notificacao 2</label><input type="date" id="f_notif2" value="' + iv('notificacao2') + '"></div></div>'
@@ -143,6 +144,7 @@ function guardarEditar(id) {
   G('f_dist').classList.remove('err-input');
 
   dados.id                  = id;
+  dados.redistribuicao_data = GV('f_redist_data');
   dados.notificacao_citacao = GV('f_notif');
   dados.notificacao1        = GV('f_notif1');
   dados.notificacao2        = GV('f_notif2');
@@ -196,6 +198,7 @@ function abrirDetalhe(id) {
       + (p.numero_processo_externo ? dr('N&ordm; Processo', esc(p.numero_processo_externo)) : '')
       + dr('Estado', '<span class="badge ' + esc(p.estado_cor) + '">' + esc(p.estado) + '</span>')
       + '<div class="dsec am" style="margin-top:14px">Datas de Controlo</div>'
+      + dd('Redistribuicao', p.redistribuicao_data)
       + dd('Notificacao/Citacao', p.notificacao_citacao) + dd('Notificacao 1', p.notificacao1) + dd('Notificacao 2', p.notificacao2) + dd('Conclusao', p.conclusao)
       + dd('Visto MP', p.visto_mp) + dd('Visto Adj.1', p.visto_adjunto1) + dd('Visto Adj.2', p.visto_adjunto2)
       + dd('Ins. Tabela', p.inscricao_tabela) + dd('Acordao', p.acordao) + dd('2&ordm; Acordao', p.acordao2) + dd('3&ordm; Acordao', p.acordao3)

@@ -175,6 +175,14 @@ Edição inline funciona por linha: botão lápis mostra `<input>` e esconde `<s
 obrigatórios tanto na criação como na edição — validados no frontend (`js/processo-form.js`,
 com `err-input` nos campos em falta) e no backend (`ProcessoModel::criar()`/`atualizar()`).
 
+**Redistribuição — dois campos distintos, de propósito**: `processos.redistribuicao` (texto — nome do
+novo magistrado) e `datas_controlo.redistribuicao_data` (data — quando a redistribuição aconteceu) são
+colunas de tabelas diferentes e nunca podem ter o mesmo alias na mesma vista (`v_processos_completos`),
+senão uma pisa a outra no `fetch()` do PDO. O campo de data fica em "Datas de Controlo Processual" (só
+disponível ao editar, tal como os restantes — Conclusão, Vistos, Acórdão, etc.); o campo de texto fica
+em "Identificação do Processo", disponível já na criação. Migração: `scripts/migrar_redistribuicao_data.php`
+(ou `sql/migracao_2026-07-11.sql` para colar directamente no phpMyAdmin).
+
 **Notificações (toast)**: `showToast(msg, icon, type)` em `js/comum.js` apresenta uma notificação
 centrada no ecrã com fundo branco, borda colorida esquerda e barra de progresso de 3 s. O parâmetro
 `type` aceita `'red'` (erro), `'amber'` (aviso) e `'blue'` (informação); omitido = verde (sucesso).

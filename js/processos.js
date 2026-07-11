@@ -143,6 +143,7 @@ function mobileCards(data) {
       ? '<button class="btn btn-sm" onclick="abrirEditar(' + d.id + ')"><i class="ti ti-edit"></i> Editar</button>'
       : '';
     var fields = [
+      ['Redistribuicao', d.redistribuicao_data],
       ['Conclusao', d.conclusao], ['Notif./Citacao', d.notificacao_citacao], ['Notif. 1', d.notificacao1], ['Notif. 2', d.notificacao2],
       ['Visto MP', d.visto_mp], ['Visto Adj.1', d.visto_adjunto1], ['Visto Adj.2', d.visto_adjunto2],
       ['Ins. Tabela', d.inscricao_tabela], ['Acordao', d.acordao],
@@ -180,7 +181,7 @@ function toggleCard(id) { var b = G(id); if (b) b.classList.toggle('open'); }
 /* ─── Exportação PDF / Excel (jsPDF + autotable, SheetJS) ─── */
 function colunasExport() {
   return ['N Registo Processo', 'Data de Registo', 'N Processo', 'Data Entrada', 'Especie', 'Partes', 'Distribuicao', 'Origem',
-    'Conclusao', 'Notif/Citacao', 'Notif 1', 'Notif 2', 'Visto MP', 'Visto Adj1', 'Visto Adj2',
+    'Data Redistribuicao', 'Conclusao', 'Notif/Citacao', 'Notif 1', 'Notif 2', 'Visto MP', 'Visto Adj1', 'Visto Adj2',
     'Ins Tabela', 'Acordao', '2 Acordao', '3 Acordao', 'Notif Acordao', 'Notif 2 Acordao', 'Notif 3 Acordao',
     'Conta Custas', '2 Conta Custas', 'Notif Conta Custas', 'Notif 2 Conta Custas', 'Arquivamento', 'Estado'];
 }
@@ -188,7 +189,7 @@ function colunasExport() {
 function linhasExport() {
   return TODOS_PROCESSOS.map(function (d) {
     return [d.numero_processo, d.data_registo || '', d.numero_processo_externo || '', d.data_entrada, d.especie, d.partes, d.distribuicao || '', d.origem,
-      d.conclusao || '', d.notificacao_citacao || '', d.notificacao1 || '', d.notificacao2 || '', d.visto_mp || '', d.visto_adjunto1 || '', d.visto_adjunto2 || '',
+      d.redistribuicao_data || '', d.conclusao || '', d.notificacao_citacao || '', d.notificacao1 || '', d.notificacao2 || '', d.visto_mp || '', d.visto_adjunto1 || '', d.visto_adjunto2 || '',
       d.inscricao_tabela || '', d.acordao || '', d.acordao2 || '', d.acordao3 || '', d.notificacao_acordao || '', d.notificacao_acordao2 || '', d.notificacao_acordao3 || '',
       d.conta_custas || '', d.conta_custas2 || '', d.notificacao_conta_custas || '', d.notificacao_conta_custas2 || '', d.arquivamento || '', d.estado];
   });

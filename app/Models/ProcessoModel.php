@@ -57,7 +57,7 @@ class ProcessoModel
 
         $sql = 'SELECT id, numero_processo, numero_processo_externo, data_entrada, data_registo, especie, partes, distribuicao, redistribuicao, origem,
                        estado, estado_codigo, estado_cor, observacoes,
-                       notificacao_citacao, notificacao1, notificacao2, conclusao, visto_mp, visto_adjunto1, visto_adjunto2,
+                       redistribuicao_data, notificacao_citacao, notificacao1, notificacao2, conclusao, visto_mp, visto_adjunto1, visto_adjunto2,
                        inscricao_tabela, acordao, acordao2, acordao3, notificacao_acordao, notificacao_acordao2, notificacao_acordao3,
                        conta_custas, conta_custas2, notificacao_conta_custas, notificacao_conta_custas2, arquivamento
                 FROM v_processos_completos';
@@ -198,6 +198,7 @@ class ProcessoModel
         // Datas de controlo — actualiza data + "registado por" (sessão, nunca o payload)
         // só para os campos que vierem presentes no pedido.
         $camposData = [
+            'redistribuicao_data' => null,
             'notificacao_citacao' => null,
             'notificacao1'        => null,
             'notificacao2'        => null,

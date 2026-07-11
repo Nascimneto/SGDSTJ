@@ -582,11 +582,11 @@ function csvEsc(v) {
 function exportarProcessosCSV() {
   apiGet('api/processos/listar.php').then(function (res) {
     var H = ['N Registo', 'N Processo', 'Data Entrada', 'Espécie', 'Partes', 'Distribuição', 'Origem',
-      'Conclusão', 'Notif/Citação', 'Notif. 1', 'Notif. 2', 'Visto MP', 'Visto Adj1', 'Visto Adj2',
+      'Data Redistribuição', 'Conclusão', 'Notif/Citação', 'Notif. 1', 'Notif. 2', 'Visto MP', 'Visto Adj1', 'Visto Adj2',
       'Ins. Tabela', 'Acórdão', '2º Acórdão', '3º Acórdão', 'Notif. Acórdão', 'Conta Custas', '2º Conta Custas', 'Arquivamento', 'Estado'];
     var R = res.items.map(function (d) {
       return [d.numero_processo, d.numero_processo_externo || '', d.data_entrada, d.especie, d.partes,
-        d.distribuicao, d.origem, d.conclusao, d.notificacao_citacao, d.notificacao1, d.notificacao2, d.visto_mp, d.visto_adjunto1, d.visto_adjunto2,
+        d.distribuicao, d.origem, d.redistribuicao_data, d.conclusao, d.notificacao_citacao, d.notificacao1, d.notificacao2, d.visto_mp, d.visto_adjunto1, d.visto_adjunto2,
         d.inscricao_tabela, d.acordao, d.acordao2, d.acordao3, d.notificacao_acordao, d.conta_custas, d.conta_custas2, d.arquivamento, d.estado].map(csvEsc);
     });
     var csv = [H.map(csvEsc)].concat(R).map(function (r) { return r.join(','); }).join('\n');
