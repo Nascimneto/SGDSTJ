@@ -16,3 +16,8 @@
   <span id="toastM"></span>
   <div id="toast-bar"></div>
 </div>
+
+<!-- Menu de ações (⋮) flutuante, partilhado por todas as tabelas — position:fixed
+     para escapar ao overflow:hidden das células (.pt td), reposicionado em JS
+     junto ao botão que o abriu (ver abrirMenuAcoes() em js/comum.js). -->
+<div id="acoesMenuFloat" class="acoes-menu"></div>

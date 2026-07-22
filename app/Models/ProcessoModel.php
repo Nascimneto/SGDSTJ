@@ -60,10 +60,11 @@ class ProcessoModel
             $params[':q6'] = $qVal;
         }
 
-        $sql = 'SELECT id, numero_processo, numero_processo_externo, data_entrada, data_registo, especie, partes, distribuicao, redistribuicao, origem,
+        $sql = 'SELECT id, numero_processo, numero_processo_externo, data_entrada, data_registo, especie, partes, distribuicao, distribuicao_data, redistribuicao, origem,
                        estado, estado_codigo, estado_cor, observacoes,
                        redistribuicao_data, notificacao_citacao, notificacao1, notificacao2, conclusao, visto_mp, visto_adjunto1, visto_adjunto2,
-                       inscricao_tabela, acordao, acordao2, acordao3, notificacao_acordao, notificacao_acordao2, notificacao_acordao3,
+                       inscricao_tabela, acordao, numero_acordao, acordao2, numero_acordao2, acordao3, numero_acordao3,
+                       notificacao_acordao, notificacao_acordao2, notificacao_acordao3,
                        conta_custas, conta_custas2, notificacao_conta_custas, notificacao_conta_custas2, arquivamento
                 FROM v_processos_completos';
 
@@ -103,6 +104,7 @@ class ProcessoModel
         $origem                = trim((string)($dados['origem'] ?? ''));
         $partes                = trim((string)($dados['partes'] ?? ''));
         $distribuicao          = trim((string)($dados['distribuicao'] ?? ''));
+        $distribuicaoData      = trim((string)($dados['distribuicao_data'] ?? '')) ?: null;
         $redistribuicao        = trim((string)($dados['redistribuicao'] ?? ''));
         $numeroProcessoExterno = trim((string)($dados['numero_processo_externo'] ?? ''));
         $observacoes           = trim((string)($dados['observacoes'] ?? ''));
@@ -135,9 +137,9 @@ class ProcessoModel
             ?: $this->pdo->query("SELECT id FROM estados_processo WHERE codigo = 'entry'")->fetchColumn();
 
         $this->pdo->prepare(
-            'INSERT INTO processos (especie_id, partes, origem, distribuicao, redistribuicao, estado_id, numero_processo_externo, data_entrada, observacoes, registado_por)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        )->execute([$especieId, $partes, $origem, $distribuicao ?: null, $redistribuicao ?: null, $estadoId, $numeroProcessoExterno, $dataEntrada, $observacoes ?: null, $uid]);
+            'INSERT INTO processos (especie_id, partes, origem, distribuicao, distribuicao_data, redistribuicao, estado_id, numero_processo_externo, data_entrada, observacoes, registado_por)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([$especieId, $partes, $origem, $distribuicao ?: null, $distribuicaoData, $redistribuicao ?: null, $estadoId, $numeroProcessoExterno, $dataEntrada, $observacoes ?: null, $uid]);
 
         $novoId = (int)$this->pdo->lastInsertId();
 
@@ -174,6 +176,7 @@ class ProcessoModel
         $origem                = trim((string)($dados['origem'] ?? ''));
         $partes                = trim((string)($dados['partes'] ?? ''));
         $distribuicao          = trim((string)($dados['distribuicao'] ?? ''));
+        $distribuicaoData      = trim((string)($dados['distribuicao_data'] ?? '')) ?: null;
         $redistribuicao        = trim((string)($dados['redistribuicao'] ?? ''));
         $observacoes           = trim((string)($dados['observacoes'] ?? ''));
         $estadoCodigo          = trim((string)($dados['estado'] ?? ''));
@@ -213,8 +216,11 @@ class ProcessoModel
             'visto_adjunto2'      => 'registado_visto_adj2_por',
             'inscricao_tabela'    => 'registado_tabela_por',
             'acordao'             => 'registado_acordao_por',
+            'numero_acordao'      => null,
             'acordao2'            => 'registado_acordao2_por',
+            'numero_acordao2'     => null,
             'acordao3'            => 'registado_acordao3_por',
+            'numero_acordao3'     => null,
             'notificacao_acordao'  => null,
             'notificacao_acordao2' => null,
             'notificacao_acordao3' => null,
@@ -297,6 +303,13 @@ class ProcessoModel
             if ($dataEntrada !== '') {
                 $sets[]   = 'data_entrada = ?';
                 $params[] = $dataEntrada;
+            }
+            // Só toca em distribuicao_data quando o campo vier presente no pedido —
+            // evita apagar a data em chamadas parciais que não passam por este campo
+            // do formulário (ex: dtSt(), mudança rápida de estado no modal de detalhe).
+            if (array_key_exists('distribuicao_data', $dados)) {
+                $sets[]   = 'distribuicao_data = ?';
+                $params[] = $distribuicaoData;
             }
             $params[] = $id;
             $this->pdo->prepare('UPDATE processos SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);

@@ -110,12 +110,6 @@ function tblHTML(data) {
     + '<th>Ac&ccedil;&otilde;es</th>'
     + '</tr></thead><tbody>';
   var rows = data.map(function (d) {
-    var delBtn = isAdm()
-      ? '<button class="btn btn-icon btn-xs" title="Eliminar" style="color:var(--red)" onclick="delDoc(' + d.id + ',\'' + esc(d.numero_processo) + '\')"><i class="ti ti-trash"></i></button>'
-      : '';
-    var editBtn = podeEditar()
-      ? '<button class="btn btn-icon btn-xs" title="Editar" onclick="abrirEditar(' + d.id + ')"><i class="ti ti-edit"></i></button>'
-      : '';
     return '<tr>'
       + '<td class="td0 tdl">' + esc(d.numero_processo) + '</td>'
       + '<td class="tdl tdd">' + esc(d.data_registo) + '</td>'
@@ -127,11 +121,21 @@ function tblHTML(data) {
       + '<td class="tdl">' + esc(trunc(d.redistribuicao || '—', 18)) + '</td>'
       + '<td class="tdl">' + esc(trunc(d.origem || '—', 16)) + '</td>'
       + '<td class="tdl"><span class="badge ' + esc(d.estado_cor) + '">' + esc(d.estado) + '</span></td>'
-      + '<td class="td-act"><div style="display:flex;gap:2px;justify-content:center">'
-      + '<button class="btn btn-icon btn-xs" title="Ver" onclick="abrirDetalhe(' + d.id + ')"><i class="ti ti-eye"></i></button>'
-      + editBtn + delBtn + '</div></td></tr>';
+      + '<td class="td-act"><button class="btn btn-icon btn-xs" title="Ac&ccedil;&otilde;es" onclick="abrirMenuAcoesProcesso(this, ' + d.id + ', \'' + esc(d.numero_processo) + '\')"><i class="ti ti-dots-vertical"></i></button></td></tr>';
   }).join('');
   return head + rows + '</tbody></table></div>';
+}
+
+/* ─── Menu de ações (⋮): Visualizar / Editar / Eliminar — ver abrirMenuAcoes() em js/comum.js ─── */
+function abrirMenuAcoesProcesso(botao, id, numero) {
+  var itens = '<button onclick="fecharMenuAcoes();abrirDetalhe(' + id + ')"><i class="ti ti-eye"></i> Visualizar</button>';
+  if (podeEditar()) {
+    itens += '<button onclick="fecharMenuAcoes();abrirEditar(' + id + ')"><i class="ti ti-edit"></i> Editar</button>';
+  }
+  if (isAdm()) {
+    itens += '<button class="danger" onclick="fecharMenuAcoes();delDoc(' + id + ',\'' + esc(numero) + '\')"><i class="ti ti-trash"></i> Eliminar</button>';
+  }
+  abrirMenuAcoes(botao, itens);
 }
 
 /* ─── Cards mobile ─── */

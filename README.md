@@ -219,6 +219,54 @@ igualdade de texto, já que não há FK). Migração: `scripts/migrar_magistrado
 nomes já usados em `processos.distribuicao`/`redistribuicao`, para nenhum valor existente desaparecer
 do combobox ao editar processos antigos.
 
+**Data de Distribuição e Nº de Acórdão (2026-07-22)**: `processos.distribuicao_data` (DATE, nova
+coluna) fica ao lado de Distribuição em "Identificação do Processo" (disponível já na criação, ao
+contrário de `datas_controlo.redistribuicao_data`, que só existe ao editar) — mostra quando o processo
+foi distribuído, não só a quem. A linha de Redistribuição passou a ficar ao lado de Estado de Processo
+(antes ficava sozinha numa linha). `datas_controlo.numero_acordao`/`numero_acordao2`/`numero_acordao3`
+(VARCHAR(50), novas colunas) guardam o número de cada acórdão ao lado do respectivo campo de data; o
+campo de data ficou mais estreito (nova classe `.fg2-tight` em `css/estilos.css`, grid `1fr 1.4fr` em
+vez do `1fr 1fr` de `.fg2`, incluída no breakpoint móvel que empilha as colunas) para dar mais espaço
+ao número, que é texto livre (ex: "123/2026") e tende a ser mais longo que uma data. Tal como
+`distribuicao`/`redistribuicao`, `distribuicao_data` é actualizada de forma condicional em
+`ProcessoModel::atualizar()` — só quando a chave vem no pedido — para chamadas parciais (ex: `dtSt()`,
+mudança rápida de estado a partir do modal de detalhe) não apagarem a data ao não a reenviarem; os
+campos `numero_acordao*` seguem o mesmo mecanismo dos restantes campos de `datas_controlo` (só tocados
+quando presentes no payload). Migração: `scripts/migrar_distribuicao_data_numero_acordao.php` (ou
+`sql/migracao_2026-07-22b.sql` para colar directamente no phpMyAdmin).
+
+**Menu de ações (⋮) na Lista de Processos (2026-07-22)**: a coluna Acções da tabela desktop
+(`js/processos.js`) tinha 3 botões-ícone lado a lado (Ver/Editar/Eliminar); passou a ter um único
+botão "⋮" que abre um menu com Visualizar/Editar/Eliminar (Editar só para quem `podeEditar()`,
+Eliminar só para `isAdm()`, tal como antes). O menu é um elemento único e partilhado,
+`#acoesMenuFloat` (`includes/modais.php`), reaproveitado por todas as chamadas — `abrirMenuAcoes(botao,
+itensHtml)` em `js/comum.js` troca o seu conteúdo e reposiciona-o junto ao botão clicado a cada
+abertura. **Tem de ser `position:fixed`, não `absolute`**: `.pt td` usa `overflow:hidden` (para o
+`text-overflow:ellipsis` das outras colunas), o que cortaria um menu posicionado dentro da própria
+célula; `fixed` escapa a esse clipping e a posição é calculada em JS a partir de
+`getBoundingClientRect()` do botão, com fallback para abrir para cima se não houver espaço por baixo
+até ao fim da janela. Fecha em scroll/resize/Escape/clique fora (mais simples do que reposicionar em
+tempo real). `js/processos.js` só constrói a lista de itens (`abrirMenuAcoesProcesso()`) — a mecânica
+de posicionamento/abertura/fecho é genérica e reutilizável por outras tabelas no futuro. A coluna
+Acções encolheu de 90px (3 botões) para 48px (1 botão); o espaço libertado foi para Intervenientes
+(170px → 212px).
+
+**Campos de data mais estreitos no formulário de Processos (2026-07-22)**: todos os `<input
+type="date">` dentro do modal de criar/editar processo (`#crudB`) passaram a ter `max-width:150px`
+(`#crudB .fg input[type="date"]` em `css/estilos.css`) — datas são sempre "dd/mm/aaaa", não precisam
+de esticar até ao fim da coluna da grid como um campo de texto livre. Scoped a `#crudB` para não
+afectar os campos de data de Conclusão/Vistos, que vivem fora deste contentor.
+
+**Grids compactas — `.fg2-tight`/`.fg3-tight` (2026-07-22)**: ao contrário de `.fg2`/`.fg3` (colunas
+`1fr`, esticam até preencher a linha), estas duas novas classes usam colunas de largura fixa em px —
+os campos ficam com o tamanho do próprio conteúdo, alinhados à esquerda, com o resto da linha em
+branco, para não haver campos curtos (datas, números de registo) esticados a ocupar meia linha à toa.
+`.fg2-tight` (`150px 190px`) pareia Data + Nº — usada nas 3 linhas de Acórdão (Acordao/2º/3º Acordao
++ respectivo Nº do Acordao). `.fg3-tight` (`150px 150px 220px`) agrupa Nº de Registo + Data de Registo
++ Nº de Processo numa única linha em "Identificação do Processo" (antes eram 2 linhas `.fg2` de 2
+colunas cada — 4 campos, incluindo Data de Entrada, que passou para a sua própria linha). Tal como
+`.fg2`/`.fg3`, ambas colapsam para 1 coluna no breakpoint móvel (`@media(max-width:767px)`).
+
 **Notificações (toast)**: `showToast(msg, icon, type)` em `js/comum.js` apresenta uma notificação
 centrada no ecrã com fundo branco, borda colorida esquerda e barra de progresso de 3 s. O parâmetro
 `type` aceita `'red'` (erro), `'amber'` (aviso) e `'blue'` (informação); omitido = verde (sucesso).

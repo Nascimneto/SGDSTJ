@@ -239,6 +239,42 @@ function updBadge() {
     .catch(function () {});
 }
 
+/**
+ * Menu de ações (⋮) flutuante e partilhado — ver #acoesMenuFloat em
+ * includes/modais.php e .acoes-menu em css/estilos.css. Um único elemento
+ * reaproveitado por todas as tabelas (Processos, etc.), reposicionado junto
+ * ao botão que o abriu; position:fixed em vez de absolute porque .pt td tem
+ * overflow:hidden e cortaria um menu posicionado dentro da célula.
+ */
+var _menuAcoesOwner = null;
+
+function abrirMenuAcoes(botao, itensHtml) {
+  var m = G('acoesMenuFloat');
+  if (!m) return;
+  if (_menuAcoesOwner === botao && m.classList.contains('open')) {
+    fecharMenuAcoes();
+    return;
+  }
+  m.innerHTML = itensHtml;
+  m.classList.add('open');
+  _menuAcoesOwner = botao;
+
+  var r  = botao.getBoundingClientRect();
+  var mw = m.offsetWidth  || 160;
+  var mh = m.offsetHeight || 130;
+  var left = Math.min(r.right - mw, window.innerWidth - mw - 8);
+  var top  = r.bottom + 4;
+  if (top + mh > window.innerHeight - 8) top = r.top - 4 - mh;
+  m.style.left = Math.max(8, left) + 'px';
+  m.style.top  = Math.max(8, top) + 'px';
+}
+
+function fecharMenuAcoes() {
+  var m = G('acoesMenuFloat');
+  if (m) m.classList.remove('open');
+  _menuAcoesOwner = null;
+}
+
 /* ─── Listeners partilhados por todas as páginas autenticadas ─── */
 document.addEventListener('DOMContentLoaded', function () {
   var menuBtn = G('menuBtn');
@@ -282,8 +318,21 @@ document.addEventListener('DOMContentLoaded', function () {
         m.classList.remove('open');
       });
       if (cfbg) cfbg.classList.remove('open');
+      fecharMenuAcoes();
     }
   });
+
+  document.addEventListener('click', function (e) {
+    var m = G('acoesMenuFloat');
+    if (!m || !m.classList.contains('open')) return;
+    if (m.contains(e.target) || e.target === _menuAcoesOwner || (_menuAcoesOwner && _menuAcoesOwner.contains(e.target))) return;
+    fecharMenuAcoes();
+  });
+  // Fecha em vez de reposicionar em scroll/resize — mais simples do que
+  // recalcular a posição em tempo real, e um menu de acções aberto não
+  // precisa de sobreviver a esses eventos.
+  window.addEventListener('scroll', fecharMenuAcoes, true);
+  window.addEventListener('resize', fecharMenuAcoes);
 
   window.addEventListener('resize', syncCards);
   syncCards();

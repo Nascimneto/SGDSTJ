@@ -119,20 +119,21 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
    Processo, Data Entrada e Estado foram encolhidas rente ao conteúdo
    (texto curto/badge — .tdl já corta com ellipsis, por isso encolher
    nunca parte o layout) para abrir espaço à coluna Redistribuição sem
-   alargar a tabela inteira. Espécie e Intervenientes mantêm mais espaço
-   por terem conteúdo variável mais longo. Acções fica igual: precisa de
-   caber sempre até 3 botões-ícone (Ver/Editar/Eliminar) para o Administrador. ── */
+   alargar a tabela inteira. Espécie mantém mais espaço por ter conteúdo
+   variável mais longo. Acções encolheu de 90px (3 botões-ícone) para 48px
+   — passou a ser um único botão "⋮" com menu flutuante (abrirMenuAcoes(),
+   ver js/comum.js) — o espaço libertado foi para Intervenientes. ── */
 .pt col.c-num    { width: 120px; }   /* Nº de Registo de Processo */
 .pt col.c-datareg { width: 90px; }   /* Data de Registo — formato fixo */
 .pt col.c-numext { width: 82px;  }   /* Nº de Processo (texto livre) */
 .pt col.c-date   { width: 60px;  }   /* Data Entrada — formato fixo */
 .pt col.c-esp    { width: 110px; }   /* Espécie           */
-.pt col.c-partes { width: 170px; }   /* Intervenientes    */
+.pt col.c-partes { width: 212px; }   /* Intervenientes    */
 .pt col.c-dist   { width: 95px;  }   /* Distribuição      */
 .pt col.c-redist { width: 90px;  }   /* Redistribuição — nome do magistrado, texto livre */
 .pt col.c-orig   { width: 95px;  }   /* Origem            */
 .pt col.c-est    { width: 65px;  }   /* Estado — badge curto */
-.pt col.c-act    { width: 90px;  }   /* Acções — 3 botões */
+.pt col.c-act    { width: 48px;  }   /* Acções — 1 botão "⋮" */
 
 /* Tabelas de detalhe das Estatísticas (Por Período/Juiz/Espécie/Estado/Origem):
    têm poucas colunas e devem encolher com o contentor, em vez de herdar o
@@ -174,6 +175,17 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .tdl { text-align:left !important; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tdd { white-space:nowrap; font-size:11px; color:var(--tx2); }
 .td-act { white-space:nowrap; text-align:center !important; }
+
+/* Menu de ações (⋮) — ver includes/modais.php e abrirMenuAcoes() em js/comum.js.
+   position:fixed (não absolute) porque .pt td tem overflow:hidden (trunca texto
+   longo nas outras colunas) — um menu position:absolute dentro dessa célula
+   ficava cortado; fixed escapa a esse clipping e é reposicionado em JS. */
+.acoes-menu { display:none; position:fixed; min-width:160px; background:var(--white); border:1px solid var(--border); border-radius:var(--rs); box-shadow:0 8px 24px rgba(0,0,0,.14),0 2px 8px rgba(0,0,0,.06); z-index:150; overflow:hidden; padding:4px; }
+.acoes-menu.open { display:block; }
+.acoes-menu button { display:flex; align-items:center; gap:8px; width:100%; padding:8px 10px; border:none; border-radius:var(--rs); background:none; font-size:12.5px; font-family:inherit; font-weight:500; color:var(--tx); cursor:pointer; text-align:left; }
+.acoes-menu button:hover { background:var(--bg); }
+.acoes-menu button.danger { color:var(--red); }
+.acoes-menu button i { font-size:14px; width:16px; flex-shrink:0; text-align:center; }
 
 /* Tabelas de configurações — sem min-width rígido, scroll horizontal no contentor */
 .cfg-t { width:100%; border-collapse:collapse; font-size:13px; }
@@ -228,12 +240,23 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .fg       { display:flex; flex-direction:column; gap:5px; margin-bottom:11px; }
 .fg label { font-size:10px; font-weight:700; color:var(--tx2); text-transform:uppercase; letter-spacing:.6px; }
 .fg input, .fg select, .fg textarea { border:1.5px solid var(--border); border-radius:var(--rs); padding:8px 10px; font-size:12px; color:var(--tx); background:var(--white); outline:none; font-family:inherit; transition:border .15s; width:100%; }
+/* Datas são sempre "dd/mm/aaaa" — não precisam de esticar até ao fim da
+   coluna da grid como um campo de texto livre. Só no formulário de Processos
+   (#crudB): outras páginas (Conclusão, Vistos) têm os seus próprios campos
+   de data fora deste contentor, com o próprio dimensionamento inline. */
+#crudB .fg input[type="date"] { max-width:150px; }
 .fg input:focus, .fg select:focus, .fg textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
 .fg textarea { resize:vertical; min-height:68px; }
 .auto       { background:var(--bg) !important; font-family:'IBM Plex Mono',monospace !important; color:var(--blue) !important; font-weight:600 !important; }
 .err-input  { border-color:var(--red) !important; }
 .fg2 { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
 .fg3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; }
+/* Colunas com largura fixa (não "1fr") — os campos não esticam até ao fim
+   da linha, ficam compactos e alinhados à esquerda, com o resto da linha
+   em branco. Usadas em campos curtos/formato fixo (datas, números de
+   registo/acórdão) para não ocupar mais espaço do que o conteúdo pede. */
+.fg2-tight { display:grid; grid-template-columns:150px 190px; gap:11px; }
+.fg3-tight { display:grid; grid-template-columns:150px 150px 220px; gap:11px; }
 .required::after { content:' *'; color:var(--red); }
 .fsec   { background:var(--bg); border-radius:var(--r); padding:12px 14px; margin-bottom:12px; }
 .fsec-t { font-size:10px; font-weight:700; color:var(--tx2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
@@ -401,7 +424,7 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
   /* Tabelas de configurações e estatísticas ficam visíveis — scroll horizontal em vez de esconder */
   body[data-pagina="configuracoes"] .tbl-outer,
   body[data-pagina="estatisticas"]  .tbl-outer { display:block; }
-  .fg2, .fg3 { grid-template-columns:1fr; }
+  .fg2, .fg3, .fg2-tight, .fg3-tight { grid-template-columns:1fr; }
   .row2  { flex-direction:column; }
   .td-prog { min-width:56px; }
   .pt-stat td, .pt-stat th { padding-left:6px !important; padding-right:6px !important; }
