@@ -158,7 +158,7 @@ SGD/
 Painel Geral · Lista de Processos · Conclusão · Vistos · Estatísticas e Relatórios · Utilizadores · Configurações.
 
 ## Configurações (parametrização do sistema)
-`configuracoes.php` / `js/configuracoes.js` — exclusivo do perfil Administrador, organizado em 5 tabs:
+`configuracoes.php` / `js/configuracoes.js` — exclusivo do perfil Administrador, organizado em 6 tabs:
 
 | Tab | Conteúdo | Endpoints |
 |---|---|---|
@@ -167,6 +167,7 @@ Painel Geral · Lista de Processos · Conclusão · Vistos · Estatísticas e Re
 | **Estados do Processo** | Editar só a etiqueta de apresentação; código interno (`entry`, `analysis`, …) e classe CSS do badge são fixos | `estados-listar`, `estados-atualizar` |
 | **Perfis de Utilizador** | Editar só a descrição; código (`Administrador`, `Secretaria`, `Visualizador`) e flags de permissão são fixos e mostrados como badges | `perfis-listar`, `perfis-atualizar` |
 | **Departamentos** | CRUD: criar (nome + sigla), editar inline (nome e sigla simultâneos), activar/desactivar, eliminar (só se sem utilizadores associados); coluna "Utilizadores" mostra quantos utilizam cada departamento | `departamentos-listar`, `criar`, `atualizar`, `toggle`, `eliminar` |
+| **Magistrados** | Tabela CRUD: criar, editar nome (inline), activar/desactivar, eliminar (só se sem processos associados); alimenta o combobox de Distribuição/Redistribuição no formulário de Processos | `magistrados-listar`, `criar`, `atualizar`, `toggle`, `eliminar` |
 | **Sistema** | Segurança (sessão, tentativas de login, bloqueio, auditoria); exportação de todos os processos em CSV | `api/configuracoes/atualizar.php` |
 
 Edição inline funciona por linha: botão lápis mostra `<input>` e esconde `<span>`, botão guardar envia ao servidor e actualiza o DOM sem recarregar; botão cancelar repõe o valor original (guardado em `data-*`). Departamentos editam nome e sigla em simultâneo na mesma linha. A eliminação de espécies/departamentos usa `cfDlg()` de confirmação antes de chamar o endpoint; o backend recusa com HTTP 409 se existirem processos/utilizadores associados.
@@ -182,6 +183,41 @@ senão uma pisa a outra no `fetch()` do PDO. O campo de data fica em "Datas de C
 disponível ao editar, tal como os restantes — Conclusão, Vistos, Acórdão, etc.); o campo de texto fica
 em "Identificação do Processo", disponível já na criação. Migração: `scripts/migrar_redistribuicao_data.php`
 (ou `sql/migracao_2026-07-11.sql` para colar directamente no phpMyAdmin).
+
+**Tabela da Lista de Processos — coluna Redistribuição (2026-07-22)**: a tabela desktop
+(`tblHTML()` em `js/processos.js`) ganhou uma 11ª coluna "Redistribuição", colocada a seguir a
+Distribuição. Mostra `processos.redistribuicao` (texto — nome do novo magistrado), **não**
+`datas_controlo.redistribuicao_data` (data) — mesmo par de campos distintos descrito acima, mas aqui
+importa mostrar o mesmo tipo de informação que a coluna "Distribuição" já mostra (quem, não quando).
+Primeira tentativa usou o campo de data por engano; como nenhum processo tinha essa data preenchida
+na BD (`datas_controlo.redistribuicao_data` estava sempre `NULL`), a coluna aparecia sempre vazia —
+corrigido para ler o campo de texto, que já tinha dados reais nalguns processos. Para abrir espaço
+sem alargar a tabela toda, as colunas de formato curto e fixo — Data de Registo (118→90px), Nº de
+Processo (130→82px), Data Entrada (78→60px) e Estado (75→65px) — foram encolhidas rente ao conteúdo
+em `css/estilos.css` (`.pt col.c-datareg`/`.c-numext`/`.c-date`/`.c-est`); seguro porque `.tdl` já
+corta com ellipsis em vez de partir o layout. A nova `.pt col.c-redist` fica com 90px. `min-width`
+da `.pt` foi de 1081px para 1100px (ao acrescentar a coluna) e depois para 1067px (com o segundo
+encolhimento).
+
+**Distribuição e Redistribuição — de texto livre a combobox configurável (2026-07-22)**: os campos
+Distribuição (Juiz/Relator) e Redistribuição no formulário de Processos (`js/processo-form.js`)
+passaram de `<input>` de texto livre a `<select>`, para reduzir erros de digitação (nomes já
+apareciam na BD com grafias inconsistentes — "Ana", "Ana teresa", "Ana Paula Joana"). As opções vêm
+de uma nova tabela `magistrados` (id, nome, activo, ordem — igual em forma a `especies_processo`),
+gerida na nova tab **Magistrados** em Configurações. Importante: `processos.distribuicao` e
+`processos.redistribuicao` continuam `VARCHAR(150)` livre, **sem FK** para `magistrados` — a tabela só
+alimenta as opções do combobox, à semelhança de como `departamentos` alimenta o `<select>` de
+Departamento no formulário de Utilizador (`window.SGD_DEPARTAMENTOS`, `js/utilizadores.js`), sem FK
+directa nesse caso também. Decidiu-se não migrar para FK porque isso obrigaria a normalizar dados
+antigos com grafias inconsistentes antes da migração — fora do âmbito deste pedido.
+`ProcessoModel::listarMagistradosActivos()` expõe a lista activa como `window.SGD_MAGISTRADOS` (só
+nomes, tal como `SGD_ESPECIES`); a tab de Configurações usa endpoints `api/configuracoes/magistrados-*.php`
+próprios (`ConfiguracaoModel`/`ConfiguracaoController`, `Administrador`-only), com eliminação
+bloqueada (HTTP 409) se algum processo tiver esse nome em `distribuicao` OU `redistribuicao` (só por
+igualdade de texto, já que não há FK). Migração: `scripts/migrar_magistrados.php` (ou
+`sql/migracao_2026-07-22.sql` para colar directamente no phpMyAdmin) cria a tabela e semeia-a com os
+nomes já usados em `processos.distribuicao`/`redistribuicao`, para nenhum valor existente desaparecer
+do combobox ao editar processos antigos.
 
 **Notificações (toast)**: `showToast(msg, icon, type)` em `js/comum.js` apresenta uma notificação
 centrada no ecrã com fundo branco, borda colorida esquerda e barra de progresso de 3 s. O parâmetro

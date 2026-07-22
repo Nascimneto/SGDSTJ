@@ -154,4 +154,42 @@ class ConfiguracaoController
         if (isset($r['erro'])) { http_response_code($r['codigo']); echo json_encode(['erro' => $r['erro']]); return; }
         echo json_encode(['ok' => true]);
     }
+
+    /* ── Magistrados ── */
+    public function magistradosListar(): void { echo json_encode(['magistrados' => $this->model()->listarMagistrados()]); }
+
+    public function magistradosCriar(): void
+    {
+        if (!ApiGuard::exigirMetodo('POST')) return;
+        $d = json_decode(file_get_contents('php://input'), true) ?? [];
+        $r = $this->model()->criarMagistrado((string)($d['nome'] ?? ''));
+        if (isset($r['erro'])) { http_response_code($r['codigo']); echo json_encode(['erro' => $r['erro']]); return; }
+        echo json_encode($r);
+    }
+
+    public function magistradosAtualizar(): void
+    {
+        if (!ApiGuard::exigirMetodo('POST')) return;
+        $d = json_decode(file_get_contents('php://input'), true) ?? [];
+        $r = $this->model()->atualizarMagistrado((int)($d['id'] ?? 0), (string)($d['nome'] ?? ''));
+        if (isset($r['erro'])) { http_response_code($r['codigo']); echo json_encode(['erro' => $r['erro']]); return; }
+        echo json_encode(['ok' => true]);
+    }
+
+    public function magistradosToggle(): void
+    {
+        if (!ApiGuard::exigirMetodo('POST')) return;
+        $d = json_decode(file_get_contents('php://input'), true) ?? [];
+        $this->model()->toggleMagistrado((int)($d['id'] ?? 0));
+        echo json_encode(['ok' => true]);
+    }
+
+    public function magistradosEliminar(): void
+    {
+        if (!ApiGuard::exigirMetodo('POST')) return;
+        $d = json_decode(file_get_contents('php://input'), true) ?? [];
+        $r = $this->model()->eliminarMagistrado((int)($d['id'] ?? 0));
+        if (isset($r['erro'])) { http_response_code($r['codigo']); echo json_encode(['erro' => $r['erro']]); return; }
+        echo json_encode(['ok' => true]);
+    }
 }

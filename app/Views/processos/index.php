@@ -74,9 +74,10 @@
 </div>
 
 <script>
-  window.SGD_ESPECIES  = <?= json_encode($especies) ?>;
-  window.SGD_ESTADOS   = <?= json_encode($estados) ?>;
-  window.SGD_PAGE_SIZE  = <?= json_encode($pageSize) ?>;
+  window.SGD_ESPECIES    = <?= json_encode($especies) ?>;
+  window.SGD_ESTADOS     = <?= json_encode($estados) ?>;
+  window.SGD_MAGISTRADOS = <?= json_encode($magistrados) ?>;
+  window.SGD_PAGE_SIZE    = <?= json_encode($pageSize) ?>;
 </script>
 <script src="<?= sgd_asset('js/comum.js') ?>"></script>
 <script src="<?= sgd_asset('js/api.js') ?>"></script>

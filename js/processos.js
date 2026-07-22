@@ -93,7 +93,7 @@ function tblHTML(data) {
   if (!data.length) return '';
   var colgroup = '<colgroup>'
     + '<col class="c-num"><col class="c-datareg"><col class="c-numext"><col class="c-date"><col class="c-esp"><col class="c-partes">'
-    + '<col class="c-dist"><col class="c-orig">'
+    + '<col class="c-dist"><col class="c-redist"><col class="c-orig">'
     + '<col class="c-est"><col class="c-act">'
     + '</colgroup>';
   var head = '<div class="tbl-outer"><table class="pt">' + colgroup + '<thead><tr>'
@@ -104,6 +104,7 @@ function tblHTML(data) {
     + '<th>Esp&eacute;cie</th>'
     + '<th style="min-width:120px">Intervenientes / Partes</th>'
     + '<th style="min-width:85px">Distribui&ccedil;&atilde;o</th>'
+    + '<th>Redistribui&ccedil;&atilde;o</th>'
     + '<th>Origem</th>'
     + '<th>Estado</th>'
     + '<th>Ac&ccedil;&otilde;es</th>'
@@ -123,6 +124,7 @@ function tblHTML(data) {
       + '<td class="tdl"><span class="badge b-type">' + esc(d.especie) + '</span></td>'
       + '<td class="tdl" style="max-width:160px">' + esc(trunc(d.partes, 38)) + '</td>'
       + '<td class="tdl">' + esc(trunc(d.distribuicao || '—', 18)) + '</td>'
+      + '<td class="tdl">' + esc(trunc(d.redistribuicao || '—', 18)) + '</td>'
       + '<td class="tdl">' + esc(trunc(d.origem || '—', 16)) + '</td>'
       + '<td class="tdl"><span class="badge ' + esc(d.estado_cor) + '">' + esc(d.estado) + '</span></td>'
       + '<td class="td-act"><div style="display:flex;gap:2px;justify-content:center">'

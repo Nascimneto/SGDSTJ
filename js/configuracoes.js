@@ -10,6 +10,7 @@ var CFG_TABS = [
   { cod:'estados',       icon:'ti-circle',             label:'Estados do Processo' },
   { cod:'perfis',        icon:'ti-users',              label:'Perfis de Utilizador' },
   { cod:'departamentos', icon:'ti-building-community', label:'Departamentos' },
+  { cod:'magistrados',   icon:'ti-gavel',              label:'Magistrados' },
   { cod:'sistema',       icon:'ti-shield-check',       label:'Sistema' },
 ];
 
@@ -58,13 +59,15 @@ function carregarTab(tab) {
   var api = { especies:      'api/configuracoes/especies-listar.php',
               estados:       'api/configuracoes/estados-listar.php',
               perfis:        'api/configuracoes/perfis-listar.php',
-              departamentos: 'api/configuracoes/departamentos-listar.php' }[tab];
+              departamentos: 'api/configuracoes/departamentos-listar.php',
+              magistrados:   'api/configuracoes/magistrados-listar.php' }[tab];
 
   apiGet(api).then(function (res) {
     if (tab === 'especies')      renderEspecies(res.especies || []);
     if (tab === 'estados')       renderEstados(res.estados   || []);
     if (tab === 'perfis')        renderPerfis(res.perfis     || []);
     if (tab === 'departamentos') renderDepartamentos(res.departamentos || []);
+    if (tab === 'magistrados')   renderMagistrados(res.magistrados || []);
     fadeIn(el);
   }).catch(function (e) {
     G('cfgCorpo').innerHTML = '<div class="empty"><i class="ti ti-alert-triangle"></i><p>Erro: ' + esc(e.message) + '</p></div>';
@@ -537,6 +540,129 @@ function depEliminar(id) {
       .then(function () {
         showToast('Departamento eliminado!', 'ti-circle-check');
         carregarTab('departamentos');
+      }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
+  });
+}
+
+/* ═══ Tab: Magistrados ═══ */
+/* Alimenta o combobox de Distribuição/Redistribuição no formulário de
+ * Processos (processos.distribuicao/redistribuicao continuam VARCHAR
+ * livre — sem FK; esta lista só restringe as opções do combobox). */
+function renderMagistrados(mags) {
+  var ativos   = mags.filter(function (m) { return +m.activo; }).length;
+  var inativos = mags.length - ativos;
+
+  var linhas = mags.map(function (m) {
+    var activo = +m.activo;
+    return '<tr id="mag-row-' + m.id + '" data-id="' + m.id + '" data-nome="' + esc(m.nome) + '">'
+      + '<td style="padding:8px 12px">'
+      + '<span class="mag-view">' + esc(m.nome) + '</span>'
+      + '<input class="mag-edit" style="display:none;width:220px" value="' + esc(m.nome) + '">'
+      + '</td>'
+      + '<td style="padding:8px 12px;text-align:center">'
+      + (activo
+          ? '<span style="color:var(--green);font-size:12px;font-weight:500"><i class="ti ti-circle-check"></i> Activo</span>'
+          : '<span style="color:var(--tx3);font-size:12px"><i class="ti ti-circle-x"></i> Inactivo</span>')
+      + '</td>'
+      + '<td style="padding:8px 12px;white-space:nowrap;display:flex;gap:4px">'
+      + '<button class="btn btn-xs mag-btn-edit"   title="Editar nome" onclick="magEditar(' + m.id + ')"><i class="ti ti-pencil"></i></button>'
+      + '<button class="btn btn-xs btn-primary mag-btn-save" style="display:none" title="Guardar" onclick="magGuardar(' + m.id + ')"><i class="ti ti-device-floppy"></i></button>'
+      + '<button class="btn btn-xs mag-btn-cancel" style="display:none" title="Cancelar" onclick="magCancelar(' + m.id + ')"><i class="ti ti-x"></i></button>'
+      + '<button class="btn btn-xs' + (activo ? '' : ' btn-success') + '" title="' + (activo ? 'Desactivar' : 'Activar') + '" onclick="magToggle(' + m.id + ')">'
+      + '<i class="ti ' + (activo ? 'ti-eye-off' : 'ti-eye') + '"></i></button>'
+      + '<button class="btn btn-xs btn-danger" title="Eliminar" onclick="magEliminar(' + m.id + ')"><i class="ti ti-trash"></i></button>'
+      + '</td></tr>';
+  }).join('');
+
+  G('cfgCorpo').innerHTML = '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">'
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-gavel" style="color:var(--blue)"></i> Total</div><div class="stat-num" style="color:var(--blue)">' + mags.length + '</div></div>'
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-circle-check" style="color:var(--green)"></i> Activos</div><div class="stat-num" style="color:var(--green)">' + ativos + '</div></div>'
+    + '<div class="stat"><div class="stat-lbl"><i class="ti ti-circle-x" style="color:var(--tx3)"></i> Inactivos</div><div class="stat-num" style="color:var(--tx3)">' + inativos + '</div></div>'
+    + '</div>'
+    + '<div class="panel" style="padding:0">'
+    + '<div class="panel-hd"><i class="ti ti-gavel" style="color:var(--purple)"></i><span class="panel-title">Magistrados</span>'
+    + '<button class="btn btn-sm btn-primary no-print" style="margin-left:auto" onclick="magMostrarForm()"><i class="ti ti-plus"></i> Novo Magistrado</button></div>'
+    + '<div id="mag-nova-form" style="display:none;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bluel)">'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    + '<input id="mag-nova-nome" placeholder="Nome do magistrado" style="flex:1;min-width:180px;max-width:280px">'
+    + '<button class="btn btn-sm btn-primary" onclick="magCriar()"><i class="ti ti-plus"></i> Criar</button>'
+    + '<button class="btn btn-sm" onclick="magOcultarForm()">Cancelar</button>'
+    + '</div></div>'
+    + '<div class="tbl-outer"><table class="cfg-t">'
+    + '<thead><tr><th class="th0">Nome do Magistrado</th><th style="text-align:center;width:100px">Estado</th><th style="width:150px">Acções</th></tr></thead>'
+    + '<tbody>' + (linhas || '<tr><td colspan="3" style="padding:14px;text-align:center;color:var(--tx3)">Sem magistrados registados.</td></tr>') + '</tbody>'
+    + '</table></div></div>'
+    + '<div class="ib blue" style="margin-top:10px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i>'
+    + 'Esta lista alimenta o combobox de Distribuição e Redistribuição no formulário de Processos.</div>';
+}
+
+function magMostrarForm() {
+  var f = G('mag-nova-form');
+  if (f) { f.style.display = ''; G('mag-nova-nome').focus(); }
+}
+function magOcultarForm() {
+  var f = G('mag-nova-form');
+  if (f) { f.style.display = 'none'; G('mag-nova-nome').value = ''; }
+}
+
+function magCriar() {
+  var nome = (G('mag-nova-nome').value || '').trim();
+  if (!nome) { showToast('Escreva o nome do magistrado', 'ti-alert-circle', 'red'); return; }
+  apiPost('api/configuracoes/magistrados-criar.php', { nome: nome })
+    .then(function () {
+      showToast('Magistrado criado!', 'ti-circle-check');
+      carregarTab('magistrados');
+    }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
+}
+
+function magEditar(id) {
+  var row = G('mag-row-' + id);
+  if (!row) return;
+  row.querySelector('.mag-view').style.display = 'none';
+  row.querySelector('.mag-edit').style.display = '';
+  row.querySelector('.mag-btn-edit').style.display = 'none';
+  row.querySelector('.mag-btn-save').style.display = '';
+  row.querySelector('.mag-btn-cancel').style.display = '';
+  row.querySelector('.mag-edit').focus();
+}
+
+function magCancelar(id) {
+  var row = G('mag-row-' + id);
+  if (!row) return;
+  row.querySelector('.mag-edit').value = row.dataset.nome;
+  row.querySelector('.mag-view').style.display = '';
+  row.querySelector('.mag-edit').style.display = 'none';
+  row.querySelector('.mag-btn-edit').style.display = '';
+  row.querySelector('.mag-btn-save').style.display = 'none';
+  row.querySelector('.mag-btn-cancel').style.display = 'none';
+}
+
+function magGuardar(id) {
+  var row = G('mag-row-' + id);
+  if (!row) return;
+  var nome = (row.querySelector('.mag-edit').value || '').trim();
+  if (!nome) { showToast('Nome não pode ser vazio', 'ti-alert-circle', 'red'); return; }
+  apiPost('api/configuracoes/magistrados-atualizar.php', { id: id, nome: nome })
+    .then(function () {
+      row.querySelector('.mag-view').textContent = nome;
+      row.dataset.nome = nome;
+      magCancelar(id);
+      showToast('Magistrado actualizado!', 'ti-circle-check');
+    }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
+}
+
+function magToggle(id) {
+  apiPost('api/configuracoes/magistrados-toggle.php', { id: id })
+    .then(function () { carregarTab('magistrados'); })
+    .catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
+}
+
+function magEliminar(id) {
+  cfDlg('Eliminar Magistrado', 'Esta acção é irreversível. Só é possível eliminar magistrados sem processos associados.', function () {
+    apiPost('api/configuracoes/magistrados-eliminar.php', { id: id })
+      .then(function () {
+        showToast('Magistrado eliminado!', 'ti-circle-check');
+        carregarTab('magistrados');
       }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
   });
 }

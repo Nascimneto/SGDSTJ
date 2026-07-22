@@ -7,12 +7,16 @@ var PROCESSO_ACTUAL = null;
 
 /* ─── Formulário fase 1 — criação ─── */
 function buildFormCriar() {
-  var especies = window.SGD_ESPECIES || [];
-  var estados  = window.SGD_ESTADOS  || [];
+  var especies    = window.SGD_ESPECIES    || [];
+  var estados     = window.SGD_ESTADOS     || [];
+  var magistrados = window.SGD_MAGISTRADOS || [];
   var espOpts  = '<option value="">— Selecionar espécie —</option>'
     + especies.map(function (e) { return '<option>' + esc(e) + '</option>'; }).join('');
   var stOpts   = '<option value="">— Selecionar estado —</option>'
     + estados.map(function (e) { return '<option value="' + esc(e.codigo) + '">' + esc(e.label) + '</option>'; }).join('');
+  var magOpts  = magistrados.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
+  var distOpts = '<option value="">— Selecionar magistrado —</option>' + magOpts;
+  var redistOpts = '<option value="">— Nenhuma —</option>' + magOpts;
   return '<div class="fsec">'
     + '<div class="fsec-t"><i class="ti ti-id" style="color:var(--blue)"></i> Identificação do Processo</div>'
     + '<div class="fg2"><div class="fg"><label>N&ordm; de Registo de Processo</label><input readonly class="auto" value="Gerado automaticamente"></div>'
@@ -22,9 +26,9 @@ function buildFormCriar() {
     + '<div class="fg2"><div class="fg"><label class="required">Espécie de Processo</label><select id="f_esp">' + espOpts + '</select></div>'
     + '<div class="fg"><label>Origem</label><input id="f_orig" placeholder="Tribunal / Entidade..."></div></div>'
     + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" placeholder="Ex: Autor vs Reu..."></div>'
-    + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><input id="f_dist" placeholder="Nome do magistrado..."></div>'
+    + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><select id="f_dist">' + distOpts + '</select></div>'
     + '<div class="fg"><label class="required">Estado de Processo</label><select id="f_st">' + stOpts + '</select></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Redistribuição</label><input id="f_redist" placeholder="Nome do novo magistrado (se aplicável)..."></div><div></div></div>'
+    + '<div class="fg2"><div class="fg"><label>Redistribuição</label><select id="f_redist">' + redistOpts + '</select></div><div></div></div>'
     + '</div>'
     + '<div class="fsec"><div class="fsec-t"><i class="ti ti-notes" style="color:var(--green)"></i> Observações</div>'
     + '<div class="fg"><textarea id="f_obs" maxlength="1500" placeholder="Notas adicionais (máx. 1500 caracteres)..."></textarea></div></div>'
@@ -33,10 +37,14 @@ function buildFormCriar() {
 
 /* ─── Formulário completo — edição ─── */
 function buildFormEditar(p) {
-  var especies = window.SGD_ESPECIES || [];
-  var estados  = window.SGD_ESTADOS || [];
+  var especies    = window.SGD_ESPECIES    || [];
+  var estados     = window.SGD_ESTADOS     || [];
+  var magistrados = window.SGD_MAGISTRADOS || [];
   var espOpts  = especies.map(function (e) { return '<option ' + (p.especie === e ? 'selected' : '') + '>' + esc(e) + '</option>'; }).join('');
   var stOpts   = estados.map(function (e) { return '<option value="' + esc(e.codigo) + '" ' + (p.estado_codigo === e.codigo ? 'selected' : '') + '>' + esc(e.label) + '</option>'; }).join('');
+  var magOpt   = function (m, actual) { return '<option ' + (actual === m ? 'selected' : '') + '>' + esc(m) + '</option>'; };
+  var distOpts = '<option value="">— Selecionar magistrado —</option>' + magistrados.map(function (m) { return magOpt(m, p.distribuicao); }).join('');
+  var redistOpts = '<option value="">— Nenhuma —</option>' + magistrados.map(function (m) { return magOpt(m, p.redistribuicao); }).join('');
   var iv = function (campo) { return p[campo] ? p2i(p[campo]) : ''; };
 
   return '<div class="fsec">'
@@ -48,9 +56,9 @@ function buildFormEditar(p) {
     + '<div class="fg2"><div class="fg"><label class="required">Espécie de Processo</label><select id="f_esp">' + espOpts + '</select></div>'
     + '<div class="fg"><label>Origem</label><input id="f_orig" value="' + esc(p.origem || '') + '"></div></div>'
     + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" value="' + esc(p.partes || '') + '"></div>'
-    + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><input id="f_dist" value="' + esc(p.distribuicao || '') + '"></div>'
+    + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><select id="f_dist">' + distOpts + '</select></div>'
     + '<div class="fg"><label class="required">Estado de Processo</label><select id="f_st">' + stOpts + '</select></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Redistribuição</label><input id="f_redist" value="' + esc(p.redistribuicao || '') + '" placeholder="Nome do novo magistrado (se aplicável)..."></div><div></div></div>'
+    + '<div class="fg2"><div class="fg"><label>Redistribuição</label><select id="f_redist">' + redistOpts + '</select></div><div></div></div>'
     + '</div>'
     + '<div class="fsec"><div class="fsec-t"><i class="ti ti-calendar-event" style="color:var(--amber)"></i> Datas de Controlo Processual</div>'
     + '<div class="fg2"><div class="fg"><label>Redistribuicao</label><input type="date" id="f_redist_data" value="' + iv('redistribuicao_data') + '"></div><div></div></div>'

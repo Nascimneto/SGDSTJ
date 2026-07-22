@@ -18,6 +18,7 @@ class ProcessoController
             'tituloPagina' => 'Lista de Processos',
             'especies'     => $this->model->listarEspeciesActivas(),
             'estados'      => $this->model->listarEstados(),
+            'magistrados'  => $this->model->listarMagistradosActivos(),
             'pageSize'     => $this->model->obterTamanhoPagina(),
         ]);
     }

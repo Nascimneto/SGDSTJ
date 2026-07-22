@@ -13,6 +13,11 @@ class ProcessoModel
         return $this->pdo->query('SELECT codigo, label FROM estados_processo ORDER BY ordem')->fetchAll();
     }
 
+    public function listarMagistradosActivos(): array
+    {
+        return $this->pdo->query('SELECT nome FROM magistrados WHERE activo = 1 ORDER BY ordem, nome')->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     public function obterTamanhoPagina(): int
     {
         return (int)($this->pdo->query("SELECT valor FROM configuracoes WHERE chave = 'processos_pagina'")->fetchColumn() ?: 15);

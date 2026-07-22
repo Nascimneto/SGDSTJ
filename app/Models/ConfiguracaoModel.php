@@ -265,4 +265,65 @@ class ConfiguracaoModel
         $this->pdo->prepare('DELETE FROM departamentos WHERE id = ?')->execute([$id]);
         return [];
     }
+
+    /* ═══ Magistrados (Distribuição / Redistribuição) ═══ */
+
+    public function listarMagistrados(): array
+    {
+        return $this->pdo->query(
+            'SELECT id, nome, activo, ordem FROM magistrados ORDER BY ordem, nome'
+        )->fetchAll();
+    }
+
+    /** @return array{erro?:string,codigo?:int,id?:int} */
+    public function criarMagistrado(string $nome): array
+    {
+        $nome = trim($nome);
+        if ($nome === '') return ['erro' => 'O nome não pode ser vazio.', 'codigo' => 400];
+        $dup = $this->pdo->prepare('SELECT id FROM magistrados WHERE nome = ?');
+        $dup->execute([$nome]);
+        if ($dup->fetchColumn()) return ['erro' => 'Já existe um magistrado com esse nome.', 'codigo' => 409];
+        $maxOrdem = (int)$this->pdo->query('SELECT COALESCE(MAX(ordem),0) FROM magistrados')->fetchColumn();
+        $this->pdo->prepare('INSERT INTO magistrados (nome, activo, ordem) VALUES (?, 1, ?)')->execute([$nome, $maxOrdem + 1]);
+        return ['id' => (int)$this->pdo->lastInsertId()];
+    }
+
+    /** @return array{erro?:string,codigo?:int} */
+    public function atualizarMagistrado(int $id, string $nome): array
+    {
+        $nome = trim($nome);
+        if ($nome === '') return ['erro' => 'O nome não pode ser vazio.', 'codigo' => 400];
+        $dup = $this->pdo->prepare('SELECT id FROM magistrados WHERE nome = ? AND id != ?');
+        $dup->execute([$nome, $id]);
+        if ($dup->fetchColumn()) return ['erro' => 'Já existe um magistrado com esse nome.', 'codigo' => 409];
+        $this->pdo->prepare('UPDATE magistrados SET nome = ? WHERE id = ?')->execute([$nome, $id]);
+        return [];
+    }
+
+    public function toggleMagistrado(int $id): array
+    {
+        $this->pdo->prepare('UPDATE magistrados SET activo = 1 - activo WHERE id = ?')->execute([$id]);
+        return [];
+    }
+
+    /**
+     * processos.distribuicao/redistribuicao são VARCHAR livre (sem FK) — a
+     * verificação de uso é por igualdade de texto com o nome do magistrado.
+     * @return array{erro?:string,codigo?:int}
+     */
+    public function eliminarMagistrado(int $id): array
+    {
+        $nome = $this->pdo->prepare('SELECT nome FROM magistrados WHERE id = ?');
+        $nome->execute([$id]);
+        $nome = $nome->fetchColumn();
+        if ($nome !== false) {
+            $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM processos WHERE distribuicao = ? OR redistribuicao = ?');
+            $stmt->execute([$nome, $nome]);
+            if ((int)$stmt->fetchColumn() > 0) {
+                return ['erro' => 'Não é possível eliminar: existem processos associados a este magistrado. Desactive-o em vez de eliminar.', 'codigo' => 409];
+            }
+        }
+        $this->pdo->prepare('DELETE FROM magistrados WHERE id = ?')->execute([$id]);
+        return [];
+    }
 }

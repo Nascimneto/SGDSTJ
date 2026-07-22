@@ -23,6 +23,7 @@ DROP TABLE IF EXISTS perfis;
 DROP TABLE IF EXISTS especies_processo;
 DROP TABLE IF EXISTS estados_processo;
 DROP TABLE IF EXISTS configuracoes;
+DROP TABLE IF EXISTS magistrados;
 
 DROP VIEW IF EXISTS v_processos_completos;
 DROP VIEW IF EXISTS v_pendentes_vistos;
@@ -65,6 +66,16 @@ CREATE TABLE especies_processo (
     id          INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nome        VARCHAR(60)  NOT NULL UNIQUE,
     descricao   VARCHAR(200),
+    activo      TINYINT(1)   NOT NULL DEFAULT 1,
+    ordem       SMALLINT     NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.3b Magistrados (lista configurável de nomes para Distribuição/Redistribuição —
+-- processos.distribuicao/redistribuicao continuam VARCHAR livre, sem FK: esta tabela
+-- só alimenta o combobox do formulário, não restringe a BD a valores já cadastrados)
+CREATE TABLE magistrados (
+    id          INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nome        VARCHAR(150) NOT NULL UNIQUE,
     activo      TINYINT(1)   NOT NULL DEFAULT 1,
     ordem       SMALLINT     NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -546,6 +557,10 @@ INSERT INTO especies_processo (nome, ordem) VALUES
     ('Peticao',                 8),
     ('Reclamacao',              9),
     ('Outro',                  10);
+
+-- 7.3b Magistrados
+INSERT INTO magistrados (nome, ordem) VALUES
+    ('Dr. Joao Ferreira', 1);
 
 -- 7.4 Estados do processo
 INSERT INTO estados_processo (codigo, label, cor_css, ordem) VALUES

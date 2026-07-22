@@ -109,29 +109,29 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .pt {
   width: 100%;
   border-collapse: collapse;
-  /* Largura total de todas as colunas ≈ 1081px */
-  min-width: 1081px;
+  /* Largura total de todas as colunas ≈ 1067px */
+  min-width: 1067px;
   font-size: 13px;
   table-layout: fixed;
 }
 
-/* ── Larguras fixas por coluna (9 colunas). Redistribuídas dando mais
-   espaço às colunas de conteúdo variável mais longo — Nº de Processo
-   (texto livre, até 50 caracteres) e Espécie (nomes como "Providencia
-   Cautelar"/"Mandado de Seguranca" não cabiam nos 80px anteriores) — à
-   custa das colunas de formato curto e fixo (Data, sempre "dd/mm/aaaa";
-   Estado, rótulos curtos em badge), que não precisavam do espaço que
-   tinham. Acções fica igual: precisa de caber sempre até 3 botões-ícone
-   (Ver/Editar/Eliminar) para o perfil Administrador. ── */
+/* ── Larguras fixas por coluna (11 colunas). Data de Registo, Nº de
+   Processo, Data Entrada e Estado foram encolhidas rente ao conteúdo
+   (texto curto/badge — .tdl já corta com ellipsis, por isso encolher
+   nunca parte o layout) para abrir espaço à coluna Redistribuição sem
+   alargar a tabela inteira. Espécie e Intervenientes mantêm mais espaço
+   por terem conteúdo variável mais longo. Acções fica igual: precisa de
+   caber sempre até 3 botões-ícone (Ver/Editar/Eliminar) para o Administrador. ── */
 .pt col.c-num    { width: 120px; }   /* Nº de Registo de Processo */
-.pt col.c-datareg { width: 118px; }  /* Data de Registo — formato fixo */
-.pt col.c-numext { width: 130px; }   /* Nº de Processo (texto livre) */
-.pt col.c-date   { width: 78px;  }   /* Data Entrada — formato fixo */
+.pt col.c-datareg { width: 90px; }   /* Data de Registo — formato fixo */
+.pt col.c-numext { width: 82px;  }   /* Nº de Processo (texto livre) */
+.pt col.c-date   { width: 60px;  }   /* Data Entrada — formato fixo */
 .pt col.c-esp    { width: 110px; }   /* Espécie           */
 .pt col.c-partes { width: 170px; }   /* Intervenientes    */
 .pt col.c-dist   { width: 95px;  }   /* Distribuição      */
+.pt col.c-redist { width: 90px;  }   /* Redistribuição — nome do magistrado, texto livre */
 .pt col.c-orig   { width: 95px;  }   /* Origem            */
-.pt col.c-est    { width: 75px;  }   /* Estado — badge curto */
+.pt col.c-est    { width: 65px;  }   /* Estado — badge curto */
 .pt col.c-act    { width: 90px;  }   /* Acções — 3 botões */
 
 /* Tabelas de detalhe das Estatísticas (Por Período/Juiz/Espécie/Estado/Origem):
