@@ -92,14 +92,13 @@ function irParaPaginaProc(p) { PROC_PG = p; renderTabela(); }
 function tblHTML(data) {
   if (!data.length) return '';
   var colgroup = '<colgroup>'
-    + '<col class="c-num"><col class="c-datareg"><col class="c-numext"><col class="c-date"><col class="c-esp"><col class="c-partes">'
+    + '<col class="c-proc"><col class="c-datareg"><col class="c-date"><col class="c-esp"><col class="c-partes">'
     + '<col class="c-dist"><col class="c-redist"><col class="c-orig">'
     + '<col class="c-est"><col class="c-act">'
     + '</colgroup>';
   var head = '<div class="tbl-outer"><table class="pt">' + colgroup + '<thead><tr>'
-    + '<th class="th0" style="min-width:110px">N&ordm; de Registo de Processo</th>'
+    + '<th class="th0" style="min-width:130px">Processos</th>'
     + '<th>Data de Registo</th>'
-    + '<th>N&ordm; de Processo</th>'
     + '<th>Data Entrada</th>'
     + '<th>Esp&eacute;cie</th>'
     + '<th style="min-width:120px">Intervenientes / Partes</th>'
@@ -107,16 +106,19 @@ function tblHTML(data) {
     + '<th>Redistribui&ccedil;&atilde;o</th>'
     + '<th>Origem</th>'
     + '<th>Estado</th>'
-    + '<th>Ac&ccedil;&otilde;es</th>'
+    + '<th class="th-act">Ac&ccedil;&otilde;es</th>'
     + '</tr></thead><tbody>';
   var rows = data.map(function (d) {
+    var numHtml = d.numero_processo_externo
+      ? '<div class="td0-lbl">N&ordm; de Processo</div><div class="td0">' + esc(d.numero_processo_externo) + '</div>'
+        + '<div class="td0-lbl" style="margin-top:3px">N&ordm; de Registo</div><div class="td0-sub">' + esc(d.numero_processo) + '</div>'
+      : '<div class="td0-lbl">N&ordm; de Registo</div><div class="td0">' + esc(d.numero_processo) + '</div>';
     return '<tr>'
-      + '<td class="td0 tdl">' + esc(d.numero_processo) + '</td>'
+      + '<td style="text-align:left">' + numHtml + '</td>'
       + '<td class="tdl tdd">' + esc(d.data_registo) + '</td>'
-      + '<td class="tdl">' + esc(d.numero_processo_externo || '—') + '</td>'
       + '<td class="tdl tdd">' + esc(d.data_entrada) + '</td>'
-      + '<td class="tdl"><span class="badge b-type">' + esc(d.especie) + '</span></td>'
-      + '<td class="tdl" style="max-width:160px">' + esc(trunc(d.partes, 38)) + '</td>'
+      + '<td class="tdl"><span class="badge b-type">' + esc(trunc(d.especie, 22)) + '</span></td>'
+      + '<td class="td-wrap">' + esc(d.partes) + '</td>'
       + '<td class="tdl">' + esc(trunc(d.distribuicao || '—', 18)) + '</td>'
       + '<td class="tdl">' + esc(trunc(d.redistribuicao || '—', 18)) + '</td>'
       + '<td class="tdl">' + esc(trunc(d.origem || '—', 16)) + '</td>'

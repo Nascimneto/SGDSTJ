@@ -267,6 +267,87 @@ branco, para não haver campos curtos (datas, números de registo) esticados a o
 colunas cada — 4 campos, incluindo Data de Entrada, que passou para a sua própria linha). Tal como
 `.fg2`/`.fg3`, ambas colapsam para 1 coluna no breakpoint móvel (`@media(max-width:767px)`).
 
+**Lista de Processos: coluna "Processos" fundida + responsividade fluida (2026-07-22)**: história
+completa de como a tabela desktop chegou ao estado actual, do mais para o menos importante:
+
+- *Colunas fundidas*: "Nº de Registo de Processo" e "Nº de Processo" eram 2 colunas; passaram a 1 só
+  ("Processos", `c-proc`), cada célula com 4 linhas empilhadas — rótulo "Nº DE PROCESSO" (`.td0-lbl`
+  — maiúsculas pequenas, cinza, negrito, deliberadamente diferente do estilo dos valores para não se
+  confundirem) + valor de `numero_processo_externo` em destaque (`.td0` — mono, azul, negrito),
+  depois rótulo "Nº DE REGISTO" + valor de `numero_processo` (código interno, ex: "SGD-2026-0001") em
+  `.td0-sub`, mais discreto. Sem Nº de Processo externo (campo opcional), mostra só "Nº DE REGISTO" +
+  valor em destaque, sem repetir informação.
+- *Intervenientes/Partes já não trunca* — em vez de `trunc(d.partes, N)` + "..." (nunca se acertava N
+  à largura da coluna: ou cortava demais, ou voltava a transbordar), mostra o texto completo com nova
+  classe `.td-wrap` (`white-space:normal; word-break:break-word`, ao contrário de `.tdl`, que força
+  `nowrap`+ellipsis) — quebra para 2ª linha em vez de cortar, à custa da linha ocasionalmente ficar
+  mais alta.
+- *Espécie ganhou `trunc(d.especie, 22)`* — não tinha nenhum corte em JS (nomes reais até 59
+  caracteres, ex: "Recurso Contencioso Administrativo com Pedido de Suspensão"), só confiava no
+  `overflow:hidden` do `.tdl`, que não protege bem um `<span class="badge">` lá dentro (o badge tem o
+  seu próprio `white-space:nowrap`, por isso escapava ao ellipsis do pai).
+- *Acções fica fixa à direita ao fazer scroll horizontal* — a coluna mais útil quando a tabela não
+  cabe (tem os controlos) era a que ficava mais facilmente fora de vista. Novo `.th-act` no cabeçalho
+  (a par do `.td-act` já existente no corpo) com `position:sticky; right:0` em ambos — ficam colados
+  à borda direita do `.tbl-outer` durante o scroll. `.td-act` leva `background:var(--white)` +
+  `box-shadow` para não deixar o conteúdo por baixo transparecer; o zebra-striping/hover (mais
+  específicos) continuam a sobrepor essa cor base normalmente. `getBoundingClientRect()` em
+  `abrirMenuAcoes()` lê sempre a posição real no ecrã, por isso o menu de ações continua a
+  posicionar-se bem mesmo com o botão sticky.
+- *Bug real por trás de "as colunas desaparecem" em ecrãs grandes* — não era falta de scroll, era um
+  bug de layout: `.content` (wrapper principal da página) é item de um flex `column` (`.main`) mas não
+  tinha `min-width:0` — por omissão, um item de flex recusa-se a encolher abaixo da largura mínima
+  intrínseca do seu conteúdo, `.content` nunca conseguia encolher o suficiente para o
+  `overflow-x:auto` de `.tbl-outer` chegar a ser necessário, e `body { overflow-x:hidden }` acabava
+  por cortar directamente as últimas colunas em vez de as deixar alcançáveis por scroll. Corrigido com
+  `min-width:0` em `.content` (`css/estilos.css`) — o fix clássico para "flex item com descendente
+  `overflow:auto` que não faz scroll, empurra tudo para fora em vez disso".
+- *Larguras fixas em px → percentagens fluidas* — a abordagem inicial foi medir o comprimento real dos
+  dados na BD (`SELECT MAX(LENGTH(...))`) e dar a cada coluna largura fixa em px suficiente, o que
+  levou a um `min-width` cada vez maior (1067px → 1276px → 1358px) e a ter de ajustar o breakpoint de
+  cartões manualmente sempre que a largura mudava (1400px → 1500px → 1700px) — nunca convergia para
+  "cabe em qualquer monitor". A tabela de Auditoria (`js/auditoria.js`) já resolvia isto de forma mais
+  simples: `table-layout:fixed` sem `min-width` forçado, tabela sempre a 100% do contentor. Adoptada a
+  mesma técnica aqui — colunas em `%` em vez de px (mantendo as proporções relativas já afinadas:
+  Intervenientes 18% > Distribuição/Redistribuição 12% > Espécie/Origem/Processos 11% > Data de
+  Registo 9% > Data Entrada/Estado 6% > Acções 4%) e removido o `min-width` da `.pt`. Isto elimina de
+  vez a necessidade de um breakpoint de cartões dedicado a esta página — a tabela cabe sempre em
+  qualquer largura ≥767px (o breakpoint móvel geral, partilhado com o resto da app), tal como
+  Auditoria já fazia.
+- *Só linhas horizontais entre processos, sem grelha vertical* — pedido explicitamente para
+  uniformizar com Auditoria (que usa a mesma classe `.pt`): `border` a toda a volta em `.pt th`/`.pt
+  td` passou a `border-top`+`border-bottom` só, directamente na regra base (já não scoped a uma
+  página) — afecta as duas tabelas por igual. `border-collapse:collapse` continua a fundir as bordas
+  horizontais entre linhas adjacentes normalmente.
+
+Letras maiores continuam scoped só à Lista de Processos (`body[data-pagina="processos"] .pt td`/
+`.tdd`/`.td0`/`.td0-sub`/`.td0-lbl`/`.pt .badge`), por ser um pedido específico dessa página — `.pt`/
+`.tdd`/`.td0` são partilhadas com Auditoria, por isso o scope evita alterar o tamanho de letra lá.
+
+**Cabeçalho da tabela de Utilizadores uniformizado com o resto da app (2026-07-22)**: a página
+Utilizadores (`js/utilizadores.js`) não usa a classe partilhada `.pt` — tem a sua própria tabela com
+estilos inline (`thS`), porque as colunas são só 6 e não precisam do sistema de larguras/colgroup das
+tabelas maiores. O cabeçalho tinha fundo claro (`var(--bg)`, texto `var(--tx2)`), diferente do fundo
+escuro `var(--sid)` + texto branco usado em `.pt th` (Processos, Auditoria) — corrigido para o mesmo
+`background:var(--sid); color:#fff` (e a borda ajustada de `2px solid var(--border)` para `1px solid
+rgba(255,255,255,.12)`, a mesma usada em `.pt th`, já que uma borda cinza clara não fazia sentido
+sobre fundo escuro). Alinhamento do texto (esquerda, ao contrário do centro de `.pt th`) manteve-se —
+não foi pedido, e faz sentido para uma coluna como "Nome".
+
+**Gráfico "Registados vs Concluídos" preenche todo o espaço do painel (2026-07-22)**: no Painel
+Geral, este painel fica lado a lado com "Processos Recentes" num CSS Grid de 2 colunas
+(`grid-template-columns:1fr 1fr`) — por omissão, grid estica os itens (`align-items:stretch`) à
+altura do mais alto da linha; como "Processos Recentes" mostra até 8 linhas de tabela, ficava quase
+sempre mais alto do que o gráfico (SVG com altura fixa, `max-height:148px`), deixando espaço vazio no
+fundo do painel do gráfico. Corrigido tornando o `.panel` num flex `column`
+(`renderVolumeGrafico()`) e o SVG (`svgBars()`) num filho `flex:1` — a `<svg>` passou de `width:100%`
++ `max-height:148px` fixo para `position:absolute;inset:0;width:100%;height:100%` dentro de um wrapper
+`flex:1;position:relative`, com `preserveAspectRatio="none"` para esticar o conteúdo (não deixar
+"letterboxing", a área em branco à volta que o comportamento por omissão do viewBox — "meet",
+preserva proporção — deixaria). O sistema de coordenadas interno mantém-se em 460×148 unidades; o
+`viewBox` escala tudo (barras, grelha, texto) não-uniformemente para preencher a caixa real, seja
+qual for a altura que o grid lhe der.
+
 **Notificações (toast)**: `showToast(msg, icon, type)` em `js/comum.js` apresenta uma notificação
 centrada no ecrã com fundo branco, borda colorida esquerda e barra de progresso de 3 s. O parâmetro
 `type` aceita `'red'` (erro), `'amber'` (aviso) e `'blue'` (informação); omitido = verde (sucesso).

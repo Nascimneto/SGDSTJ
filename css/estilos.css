@@ -57,7 +57,14 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .topbar       { background:var(--white); border-bottom:1px solid var(--border); padding:0 14px; height:48px; display:flex; align-items:center; gap:8px; position:sticky; top:0; z-index:100; box-shadow:var(--sh); }
 .topbar-menu  { display:none; width:32px; height:32px; border:1px solid var(--border); background:var(--white); border-radius:var(--rs); cursor:pointer; align-items:center; justify-content:center; color:var(--tx2); font-size:18px; flex-shrink:0; }
 .topbar-right { margin-left:auto; display:flex; align-items:center; gap:5px; flex-shrink:0; }
-.content { flex:1; padding:12px; overflow-x:hidden; }
+/* min-width:0 é essencial aqui: .content é item de um flex column (.main).
+   Sem isto, um descendente largo (ex: a tabela de Processos, table-layout:
+   fixed com min-width alto) impede .content de encolher abaixo do
+   conteúdo, .tbl-outer nunca chega a precisar do seu próprio scroll
+   interno, e o body { overflow-x:hidden } acaba por cortar directamente as
+   últimas colunas (Estado, Acções) em vez de as deixar alcançáveis por
+   scroll — pareciam "desaparecidas" em vez de apenas fora de vista. */
+.content { flex:1; min-width:0; padding:12px; overflow-x:hidden; }
 
 /* ── Botões ── */
 .btn         { display:inline-flex; align-items:center; gap:5px; padding:7px 12px; border-radius:var(--rs); border:1px solid var(--border); background:var(--white); color:var(--tx); cursor:pointer; font-size:12px; font-weight:500; font-family:inherit; transition:all .15s; white-space:nowrap; user-select:none; line-height:1.4; }
@@ -109,31 +116,39 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .pt {
   width: 100%;
   border-collapse: collapse;
-  /* Largura total de todas as colunas ≈ 1067px */
-  min-width: 1067px;
   font-size: 13px;
   table-layout: fixed;
 }
 
-/* ── Larguras fixas por coluna (11 colunas). Data de Registo, Nº de
-   Processo, Data Entrada e Estado foram encolhidas rente ao conteúdo
-   (texto curto/badge — .tdl já corta com ellipsis, por isso encolher
-   nunca parte o layout) para abrir espaço à coluna Redistribuição sem
-   alargar a tabela inteira. Espécie mantém mais espaço por ter conteúdo
-   variável mais longo. Acções encolheu de 90px (3 botões-ícone) para 48px
-   — passou a ser um único botão "⋮" com menu flutuante (abrirMenuAcoes(),
-   ver js/comum.js) — o espaço libertado foi para Intervenientes. ── */
-.pt col.c-num    { width: 120px; }   /* Nº de Registo de Processo */
-.pt col.c-datareg { width: 90px; }   /* Data de Registo — formato fixo */
-.pt col.c-numext { width: 82px;  }   /* Nº de Processo (texto livre) */
-.pt col.c-date   { width: 60px;  }   /* Data Entrada — formato fixo */
-.pt col.c-esp    { width: 110px; }   /* Espécie           */
-.pt col.c-partes { width: 212px; }   /* Intervenientes    */
-.pt col.c-dist   { width: 95px;  }   /* Distribuição      */
-.pt col.c-redist { width: 90px;  }   /* Redistribuição — nome do magistrado, texto livre */
-.pt col.c-orig   { width: 95px;  }   /* Origem            */
-.pt col.c-est    { width: 65px;  }   /* Estado — badge curto */
-.pt col.c-act    { width: 48px;  }   /* Acções — 1 botão "⋮" */
+/* ── Larguras em % (não px) — fluidas por definição, cabem em qualquer
+   largura de ecrã sem precisar de scroll horizontal nem de breakpoints
+   ajustados à mão (mesma técnica que já funcionava em Auditoria:
+   table-layout:fixed + colunas relativas, tabela sem min-width forçado —
+   ver renderHistoricoProcessos()/renderAuditoriaSistema() em
+   js/auditoria.js). Proporções mantêm a importância relativa já afinada a
+   partir do comprimento real dos dados (SELECT MAX(LENGTH(...)) na BD):
+   Intervenientes > Distribuição/Redistribuição > Espécie/Origem/Processos
+   > Data de Registo > Data Entrada/Estado > Acções. ── */
+.pt col.c-proc   { width: 11%; }   /* Processos — Nº de Processo + Nº Registo, 2 rótulos + 2 valores */
+.pt col.c-datareg { width: 9%; }   /* Data de Registo — "dd/mm/aaaa hh:mm", 16 caract. */
+.pt col.c-date   { width: 6%;  }   /* Data Entrada — "dd/mm/aaaa", 10 caract. */
+.pt col.c-esp    { width: 11%; }   /* Espécie — badge, trunc(22) */
+.pt col.c-partes { width: 18%; }   /* Intervenientes — texto completo, quebra linha (.td-wrap) em vez de truncar */
+.pt col.c-dist   { width: 12%; }   /* Distribuição — trunc(18), nomes reais até 18 caract. */
+.pt col.c-redist { width: 12%; }   /* Redistribuição — trunc(18) */
+.pt col.c-orig   { width: 11%; }   /* Origem — trunc(16) */
+.pt col.c-est    { width: 6%;  }   /* Estado — badge, label mais longa real: 11 caract. */
+.pt col.c-act    { width: 4%;  }   /* Acções — 1 botão "⋮" */
+
+/* Letras maiores na Lista de Processos, scoped a esta página (.pt/.tdd/.td0
+   são partilhadas com Auditoria) — pedido explícito, para além do que os
+   dados por si só exigiriam. */
+body[data-pagina="processos"] .pt td       { font-size:12px; }
+body[data-pagina="processos"] .tdd         { font-size:12px; }
+body[data-pagina="processos"] .td0         { font-size:12px; }
+body[data-pagina="processos"] .td0-sub     { font-size:11px; }
+body[data-pagina="processos"] .td0-lbl     { font-size:9.5px; }
+body[data-pagina="processos"] .pt .badge   { font-size:10px; }
 
 /* Tabelas de detalhe das Estatísticas (Por Período/Juiz/Espécie/Estado/Origem):
    têm poucas colunas e devem encolher com o contentor, em vez de herdar o
@@ -151,7 +166,10 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
   font-weight: 700;
   color: #fff;
   background: var(--sid);
-  border: 1px solid rgba(255,255,255,.12);
+  /* Só linha horizontal (separa o cabeçalho do corpo) — sem grelha vertical
+     entre colunas, uniforme em todas as tabelas .pt (Processos, Auditoria). */
+  border-top: 1px solid rgba(255,255,255,.12);
+  border-bottom: 1px solid rgba(255,255,255,.12);
   text-transform: uppercase;
   letter-spacing: 0;
   /* Cabeçalhos mais longos (ex: "Nº de Registo de Processo") quebram em
@@ -162,7 +180,8 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 
 .pt td {
   padding: 12px 4px;
-  border: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   font-size: 11px;
   color: var(--tx);
   vertical-align: middle;
@@ -172,9 +191,26 @@ body { font-family:'IBM Plex Sans',system-ui,sans-serif; background:var(--bg); c
 .pt tr:nth-child(even) td { background:#FAFAF6; }
 .pt tr:hover td { background:#EFF6FF; cursor:pointer; }
 .td0 { font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--blue); font-size:11px; white-space:nowrap; text-align:left !important; overflow:hidden; text-overflow:ellipsis; }
+/* Rótulos "Nº de Processo"/"Nº de Registo" — negrito, mas deliberadamente
+   diferentes do estilo do valor (.td0/.td0-sub: mono, colorido): tipo de
+   letra normal, maiúsculas pequenas, cinza — para não se confundirem
+   visualmente com os próprios números. Ver coluna "Processos" em
+   tblHTML() (js/processos.js). */
+.td0-lbl { font-size:9px; font-weight:700; color:var(--tx2); text-transform:uppercase; letter-spacing:.4px; line-height:1.5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.td0-sub { font-size:10px; font-weight:500; color:var(--tx3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tdl { text-align:left !important; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Intervenientes/Partes: em vez de truncar com "...", quebra para 2ª linha
+   — o texto completo (partes pode ser longo) fica sempre visível, à custa
+   de a linha ocasionalmente ficar um pouco mais alta. */
+.td-wrap { text-align:left !important; white-space:normal; word-break:break-word; line-height:1.35; }
 .tdd { white-space:nowrap; font-size:11px; color:var(--tx2); }
 .td-act { white-space:nowrap; text-align:center !important; }
+/* Acções fica fixa à direita ao fazer scroll horizontal (.tbl-outer) — em
+   ecrãs onde a tabela não cabe, era a coluna mais útil (tem os controlos)
+   e a que ficava mais facilmente fora de vista. */
+.td-act, .th-act { position:sticky; right:0; z-index:2; }
+.td-act { background:var(--white); box-shadow:-6px 0 6px -6px rgba(0,0,0,.18); }
+.th-act { z-index:3; }
 
 /* Menu de ações (⋮) — ver includes/modais.php e abrirMenuAcoes() em js/comum.js.
    position:fixed (não absolute) porque .pt td tem overflow:hidden (trunca texto

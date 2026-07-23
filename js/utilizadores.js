@@ -19,7 +19,7 @@ function carregarUtilizadores() {
 }
 
 function renderUtilizadores() {
-  var thS = 'text-align:left;padding:10px 16px;font-size:10.5px;font-weight:700;color:var(--tx2);border-bottom:2px solid var(--border);background:var(--bg);text-transform:uppercase;letter-spacing:.5px';
+  var thS = 'text-align:left;padding:10px 16px;font-size:10.5px;font-weight:700;color:#fff;border-bottom:1px solid rgba(255,255,255,.12);background:var(--sid);text-transform:uppercase;letter-spacing:.5px';
   var tdS = 'padding:11px 16px;border-bottom:1px solid var(--border)';
 
   var tableRows = ULTIMOS_USERS.map(function (u) {

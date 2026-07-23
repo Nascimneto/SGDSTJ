@@ -135,7 +135,7 @@ function renderVolumeGrafico(volume) {
   var dados  = (volume && volume.dados)  || [];
   var escala = (volume && volume.escala) || 'mensal';
 
-  return '<div class="panel" style="padding:16px">'
+  return '<div class="panel" style="padding:16px;display:flex;flex-direction:column">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
     + '<div style="font-size:13px;font-weight:600"><i class="ti ti-chart-line" style="color:var(--blue)"></i> Registados vs Concluídos</div>'
     + '<div style="display:flex;gap:4px">' + btnEscala('mensal','Mensal') + btnEscala('anual','Anual') + '</div>'
@@ -180,8 +180,9 @@ function svgBars(dados, escala) {
       + '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" font-size="8" fill="#94A3B8">' + esc(lbl) + '</text>';
   });
 
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;max-height:148px">'
-    + linhas + barras + '</svg>'
+  return '<div style="flex:1;min-height:148px;position:relative">'
+    + '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">'
+    + linhas + barras + '</svg></div>'
     + '<div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--tx3)">'
     + '<span><span style="display:inline-block;width:10px;height:8px;background:#2563EB;border-radius:2px;margin-right:4px;vertical-align:middle"></span>Registados</span>'
     + '<span><span style="display:inline-block;width:10px;height:8px;background:#059669;border-radius:2px;margin-right:4px;vertical-align:middle"></span>Concluídos</span>'
