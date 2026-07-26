@@ -361,11 +361,6 @@ body[data-pagina="processos"] .pt .badge   { font-size:10px; }
    fixa — sem isto, o canvas e o painel à volta crescem um ao outro num
    ciclo sem fim (responsive:true a reagir ao próprio crescimento). */
 .chart-wrap { position:relative; height:230px; }
-.chart-row  { display:flex; align-items:center; gap:9px; margin-bottom:7px; }
-.chart-lbl  { font-size:11px; color:var(--tx2); min-width:95px; }
-.chart-bg   { flex:1; height:6px; background:var(--bg); border-radius:4px; overflow:hidden; }
-.chart-fill { height:100%; border-radius:4px; transition:width .7s ease; }
-.chart-val  { font-size:11px; font-weight:600; min-width:18px; text-align:right; }
 
 /* ── Info box ── */
 .ib       { border-radius:var(--rs); padding:8px 11px; font-size:11px; display:flex; align-items:flex-start; gap:7px; margin-bottom:10px; }

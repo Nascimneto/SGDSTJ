@@ -18,6 +18,22 @@ class ProcessoModel
         return $this->pdo->query('SELECT nome FROM magistrados WHERE activo = 1 ORDER BY ordem, nome')->fetchAll(PDO::FETCH_COLUMN);
     }
 
+    /** O número de processo (`numero_processo_externo`) não é único por si só — vários
+     *  processos internos podem partilhá-lo — mas a combinação com a espécie tem de o
+     *  ser: não pode haver dois processos com o mesmo número E a mesma espécie. */
+    private function existeNumeroEspecie(string $numero, int $especieId, ?int $ignorarId = null): bool
+    {
+        $sql    = 'SELECT id FROM processos WHERE numero_processo_externo = ? AND especie_id = ?';
+        $params = [$numero, $especieId];
+        if ($ignorarId !== null) {
+            $sql     .= ' AND id != ?';
+            $params[] = $ignorarId;
+        }
+        $stmt = $this->pdo->prepare($sql . ' LIMIT 1');
+        $stmt->execute($params);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function obterTamanhoPagina(): int
     {
         return (int)($this->pdo->query("SELECT valor FROM configuracoes WHERE chave = 'processos_pagina'")->fetchColumn() ?: 15);
@@ -119,6 +135,9 @@ class ProcessoModel
         if ($distribuicao === '') {
             return ['erro' => 'Preencha a Distribuição (Juiz Relator).', 'codigo' => 400];
         }
+        if ($distribuicaoData === null) {
+            return ['erro' => 'Preencha a Data de Distribuição.', 'codigo' => 400];
+        }
         if (mb_strlen($observacoes) > 1500) {
             return ['erro' => 'Observações: máximo de 1500 caracteres.', 'codigo' => 400];
         }
@@ -128,6 +147,11 @@ class ProcessoModel
         $especieId = $especieStmt->fetchColumn();
         if (!$especieId) {
             return ['erro' => 'Espécie de processo inválida.', 'codigo' => 400];
+        }
+        // O número de processo pode repetir-se (não é único), mas não com a mesma
+        // espécie — já teria de ser necessariamente o mesmo processo.
+        if ($this->existeNumeroEspecie($numeroProcessoExterno, (int)$especieId)) {
+            return ['erro' => 'Já existe um processo com este número e esta espécie.', 'codigo' => 409];
         }
 
         $estadoCodigo = trim((string)($dados['estado'] ?? '')) ?: 'entry';
@@ -192,6 +216,9 @@ class ProcessoModel
         if ($distribuicao === '') {
             return ['erro' => 'Preencha a Distribuição (Juiz Relator).', 'codigo' => 400];
         }
+        if ($distribuicaoData === null) {
+            return ['erro' => 'Preencha a Data de Distribuição.', 'codigo' => 400];
+        }
         if (mb_strlen($observacoes) > 1500) {
             return ['erro' => 'Observações: máximo de 1500 caracteres.', 'codigo' => 400];
         }
@@ -201,6 +228,9 @@ class ProcessoModel
         $especieId = $especieStmt->fetchColumn();
         if (!$especieId) {
             return ['erro' => 'Espécie de processo inválida.', 'codigo' => 400];
+        }
+        if ($this->existeNumeroEspecie($numeroProcessoExterno, (int)$especieId, $id)) {
+            return ['erro' => 'Já existe um processo com este número e esta espécie.', 'codigo' => 409];
         }
 
         // Datas de controlo — actualiza data + "registado por" (sessão, nunca o payload)
@@ -294,8 +324,8 @@ class ProcessoModel
 
         $this->pdo->beginTransaction();
         try {
-            $sets   = ['especie_id = ?', 'partes = ?', 'origem = ?', 'distribuicao = ?', 'redistribuicao = ?', 'observacoes = ?', 'numero_processo_externo = ?', 'atualizado_por = ?'];
-            $params = [$especieId, $partes, $origem, $distribuicao ?: null, $redistribuicao ?: null, $observacoes ?: null, $numeroProcessoExterno ?: null, $uid];
+            $sets   = ['especie_id = ?', 'partes = ?', 'origem = ?', 'distribuicao = ?', 'distribuicao_data = ?', 'redistribuicao = ?', 'observacoes = ?', 'numero_processo_externo = ?', 'atualizado_por = ?'];
+            $params = [$especieId, $partes, $origem, $distribuicao ?: null, $distribuicaoData, $redistribuicao ?: null, $observacoes ?: null, $numeroProcessoExterno ?: null, $uid];
             if ($estadoId) {
                 $sets[]   = 'estado_id = ?';
                 $params[] = $estadoId;
@@ -303,13 +333,6 @@ class ProcessoModel
             if ($dataEntrada !== '') {
                 $sets[]   = 'data_entrada = ?';
                 $params[] = $dataEntrada;
-            }
-            // Só toca em distribuicao_data quando o campo vier presente no pedido —
-            // evita apagar a data em chamadas parciais que não passam por este campo
-            // do formulário (ex: dtSt(), mudança rápida de estado no modal de detalhe).
-            if (array_key_exists('distribuicao_data', $dados)) {
-                $sets[]   = 'distribuicao_data = ?';
-                $params[] = $distribuicaoData;
             }
             $params[] = $id;
             $this->pdo->prepare('UPDATE processos SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);

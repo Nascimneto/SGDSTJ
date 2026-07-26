@@ -27,7 +27,7 @@ function buildFormCriar() {
     + '<div class="fg"><label>Origem</label><input id="f_orig" placeholder="Tribunal / Entidade..."></div></div>'
     + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" placeholder="Ex: Autor vs Reu..."></div>'
     + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><select id="f_dist">' + distOpts + '</select></div>'
-    + '<div class="fg"><label>Data de Distribuição</label><input type="date" id="f_dist_data"></div></div>'
+    + '<div class="fg"><label class="required">Data de Distribuição</label><input type="date" id="f_dist_data" value="' + hojeISO() + '"></div></div>'
     + '<div class="fg2"><div class="fg"><label>Redistribuição</label><select id="f_redist">' + redistOpts + '</select></div>'
     + '<div class="fg"><label class="required">Estado de Processo</label><select id="f_st">' + stOpts + '</select></div></div>'
     + '</div>'
@@ -58,7 +58,7 @@ function buildFormEditar(p) {
     + '<div class="fg"><label>Origem</label><input id="f_orig" value="' + esc(p.origem || '') + '"></div></div>'
     + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" value="' + esc(p.partes || '') + '"></div>'
     + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><select id="f_dist">' + distOpts + '</select></div>'
-    + '<div class="fg"><label>Data de Distribuição</label><input type="date" id="f_dist_data" value="' + iv('distribuicao_data') + '"></div></div>'
+    + '<div class="fg"><label class="required">Data de Distribuição</label><input type="date" id="f_dist_data" value="' + (iv('distribuicao_data') || hojeISO()) + '"></div></div>'
     + '<div class="fg2"><div class="fg"><label>Redistribuição</label><select id="f_redist">' + redistOpts + '</select></div>'
     + '<div class="fg"><label class="required">Estado de Processo</label><select id="f_st">' + stOpts + '</select></div></div>'
     + '</div>'
@@ -139,6 +139,8 @@ function guardarCriar() {
   G('f_data_entrada').classList.remove('err-input');
   if (!dados.distribuicao) { G('f_dist').classList.add('err-input'); showToast('Preencha a Distribuição (Juiz Relator)', 'ti-alert-circle', 'red'); return; }
   G('f_dist').classList.remove('err-input');
+  if (!dados.distribuicao_data) { G('f_dist_data').classList.add('err-input'); showToast('Preencha a Data de Distribuição', 'ti-alert-circle', 'red'); return; }
+  G('f_dist_data').classList.remove('err-input');
   if (!dados.estado) { G('f_st').classList.add('err-input'); showToast('Selecione o Estado do Processo', 'ti-alert-circle', 'red'); return; }
   G('f_st').classList.remove('err-input');
 
@@ -146,7 +148,10 @@ function guardarCriar() {
     closeCrud();
     if (typeof recarregarProcessos === 'function') recarregarProcessos();
     showToast(res.numero_processo + ' registado com sucesso!', 'ti-circle-check');
-  }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
+  }).catch(function (e) {
+    if (e.status === 409) G('f_esp').classList.add('err-input');
+    showToast(e.message, 'ti-alert-circle', 'red');
+  });
 }
 
 function guardarEditar(id) {
@@ -156,6 +161,8 @@ function guardarEditar(id) {
   if (!dados.data_entrada) { showToast('Preencha a Data de Entrada', 'ti-alert-circle', 'red'); return; }
   if (!dados.distribuicao) { G('f_dist').classList.add('err-input'); showToast('Preencha a Distribuição (Juiz Relator)', 'ti-alert-circle', 'red'); return; }
   G('f_dist').classList.remove('err-input');
+  if (!dados.distribuicao_data) { G('f_dist_data').classList.add('err-input'); showToast('Preencha a Data de Distribuição', 'ti-alert-circle', 'red'); return; }
+  G('f_dist_data').classList.remove('err-input');
 
   dados.id                  = id;
   dados.redistribuicao_data = GV('f_redist_data');
@@ -186,7 +193,10 @@ function guardarEditar(id) {
     closeCrud();
     if (typeof recarregarProcessos === 'function') recarregarProcessos();
     showToast('Processo actualizado!', 'ti-circle-check');
-  }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
+  }).catch(function (e) {
+    if (e.status === 409) G('f_esp').classList.add('err-input');
+    showToast(e.message, 'ti-alert-circle', 'red');
+  });
 }
 
 /* ─── Detalhe ─── */
@@ -256,7 +266,10 @@ function dtSt(id) {
     id: id, estado: s,
     especie: PROCESSO_ACTUAL.especie, origem: PROCESSO_ACTUAL.origem,
     partes: PROCESSO_ACTUAL.partes, distribuicao: PROCESSO_ACTUAL.distribuicao,
-    distribuicao_data: p2i(PROCESSO_ACTUAL.distribuicao_data),
+    // Data de Distribuição passou a obrigatória no servidor — processos antigos, de
+    // antes dessa regra, podem não a ter; sem este fallback, esta mudança rápida de
+    // estado ficaria bloqueada por um campo que nem sequer está a ser editado aqui.
+    distribuicao_data: p2i(PROCESSO_ACTUAL.distribuicao_data) || hojeISO(),
     redistribuicao: PROCESSO_ACTUAL.redistribuicao,
     observacoes: PROCESSO_ACTUAL.observacoes,
     numero_processo_externo: PROCESSO_ACTUAL.numero_processo_externo

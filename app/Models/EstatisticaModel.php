@@ -117,44 +117,63 @@ class EstatisticaModel
         $porUtilizador = $stmtUtilizador->fetchAll();
 
         $ondeWhere = $cond ? ' WHERE ' . implode(' AND ', $cond) : '';
+        // pendentes/findos por origem (mesmo critério de produtividade()) — alimentam o
+        // gráfico de coluna agrupada do tab Por Origem, além do total.
         $stmtOrigem = $this->pdo->prepare(
-            "SELECT COALESCE(NULLIF(TRIM(p.origem), ''), '(Sem origem)') AS origem, COUNT(p.id) AS total
-             FROM processos p"
+            "SELECT COALESCE(NULLIF(TRIM(p.origem), ''), '(Sem origem)') AS origem,
+                    COUNT(p.id) AS total,
+                    SUM(CASE WHEN est.codigo NOT IN ('concluded','archived') THEN 1 ELSE 0 END) AS pendentes,
+                    SUM(CASE WHEN est.codigo IN ('concluded','archived') THEN 1 ELSE 0 END) AS findos
+             FROM processos p
+             JOIN estados_processo est ON est.id = p.estado_id"
             . $ondeWhere .
             " GROUP BY origem ORDER BY total DESC LIMIT 30"
         );
         $stmtOrigem->execute($params);
         $porOrigem = $stmtOrigem->fetchAll();
+        foreach ($porOrigem as &$o) {
+            $o['total']     = (int)$o['total'];
+            $o['pendentes'] = (int)$o['pendentes'];
+            $o['findos']    = (int)$o['findos'];
+        }
 
         return ['porEstado' => $porEstado, 'porEspecie' => $porEspecie, 'porUtilizador' => $porUtilizador, 'porOrigem' => $porOrigem];
     }
 
-    /** Volumes mensais ou anuais: processos registados vs concluídos por período. */
+    /** Volumes mensais ou anuais: processos registados vs concluídos por período,
+     *  respeitando os mesmos filtros de data/utilizador dos outros métodos deste model. */
     public function volume(array $get): array
     {
         $escala    = ($get['escala'] ?? 'mensal') === 'anual' ? 'anual' : 'mensal';
         $formato   = $escala === 'anual' ? '%Y' : '%Y-%m';
         $intervalo = $escala === 'anual' ? '5 YEAR' : '13 MONTH';
 
+        [$cond, $params] = $this->condicoes($get);
+        $ondeExtra = $cond ? ' AND ' . implode(' AND ', $cond) : '';
+
         $stmtReg = $this->pdo->prepare(
-            "SELECT DATE_FORMAT(data_registo, :fmt) AS periodo, COUNT(*) AS registados
-             FROM processos
-             WHERE data_registo >= DATE_SUB(CURDATE(), INTERVAL $intervalo)
+            "SELECT DATE_FORMAT(p.data_registo, '$formato') AS periodo, COUNT(*) AS registados
+             FROM processos p
+             WHERE p.data_registo >= DATE_SUB(CURDATE(), INTERVAL $intervalo)$ondeExtra
              GROUP BY periodo ORDER BY periodo"
         );
-        $stmtReg->execute([':fmt' => $formato]);
+        $stmtReg->execute($params);
         $regMap = [];
         foreach ($stmtReg->fetchAll() as $r) {
             $regMap[$r['periodo']] = (int)$r['registados'];
         }
 
+        // Concluídos agrupados pela data de conclusão, mas restritos aos processos que
+        // já correspondiam aos filtros (mesmo critério de p.data_registo/p.registado_por
+        // usado em todo o resto do model) — não à data de conclusão em si.
         $stmtConc = $this->pdo->prepare(
-            "SELECT DATE_FORMAT(conclusao, :fmt) AS periodo, COUNT(*) AS concluidos
-             FROM datas_controlo
-             WHERE conclusao IS NOT NULL AND conclusao >= DATE_SUB(CURDATE(), INTERVAL $intervalo)
+            "SELECT DATE_FORMAT(dc.conclusao, '$formato') AS periodo, COUNT(*) AS concluidos
+             FROM datas_controlo dc
+             JOIN processos p ON p.id = dc.processo_id
+             WHERE dc.conclusao IS NOT NULL AND dc.conclusao >= DATE_SUB(CURDATE(), INTERVAL $intervalo)$ondeExtra
              GROUP BY periodo ORDER BY periodo"
         );
-        $stmtConc->execute([':fmt' => $formato]);
+        $stmtConc->execute($params);
         $concMap = [];
         foreach ($stmtConc->fetchAll() as $r) {
             $concMap[$r['periodo']] = (int)$r['concluidos'];
@@ -175,7 +194,19 @@ class EstatisticaModel
         return ['escala' => $escala, 'dados' => $dados];
     }
 
-    /** Produtividade por Juiz Relator (campo distribuicao): total, pendentes, findos, taxa. */
+    /** Expressão do juiz relator "efectivo": quando o processo foi redistribuído
+     *  (campo `redistribuicao` preenchido), conta para o juiz da redistribuição, não
+     *  para o da distribuição original — o processo "sai" de um relator e "entra" no
+     *  outro. Usada em toda a estatística por Juiz Relator (produtividade() e o eixo
+     *  'relator' de detalheEixo()), para não continuar a contar processos
+     *  redistribuídos a favor do relator original. */
+    private function exprRelator(): string
+    {
+        return "COALESCE(NULLIF(TRIM(p.redistribuicao), ''), NULLIF(TRIM(p.distribuicao), ''), '(Não distribuído)')";
+    }
+
+    /** Produtividade por Juiz Relator (redistribuição tem prioridade sobre distribuição
+     *  original — ver exprRelator()): total, pendentes, findos, taxa. */
     public function produtividade(array $get): array
     {
         [$cond, $params] = $this->condicoes($get);
@@ -183,7 +214,7 @@ class EstatisticaModel
 
         $stmt = $this->pdo->prepare(
             "SELECT
-                COALESCE(NULLIF(TRIM(p.distribuicao), ''), '(Não distribuído)') AS relator,
+                " . $this->exprRelator() . " AS relator,
                 COUNT(p.id) AS total,
                 SUM(CASE WHEN est.codigo NOT IN ('concluded','archived') THEN 1 ELSE 0 END) AS pendentes,
                 SUM(CASE WHEN est.codigo IN ('concluded','archived') THEN 1 ELSE 0 END) AS findos
@@ -203,6 +234,92 @@ class EstatisticaModel
         }
 
         return ['relatores' => $rows];
+    }
+
+    /** Drill-down genérico: clicou-se num valor de um eixo (Juiz Relator, Espécie, Estado,
+     *  Origem ou Período) num dos gráficos/tabelas de Estatísticas — devolve os mesmos
+     *  processos filtrados como nos outros métodos deste model, mas restritos a esse valor,
+     *  quebrados pelas duas dimensões mais relevantes que não sejam o próprio eixo clicado
+     *  (evita uma fatia trivial de 100% repetindo o que já se viu no gráfico de origem).
+     *  @throws InvalidArgumentException eixo desconhecido.
+     */
+    public function detalheEixo(string $eixo, string $valor, array $get): array
+    {
+        [$cond, $params] = $this->condicoes($get);
+
+        switch ($eixo) {
+            case 'relator':
+                $cond[]     = $this->exprRelator() . ' = ?';
+                $params[]   = $valor;
+                $dimensoes  = ['estado', 'especie'];
+                break;
+            case 'especie':
+                $cond[]     = 'p.especie_id = (SELECT id FROM especies_processo WHERE nome = ? LIMIT 1)';
+                $params[]   = $valor;
+                $dimensoes  = ['estado', 'relator'];
+                break;
+            case 'estado':
+                $cond[]     = 'p.estado_id = (SELECT id FROM estados_processo WHERE codigo = ? LIMIT 1)';
+                $params[]   = $valor;
+                $dimensoes  = ['especie', 'relator'];
+                break;
+            case 'origem':
+                $cond[] = $valor === '(Sem origem)'
+                    ? "COALESCE(NULLIF(TRIM(p.origem), ''), '(Sem origem)') = ?"
+                    : 'TRIM(p.origem) = ?';
+                $params[]   = $valor;
+                $dimensoes  = ['estado', 'especie'];
+                break;
+            case 'periodo':
+                $escala     = ($get['escala'] ?? 'mensal') === 'anual' ? 'anual' : 'mensal';
+                $formato    = $escala === 'anual' ? '%Y' : '%Y-%m';
+                $cond[]     = "DATE_FORMAT(p.data_registo, '$formato') = ?";
+                $params[]   = $valor;
+                $dimensoes  = ['estado', 'especie'];
+                break;
+            default:
+                throw new InvalidArgumentException('Eixo desconhecido: ' . $eixo);
+        }
+
+        $ondeJoin  = ' AND ' . implode(' AND ', $cond);
+        $ondeWhere = ' WHERE ' . implode(' AND ', $cond);
+        $resultado = ['eixo' => $eixo, 'valor' => $valor];
+
+        if (in_array('estado', $dimensoes, true)) {
+            $stmt = $this->pdo->prepare(
+                "SELECT est.codigo, est.label, est.cor_css, est.ordem, COUNT(p.id) AS total
+                 FROM estados_processo est
+                 LEFT JOIN processos p ON p.estado_id = est.id$ondeJoin
+                 GROUP BY est.id, est.codigo, est.label, est.cor_css, est.ordem
+                 ORDER BY est.ordem"
+            );
+            $stmt->execute($params);
+            $resultado['porEstado'] = $stmt->fetchAll();
+        }
+
+        if (in_array('especie', $dimensoes, true)) {
+            $stmt = $this->pdo->prepare(
+                "SELECT ep.id, ep.nome AS especie, ep.ordem, COUNT(p.id) AS total
+                 FROM especies_processo ep
+                 LEFT JOIN processos p ON p.especie_id = ep.id$ondeJoin
+                 GROUP BY ep.id, ep.nome, ep.ordem
+                 ORDER BY ep.ordem"
+            );
+            $stmt->execute($params);
+            $resultado['porEspecie'] = $stmt->fetchAll();
+        }
+
+        if (in_array('relator', $dimensoes, true)) {
+            $stmt = $this->pdo->prepare(
+                "SELECT " . $this->exprRelator() . " AS relator, COUNT(p.id) AS total
+                 FROM processos p$ondeWhere
+                 GROUP BY relator ORDER BY total DESC LIMIT 15"
+            );
+            $stmt->execute($params);
+            $resultado['porRelator'] = $stmt->fetchAll();
+        }
+
+        return $resultado;
     }
 
     public function funil(array $get): array

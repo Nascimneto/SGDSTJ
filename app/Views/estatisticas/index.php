@@ -47,13 +47,41 @@
   </div>
 </div>
 <?php include __DIR__ . '/../../../includes/modais.php'; ?>
+
+<!-- Drill-down: clicar num valor (barra/fatia/ponto do gráfico, ou linha da tabela) em
+     qualquer um dos 5 tabs abre este modal com a distribuição por duas dimensões
+     relacionadas, só dos processos daquele valor — ver abrirDetalheEixo() em estatisticas.js. -->
+<div class="modal-bg" id="estDetalheBg">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hd">
+      <i class="ti ti-chart-pie" style="font-size:21px;color:var(--blue)"></i>
+      <h2 id="estDetalheTitulo">Detalhe</h2>
+      <button class="btn btn-sm btn-danger" id="estDetalheExportPdf" title="Exportar este detalhe em PDF"><i class="ti ti-file-type-pdf"></i> PDF</button>
+      <button class="btn btn-icon" id="estDetalheClose"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="estDetalheStats"></div>
+      <div class="row2">
+        <div>
+          <div id="estDetalheLabelA" style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:8px"></div>
+          <div style="position:relative;height:280px"><canvas id="chartDetalheA"></canvas></div>
+        </div>
+        <div>
+          <div id="estDetalheLabelB" style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:8px"></div>
+          <div style="position:relative;height:280px"><canvas id="chartDetalheB"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="<?= sgd_asset('js/comum.js') ?>"></script>
 <script src="<?= sgd_asset('js/api.js') ?>"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js" integrity="sha384-y49Zu59jZHJL/PLKgZPv3k2WI9c0Yp3pWB76V8OBVCb0QBKS8l4Ff3YslzHVX76Y" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.min.js" integrity="sha384-b8MpgG2ZzWN6OPAtiB1JiBmDr9MpTt3NKK6KQf61hC/L7X4wJrvoTeVmMFPgp3nL" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+<!-- jsPDF/xlsx (exportação) são carregadas a pedido por carregarLibPdf()/carregarLibXlsx()
+     em js/estatisticas.js — só quando os botões PDF/Excel são clicados, não no arranque
+     da página (jspdf-autotable deixou de ser necessário: o PDF já não desenha tabelas). -->
 <script src="<?= sgd_asset('js/estatisticas.js') ?>"></script>
 </body>
 </html>

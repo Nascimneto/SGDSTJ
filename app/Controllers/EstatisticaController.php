@@ -52,4 +52,23 @@ class EstatisticaController
     {
         echo json_encode($this->model->produtividade($_GET));
     }
+
+    /** GET api/estatisticas/detalhe.php?eixo=relator|especie|estado|origem|periodo&valor=...
+     *  Drill-down ao clicar num valor de qualquer gráfico/tabela de Estatísticas. */
+    public function detalheEixo(): void
+    {
+        $eixo  = trim((string)($_GET['eixo'] ?? ''));
+        $valor = trim((string)($_GET['valor'] ?? ''));
+        if ($eixo === '' || $valor === '') {
+            http_response_code(400);
+            echo json_encode(['erro' => 'Parâmetros eixo e valor são obrigatórios.']);
+            return;
+        }
+        try {
+            echo json_encode($this->model->detalheEixo($eixo, $valor, $_GET));
+        } catch (InvalidArgumentException $e) {
+            http_response_code(400);
+            echo json_encode(['erro' => $e->getMessage()]);
+        }
+    }
 }

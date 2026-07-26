@@ -289,6 +289,9 @@ CREATE INDEX idx_processos_data        ON processos(data_registo DESC);
 CREATE INDEX idx_processos_origem      ON processos(origem);
 CREATE INDEX idx_processos_distribuido ON processos(distribuicao);
 CREATE INDEX idx_processos_numero_externo ON processos(numero_processo_externo);
+-- Número de Processo pode repetir-se, mas não com a mesma Espécie — ver
+-- ProcessoModel::existeNumeroEspecie() e sql/migracao_2026-07-26.sql.
+CREATE UNIQUE INDEX uq_processos_numero_especie ON processos(numero_processo_externo, especie_id);
 CREATE FULLTEXT INDEX idx_processos_partes_ft ON processos(partes);
 
 CREATE INDEX idx_dc_conclusao    ON datas_controlo(conclusao);

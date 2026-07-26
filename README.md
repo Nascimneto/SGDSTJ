@@ -98,15 +98,27 @@ todas as linhas, em vez de repetir o rótulo em cada uma.
 - **3 cards de topo**: Total de Processos Entrados (com filtro de período: todo / este ano / este mês),
   Total Pendentes (estados ≠ concluded/archived) e Total Findos (concluded + archived) — os dois últimos
   reflectem sempre o acumulado global, independentemente do filtro de período.
-- **Distribuição por estado**: gráfico de barras horizontais (SVG puro, sem CDN) com o total de cada estado.
+- **Distribuição por estado** e **Produtividade por Juiz Relator** lado a lado (`.row2`): gráfico de
+  Pizza (total por estado) e gráfico de coluna agrupada (Pendentes/Findos por juiz), ambos Chart.js.
 - **Processos recentes**: tabela compacta com os 8 processos mais recentes, com link directo ao detalhe
   (`processos.php?ver=<numero_processo>`).
 - **Gráfico volumétrico**: barras agrupadas SVG (Registados vs Concluídos) por mês (13 meses) ou por ano
   (5 anos), com toggle Mensal/Anual.
-- **Produtividade por Juiz Relator**: tabela com total, pendentes, findos e taxa de conclusão (barra
-  proporcional verde/amber/vermelho) por `distribuicao`.
 
-Todos os gráficos do painel usam SVG puro — sem dependência de Chart.js nem de qualquer CDN.
+Adicionado (2026-07-26): "Distribuição por Estado" e "Produtividade por Juiz Relator" passaram de
+markup puro (barras `div`/CSS) para gráficos Chart.js (`desenharGraficoEstadoPainel()`,
+`desenharGraficoJuizPainel()`, ambos em `js/painel.js`) — o gráfico volumétrico "Registados vs
+Concluídos" continua em SVG puro, sem alteração. Isto exigiu carregar `chart.js` e
+`chartjs-plugin-datalabels` em `app/Views/painel/index.php` (antes só `estatisticas.php` os
+carregava). `CHART_PAINEL_ESTADO`/`CHART_PAINEL_JUIZ` são destruídos no início de `renderPainel()`
+antes de recriar os canvas, para o toggle de período (Todo/Ano/Mês) não acumular instâncias Chart.js
+órfãs a apontar para um `<canvas>` já substituído.
+
+Alterado (2026-07-26): "Produtividade por Juiz Relator" perdeu a tabela por baixo do gráfico (ficou só
+o gráfico de coluna agrupada) e passou a ficar lado a lado com "Distribuição por Estado" (`.row2`), em
+vez de estar num painel próprio, largura total, abaixo da linha "Processos Recentes"/"Registados vs
+Concluídos". O detalhe por juiz (tabela completa) continua disponível no tab "Por Juiz Relator" de
+Estatísticas.
 
 ## Estatísticas e Relatórios
 `estatisticas.php` / `js/estatisticas.js` reorganizados em 5 tabs independentes, cada um com gráfico
@@ -114,20 +126,208 @@ Todos os gráficos do painel usam SVG puro — sem dependência de Chart.js nem 
 
 | Tab | API | Gráfico | Exportação |
 |---|---|---|---|
-| **Por Período** | `volume.php` (Mensal/Anual) | Barras agrupadas fixas | Período, Reg., Conc., Saldo |
-| **Por Juiz Relator** | `produtividade.php` | Barras horizontais fixas | Juiz, Total, Pendentes, Findos, Taxa % |
+| **Por Período** | `volume.php` (Mensal/Anual) | Barras agrupadas/Pizza/Linha (selector) | Período, Reg., Conc., Saldo |
+| **Por Juiz Relator** | `produtividade.php` | Coluna agrupada (Pendentes/Findos)/Pizza/Linha (selector) | Juiz, Total, Pendentes, Findos, Taxa % |
 | **Por Espécie** | `distribuicao.php → porEspecie` | Barras/Pizza/Linha (selector) | Espécie, Total |
 | **Por Estado** | `distribuicao.php → porEstado` | Barras/Pizza/Linha (selector) | Estado, Total |
-| **Por Origem** | `distribuicao.php → porOrigem` | Barras horizontais/Pizza/Linha | Origem, Total |
+| **Por Origem** | `distribuicao.php → porOrigem` | Coluna agrupada (Pendentes/Findos)/Pizza/Linha (selector) | Origem, Total |
 
 `EstatisticaModel::distribuicao()` devolve agora também `porOrigem`: agrupamento por `processos.origem`
 (campo texto livre; fallback "Sem origem"; LIMIT 30), com os mesmos filtros de data/utilizador.
 `EstatisticaModel::volume()` e `EstatisticaModel::produtividade()` servem tanto o Painel como a tab
 correspondente de Estatísticas. Os botões **PDF** e **Excel** exportam apenas o tab activo.
-O selector `#fTipoGrafico` (Barras/Pizza/Linha) actua sobre os tabs Espécie, Estado e Origem; os tabs
-Período e Juiz usam tipo de gráfico fixo (adequado a dados de série temporal e texto longo,
-respectivamente). Botão "Imprimir" usa `window.print()` com a barra de filtros e os tabs escondidos
-via `.no-print`.
+O selector `#fTipoGrafico` (Barras/Pizza/Linha) actua sobre os 5 tabs. Em "Por Período" a opção Pizza
+agrega o intervalo filtrado em duas fatias (Registados/Concluídos), já que o gráfico normal tem duas
+séries ao longo do tempo; em "Por Juiz Relator" a Pizza mostra a proporção de processos por juiz e a
+Linha desenha os mesmos valores em vez de barras horizontais. Botão "Imprimir" usa `window.print()` com
+a barra de filtros e os tabs escondidos via `.no-print`.
+
+Corrigido (2026-07-26): a opção "Linha" não tinha efeito nos tabs Espécie/Estado/Origem —
+`desenharGraficoSimples()` só resolvia o tipo do Chart.js para `'pie'` ou `'bar'`, nunca para `'line'`.
+Além disso, os tabs **Por Período** e **Por Juiz Relator** ignoravam por completo o selector (gráfico
+fixo em barras) — como esse é o tab que abre por defeito, dava a sensação de que Pizza/Linha "não
+funcionavam" em toda a página. `desenharGraficoPeriodo()` e `desenharGraficoJuiz()` passaram a
+respeitar `TIPO_GRAFICO` tal como os outros três tabs.
+
+Melhorado (2026-07-26): layout do tab **Por Período** passou a usar `.row2` (gráfico e tabela de
+detalhe lado a lado, tal como nos outros 4 tabs) em vez de ter a tabela empilhada por baixo do
+gráfico. A altura do canvas subiu de 220px para 280px e removeu-se a legenda HTML manual
+(Registados/Concluídos) que duplicava a legenda já desenhada pelo próprio Chart.js — dava mais
+espaço à Pizza, que ficava pequena e com legenda repetida. Em **Por Juiz Relator**, a altura do
+gráfico deixou de seguir a fórmula pensada para barras horizontais (`nº de juízes × 38px`, que
+ficava demasiado baixa com poucos juízes) e passou a 280px fixos quando o tipo escolhido é Pizza
+ou Linha.
+
+Ajustado (2026-07-26): a legenda do Gráfico de Pizza (nos 5 tabs) passou de `position:'bottom'`
+(indicadores numa linha horizontal, a quebrar quando não cabiam) para `position:'right'` — Chart.js
+lista os indicadores um por linha, na vertical, ao lado do círculo.
+
+Ajustado (2026-07-26): canvas dos 5 tabs aumentado de 260/280px para 400px (Período, Juiz não-barra,
+Espécie, Estado, Origem não-barra), para os gráficos — sobretudo a Pizza — ocuparem mais espaço no
+ecrã e os dados/legenda ficarem mais legíveis. Nos tabs com barras horizontais dependentes do número
+de itens (Juiz e Origem, quando o tipo é Barras), a fórmula subiu de `nº itens × 38px` (180–420px)
+para `nº itens × 42px` (260–480px). A legenda da Pizza também ficou maior (`font-size` 10→12,
+`boxWidth` 12→14, `padding` 10px entre itens).
+
+Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
+barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um
+modal (`#estDetalheBg`, `app/Views/estatisticas/index.php`) com estatísticas rápidas (Total,
+Pendentes/Findos ou Registados/Concluídos, já disponíveis no cliente — sem pedido extra) e até 2
+gráficos de Pizza com as dimensões relacionadas àquele valor, respeitando os filtros activos
+(utilizador/datas):
+
+- **Juiz Relator** → Por Estado + Por Espécie
+- **Espécie** → Por Estado + Por Juiz Relator
+- **Estado** → Por Espécie + Por Juiz Relator
+- **Origem** e **Período** → Por Estado + Por Espécie
+
+Novo endpoint genérico `GET api/estatisticas/detalhe.php?eixo=relator|especie|estado|origem|periodo&valor=...`
+→ `EstatisticaController::detalheEixo()` → `EstatisticaModel::detalheEixo()`, que reaproveita
+`condicoes()` e acrescenta a condição do eixo clicado (com tratamento especial para os sentinelas
+`'(Não distribuído)'`/`'(Sem origem)'`, que correspondem a colunas vazias/NULL), devolvendo só as
+duas dimensões acima (nunca a do próprio eixo clicado, para não desenhar uma fatia trivial de 100%).
+No lado do cliente, `abrirDetalheEixo(eixo, valor, titulo)` (`js/estatisticas.js`) é chamada tanto
+pelo `onClick` do Chart.js de cada gráfico (`onHover` muda o cursor para `pointer` sobre elementos
+clicáveis) como por `attachLinhasDetalhe()`, que liga o clique em qualquer `<tr data-eixo>` — as
+tabelas de cada tab marcam as suas linhas com `data-eixo`/`data-valor`/`data-titulo`. Isto porque a
+regra global `.pt tr:hover td { cursor:pointer }` (`css/estilos.css`) já faz qualquer linha de
+qualquer tabela parecer clicável, e antes só o gráfico reagia.
+
+Adicionado (2026-07-26): os gráficos de Barras de "Por Juiz Relator" e "Por Origem" passaram de uma
+única barra/coluna de Total para coluna agrupada Pendentes/Findos por item (tal como
+Registados/Concluídos em "Por Período") — mais informativo do que um único número. Para Origem isto
+exigiu estender `EstatisticaModel::distribuicao()` a somar `pendentes`/`findos` por origem (mesmo
+critério de `produtividade()`), além do `total` que já devolvia.
+
+Corrigido (2026-07-26): no tab "Por Período", os filtros de Utilizador e Data (`#fEstUtilizador`,
+`#fEstDataDe`/`#fEstDataAte`) não tinham efeito nenhum nos números de Registados/Concluídos —
+`EstatisticaModel::volume()` nunca chamava `condicoes($get)` como os outros métodos do model, e
+ignorava por completo esses três parâmetros (só lia `escala`). Passou a aplicar a mesma condição de
+`p.data_registo`/`p.registado_por` de `resumo()`/`distribuicao()`/`produtividade()`/`funil()`: a
+contagem de Registados filtra directamente por essas colunas, e a de Concluídos passou a fazer
+`JOIN processos p ON p.id = dc.processo_id` para poder aplicar o mesmo filtro (que é sobre a data de
+*registo*/utilizador que registou, não sobre a data de conclusão em si — mesma semântica do resto da
+página).
+
+Adicionado (2026-07-26): botão "Limpar Filtros" (`#btnLimparFiltrosEst`) da barra de filtros de
+Estatísticas fica destacado (`btn-danger` + texto "Limpar Filtros") enquanto Utilizador, Data De ou
+Data Até tiverem algum valor escolhido — antes era só um ícone (🚫) sempre com o mesmo aspecto, sem
+indicar se algum filtro estava activo. `atualizarBotaoLimparFiltros()` corre a cada `change` desses 3
+campos, ao clicar no próprio botão, e uma vez ao carregar a página.
+
+Adicionado (2026-07-26): botão "PDF" (`#estDetalheExportPdf`) no modal de detalhe (drill-down —
+clicar num juiz/utilizador/espécie/estado/origem/período em qualquer tab) exporta esse detalhe para
+PDF com um cabeçalho institucional fixo, por este modelo:
+1. Logótipo (`assets/img/logostj.jpg`) centrado no topo.
+2. Traço tracejado.
+3. "RELATÓRIO GESTÃO DE PROCESSOS" / "ENTIDADE - SUPREMO TRIBUNAL DE JUSTIÇA - ANO JUDICIAL:
+   2025/2026" (ano fixo por agora) + parágrafo narrativo com os totais reais e actuais do sistema
+   (`api/estatisticas/resumo.php`, sem filtros — é sempre o total institucional, não o filtro activo
+   na página) por extenso em português (`numeroPorExtenso()`, cobre 0–999999) e em percentagem.
+4. Outro traço tracejado.
+5. Título do valor clicado, as estatísticas rápidas do modal (texto), e os 2 gráficos de Pizza do
+   modal — capturados directamente do `<canvas>` já desenhado (`chart.canvas.toDataURL('image/png')`),
+   sem os redesenhar.
+
+`gerarPdfDetalhe()` (`js/estatisticas.js`) usa `doc.setLineDashPattern()` do jsPDF para os traços
+tracejados, com fallback silencioso para traço contínuo se essa API não existir na versão carregada
+(`typeof doc.setLineDashPattern === 'function'`) — evita que a exportação falhe por completo só por
+causa do traço. O logótipo é carregado via `<canvas>` (`carregarImagemDataURL()`) porque o jsPDF
+precisa de uma dataURL, não de um caminho de imagem.
+
+Adicionado (2026-07-26): o mesmo cabeçalho institucional passou a aplicar-se também ao botão "PDF"
+principal da barra de topo (`exportarPDF()`, que já existia e exporta o tab activo — Período, Juiz,
+Espécie, Estado ou Origem, conforme a selecção/filtros correntes) — antes só o PDF do modal de
+detalhe tinha logótipo/tracejados/parágrafo institucional. Extraído para
+`desenharCabecalhoInstitucionalPdf(doc, logo)` e `comCabecalhoInstitucionalPdf(callback)`, partilhados
+por `gerarPdfRelatorio()` (tab activo) e `gerarPdfDetalhe()` (modal de drill-down).
+
+Corrigido (2026-07-26): o parágrafo institucional usava `api/estatisticas/resumo.php`, cujos totais
+(`total_acumulado`/`pendentes`/`findos`) são **sempre globais e sem filtro**, por desenho (servem o
+Painel Geral) — por isso o parágrafo mostrava sempre o total da instituição inteira, nunca o do
+filtro/utilizador seleccionado na página. `desenharCabecalhoInstitucionalPdf()` passou a usar
+`totaisFiltrados()`, que soma `ULTIMOS_DADOS.distribuicao.porEstado` (já filtrado por
+Utilizador/Data) em vez de chamar `resumo.php` — sem pedido extra ao servidor.
+
+Alterado (2026-07-26): o PDF principal (`gerarPdfRelatorio()`) deixou de desenhar uma tabela
+(`autoTable`) com as linhas de `dadosExportacao()` — passou a converter cada linha numa frase de texto
+("Cabeçalho: valor, Cabeçalho: valor"), com paginação manual própria (`escreverTextoComPaginacao()`,
+já que `doc.text()` sozinho não pagina como o `autoTable` fazia). Por baixo, nova secção "Resumo
+geral" (`resumoGeralLinhas()`): total/pendentes/findos e taxa média de conclusão do filtro activo, mais
+uma frase de disparidade entre relatores — calculada a partir da maior/menor taxa de conclusão entre
+os juízes relatores actualmente carregados (só entra se a diferença for ≥ 30 pontos percentuais; caso
+contrário fica de fora, em vez de forçar uma observação sem sentido para os dados reais). O PDF do
+modal de detalhe (`gerarPdfDetalhe()`) manteve os 2 gráficos de Pizza — só o PDF principal perdeu a
+tabela.
+
+Corrigido (2026-07-26): os cartões "Registados"/"Concluídos"/"Saldo" no topo do tab **Por Período**
+somavam apenas o array `dados` de `volume.php`, que só cobre os últimos 13 meses (mensal) ou 5 anos
+(anual) — por desenho, é um gráfico de tendência recente, não o histórico completo (ver
+`EstatisticaModel::volume()`). Ao filtrar por um utilizador com processos concluídos há mais tempo do
+que essa janela, os cartões mostravam um número de Concluídos menor do que a Lista de Processos
+filtrada pelo mesmo utilizador+estado (ex: 2 em vez de 5). `htmlTabPeriodo()` passou a calcular estes 3
+cartões com `totaisFiltrados()` (a mesma função usada no cabeçalho do PDF — soma
+`ULTIMOS_DADOS.distribuicao.porEstado`, sem limite de tempo), reflectindo sempre o filtro
+Utilizador/Data activo por completo. O gráfico e a tabela "Detalhe por Mês/Ano" abaixo continuam
+limitados à janela recente (é o objectivo desse gráfico), mas passaram a indicar isso explicitamente
+no título — "(últimos 13 meses)"/"(últimos 5 anos)" — para não parecerem inconsistentes com os
+cartões acima.
+
+Corrigido (2026-07-26): a estatística por Juiz Relator (tab "Por Juiz Relator", "Produtividade por
+Juiz Relator" no Painel, e o eixo `relator` do drill-down) contava sempre pelo campo `distribuicao`
+(o juiz original), ignorando por completo `redistribuicao` — um processo redistribuído continuava a
+contar para o relator original em vez de "sair" dele e passar a contar para o novo. Novo
+`EstatisticaModel::exprRelator()`: `COALESCE(NULLIF(TRIM(p.redistribuicao),''),
+NULLIF(TRIM(p.distribuicao),''), '(Não distribuído)')` — usado em `produtividade()` e nos dois sítios
+de `detalheEixo()` que antes liam `p.distribuicao` directamente (o eixo `relator` e a subconsulta
+`porRelator`). Um processo nunca é contado nos dois relatores ao mesmo tempo — ou ainda não foi
+redistribuído (conta para `distribuicao`) ou foi (conta só para `redistribuicao`). As colunas
+`distribuicao`/`redistribuicao` em si (`processos.php`) mantêm-se as duas, como registo histórico de
+quem foi o relator original e para quem foi depois redistribuído — só a *estatística* passou a somar
+pelo relator efectivo.
+
+Adicionado (2026-07-26): "Data de Distribuição" (`distribuicao_data`) passou a obrigatória, tal como
+"Distribuição (Juiz Relator)" já era — `ProcessoModel::criar()`/`atualizar()` rejeitam o pedido sem
+ela, e `js/processo-form.js` marca o campo com `class="required"` e valida antes de submeter (em
+ambos os formulários, criação e edição). Como processos antigos podiam ainda não ter esta data (o
+campo era opcional até agora), `dtSt()` (mudança rápida de estado, no modal de detalhe) passou a
+enviar a data de hoje como *fallback* quando o processo não a tiver — sem isto, essa acção ficaria
+bloqueada por um campo que nem sequer está a ser editado ali.
+
+Adicionado (2026-07-26): o Número de Processo (`numero_processo_externo`) continua a poder repetir-se
+entre processos (não é único por si só — nunca foi, e mantém-se assim), mas a combinação Número +
+Espécie passou a ter de ser única — não pode haver dois processos com o mesmo número **e** a mesma
+espécie (já teria de ser necessariamente o mesmo processo). Novo
+`ProcessoModel::existeNumeroEspecie($numero, $especieId, $ignorarId = null)`, chamado em `criar()` e
+`atualizar()` (com `$ignorarId` = o próprio processo, para não se comparar consigo mesmo ao editar) —
+devolve `409 Já existe um processo com este número e esta espécie.` se a combinação já existir noutro
+processo. `js/processo-form.js` não duplica esta validação no cliente (exige uma consulta à BD), mas
+apanha o erro 409 e realça o campo Espécie (`err-input`), tal como os outros campos obrigatórios.
+Reforçado ao nível da base de dados por `uq_processos_numero_especie` (índice único em
+`numero_processo_externo, especie_id`) — `sql/migracao_2026-07-26.sql`, já reflectido em
+`database.sql` para instalações novas — defesa contra condição de corrida entre o `SELECT` de
+validação e o `INSERT`/`UPDATE` em dois pedidos simultâneos. A migração começa por um `SELECT` que
+lista duplicados existentes (se devolver alguma linha, resolva-os antes de correr a `ALTER TABLE`,
+que falha se já houver dados a violar a constraint); testado localmente (sem duplicados, `ALTER
+TABLE` aplicada e confirmada idempotente por reexecução).
+
+Limpo/optimizado (2026-07-26): revisão de desempenho pedida antes de um commit (score do Lighthouse
+mais baixo em mobile do que em desktop). Achados:
+- `PALETA` em `js/painel.js` estava declarada mas nunca usada (sobrou de uma versão anterior) —
+  removida.
+- `jspdf-autotable` deixou de ter qualquer utilização em `js/estatisticas.js` desde que o PDF do tab
+  activo deixou de desenhar tabela (ver "Alterado" acima) — confirmado por grep, zero ocorrências de
+  `autoTable` no ficheiro — biblioteca inteira removida de `app/Views/estatisticas/index.php`.
+- jsPDF e xlsx (usadas só pelos botões "PDF"/"Excel", não no carregamento normal da página) passaram
+  de `<script>` estático no `<head>` para carregamento a pedido: `carregarScript()`,
+  `carregarLibPdf()`, `carregarLibXlsx()` (`js/estatisticas.js`) injectam o `<script>` (com o mesmo
+  `integrity`/`crossorigin` de antes) só quando o utilizador clica em Exportar, com uma Promise que
+  evita carregar duas vezes a mesma biblioteca. Chart.js/`chartjs-plugin-datalabels` continuam
+  carregadas sempre (Período/Juiz/Espécie/Estado/Origem/Painel desenham gráficos logo ao abrir a
+  página, não há como adiar isso). Não foram encontradas outras funções/variáveis órfãs nos ficheiros
+  alterados nesta sessão (`js/estatisticas.js`, `js/painel.js`, `js/processo-form.js`,
+  `app/Models/EstatisticaModel.php`, `app/Models/ProcessoModel.php`) — confirmado por contagem de
+  ocorrências de cada símbolo introduzido.
 
 ## Estrutura de ficheiros
 ```

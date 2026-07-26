@@ -4,6 +4,12 @@
 var SGD_COR_ESTADO = { entry: '#2563EB', analysis: '#7C3AED', distributed: '#D97706', concluded: '#059669', archived: '#9CA3AF' };
 var MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 var painelFiltro = { periodo: 'tudo', escala: 'mensal' };
+var CHART_PAINEL_ESTADO = null;
+var CHART_PAINEL_JUIZ   = null;
+
+if (window.Chart && window.ChartDataLabels) {
+  window.Chart.register(window.ChartDataLabels);
+}
 
 document.addEventListener('DOMContentLoaded', function () {
   carregarPainel();
@@ -37,6 +43,9 @@ function periodoParams() {
 
 /* ─── Render principal ─── */
 function renderPainel(resumo, processos, volume, prod) {
+  if (CHART_PAINEL_ESTADO) { CHART_PAINEL_ESTADO.destroy(); CHART_PAINEL_ESTADO = null; }
+  if (CHART_PAINEL_JUIZ)   { CHART_PAINEL_JUIZ.destroy();   CHART_PAINEL_JUIZ   = null; }
+
   var t         = (resumo && resumo.totais)    || {};
   var porEstado = (resumo && resumo.porEstado) || [];
   var temPeriodo = painelFiltro.periodo !== 'tudo';
@@ -45,15 +54,6 @@ function renderPainel(resumo, processos, volume, prod) {
   var subEntrados = temPeriodo
     ? '<div class="stat-sub">Acumulado: ' + (t.total_acumulado || 0) + '</div>'
     : '<div class="stat-sub">Total acumulado</div>';
-
-  var maxEstado = 1;
-  porEstado.forEach(function (e) { if (+e.total > maxEstado) maxEstado = +e.total; });
-  var estadoCharts = porEstado.map(function (e) {
-    var pct = Math.round(+e.total / maxEstado * 100);
-    return '<div class="chart-row"><span class="chart-lbl">' + esc(e.label) + '</span>'
-      + '<div class="chart-bg"><div class="chart-fill" style="width:' + pct + '%;background:' + (SGD_COR_ESTADO[e.codigo] || '#888') + '"></div></div>'
-      + '<span class="chart-val">' + e.total + '</span></div>';
-  }).join('');
 
   G('content').innerHTML = [
     /* filtros de período */
@@ -73,10 +73,15 @@ function renderPainel(resumo, processos, volume, prod) {
       + '<div class="stat-sub">Concluídos e arquivados</div></div>'
       + '</div>',
 
-    /* distribuição por estado */
-    '<div class="panel" style="padding:16px;margin-bottom:12px">'
-      + '<div style="font-size:13px;font-weight:600;margin-bottom:10px"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Distribuição por Estado</div>'
-      + (estadoCharts || '<p style="font-size:12px;color:var(--tx3)">Sem dados.</p>')
+    /* distribuição por estado + produtividade por juiz relator, lado a lado */
+    '<div class="row2" style="margin-bottom:12px">'
+      + '<div class="panel" style="padding:16px">'
+      + '<div style="font-size:13px;font-weight:600;margin-bottom:10px"><i class="ti ti-chart-pie" style="color:var(--blue)"></i> Distribuição por Estado</div>'
+      + (porEstado.length
+          ? '<div style="position:relative;height:260px"><canvas id="chartPainelEstado"></canvas></div>'
+          : '<p style="font-size:12px;color:var(--tx3)">Sem dados.</p>')
+      + '</div>'
+      + renderProdutividade(prod && prod.relatores ? prod.relatores : [])
       + '</div>',
 
     /* linha 2: lista recente + gráfico volume */
@@ -84,11 +89,11 @@ function renderPainel(resumo, processos, volume, prod) {
     renderProcessosRecentes(processos && processos.items ? processos.items : []),
     renderVolumeGrafico(volume),
     '</div>',
-
-    /* produtividade por juiz relator */
-    renderProdutividade(prod && prod.relatores ? prod.relatores : []),
   ].join('');
   fadeIn(G('content'));
+
+  desenharGraficoEstadoPainel(porEstado);
+  desenharGraficoJuizPainel(prod && prod.relatores ? prod.relatores : []);
 
   /* listeners dos botões */
   ['tudo','ano','mes'].forEach(function (p) {
@@ -98,6 +103,62 @@ function renderPainel(resumo, processos, volume, prod) {
   ['mensal','anual'].forEach(function (e) {
     var btn = G('btn-escala-' + e);
     if (btn) btn.addEventListener('click', function () { painelFiltro.escala = e; carregarPainel(); });
+  });
+}
+
+/* ─── Gráfico de Pizza: Distribuição por Estado ─── */
+function desenharGraficoEstadoPainel(porEstado) {
+  var canvas = G('chartPainelEstado');
+  if (!canvas || !window.Chart || !porEstado.length) return;
+
+  var valores = porEstado.map(function (e) { return +e.total || 0; });
+  var totalG  = valores.reduce(function (a, b) { return a + b; }, 0);
+
+  CHART_PAINEL_ESTADO = new window.Chart(canvas, {
+    type: 'pie',
+    data: {
+      labels: porEstado.map(function (e) { return e.label; }),
+      datasets: [{
+        data: valores,
+        backgroundColor: porEstado.map(function (e) { return SGD_COR_ESTADO[e.codigo] || '#888'; }),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'right', align: 'center', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        datalabels: {
+          display: true, color: '#fff', anchor: 'center', align: 'center', font: { size: 11, weight: '600' },
+          formatter: function (v) { return totalG ? Math.round(v / totalG * 100) + '%' : ''; }
+        }
+      }
+    }
+  });
+}
+
+/* ─── Gráfico de coluna agrupada: Pendentes/Findos por Juiz Relator ─── */
+function desenharGraficoJuizPainel(relatores) {
+  var canvas = G('chartPainelJuiz');
+  if (!canvas || !window.Chart || !relatores.length) return;
+
+  CHART_PAINEL_JUIZ = new window.Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: relatores.map(function (r) { return r.relator; }),
+      datasets: [
+        { label:'Pendentes', data: relatores.map(function (r) { return +r.pendentes || 0; }), backgroundColor:'#D97706', borderRadius:3 },
+        { label:'Findos',    data: relatores.map(function (r) { return +r.findos    || 0; }), backgroundColor:'#059669', borderRadius:3 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { display:true, position:'bottom', labels:{ font:{ size:10 } } },
+        datalabels: { display:false }
+      },
+      scales: { y:{ beginAtZero:true, ticks:{ precision:0 } } }
+    }
   });
 }
 
@@ -189,36 +250,15 @@ function svgBars(dados, escala) {
     + '</div>';
 }
 
-/* ─── Produtividade por Juiz Relator ─── */
+/* ─── Produtividade por Juiz Relator — só o gráfico (Pendentes/Findos por juiz);
+   o detalhe por juiz fica no tab "Por Juiz Relator" de Estatísticas. ─── */
 function renderProdutividade(relatores) {
-  if (!relatores.length) return '';
-
-  var linhas = relatores.map(function (r) {
-    var taxa = r.taxa;
-    var cor  = taxa >= 70 ? 'var(--green)' : taxa >= 40 ? 'var(--amber)' : 'var(--red)';
-    return '<tr>'
-      + '<td style="padding:7px 8px;font-size:12px">' + esc(r.relator) + '</td>'
-      + '<td style="padding:7px 8px;font-size:12px;text-align:center;font-weight:600">' + r.total + '</td>'
-      + '<td style="padding:7px 8px;font-size:12px;text-align:center;color:var(--amber)">' + r.pendentes + '</td>'
-      + '<td style="padding:7px 8px;font-size:12px;text-align:center;color:var(--green)">' + r.findos + '</td>'
-      + '<td style="padding:7px 8px;min-width:130px"><div style="display:flex;align-items:center;gap:6px">'
-      + '<div style="flex:1;height:4px;background:var(--bg);border-radius:4px">'
-      + '<div style="width:' + Math.min(taxa, 100) + '%;height:100%;background:' + cor + ';border-radius:4px"></div></div>'
-      + '<span style="font-size:11px;font-weight:600;color:' + cor + ';min-width:30px;text-align:right">' + taxa + '%</span>'
-      + '</div></td></tr>';
-  }).join('');
+  if (!relatores.length) return '<div class="panel" style="padding:16px"><div style="font-size:13px;font-weight:600;margin-bottom:10px"><i class="ti ti-users" style="color:var(--blue)"></i> Produtividade por Juiz Relator</div><p style="font-size:12px;color:var(--tx3)">Sem dados.</p></div>';
 
   return '<div class="panel" style="padding:16px">'
-    + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-users" style="color:var(--blue)"></i> Produtividade por Juiz Relator</div>'
-    + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'
-    + '<thead><tr>'
-    + thP('Juiz Relator','left') + thP('Total','center') + thP('Pendentes','center') + thP('Findos','center') + thP('Taxa Conclusão','left')
-    + '</tr></thead><tbody>' + linhas + '</tbody></table></div>'
+    + '<div style="font-size:13px;font-weight:600;margin-bottom:10px"><i class="ti ti-users" style="color:var(--blue)"></i> Produtividade por Juiz Relator</div>'
+    + '<div style="position:relative;height:260px"><canvas id="chartPainelJuiz"></canvas></div>'
     + '</div>';
-}
-
-function thP(label, align) {
-  return '<th style="text-align:' + align + ';padding:4px 8px;font-size:10px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--border)">' + label + '</th>';
 }
 
 /* ─── Botões auxiliares ─── */
