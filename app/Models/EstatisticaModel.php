@@ -16,15 +16,23 @@ class EstatisticaModel
      */
     private function condicoes(array $get): array
     {
+        return $this->condicoesPorCampo($get, 'p.data_registo');
+    }
+
+    /** Mesmos filtros de condicoes(), mas aplicados a outra coluna de data (ex.: p.data_entrada
+     *  para o card "Processos de Entrada" do Painel Geral, que conta por data de entrada em vez
+     *  de data de registo). */
+    private function condicoesPorCampo(array $get, string $campoData): array
+    {
         $dataDe       = trim((string)($get['data_de'] ?? ''));
         $dataAte      = trim((string)($get['data_ate'] ?? ''));
         $utilizadorId = (int)($get['utilizador'] ?? 0);
 
         $cond   = [];
         $params = [];
-        if ($dataDe !== '')  { $cond[] = 'DATE(p.data_registo) >= ?'; $params[] = $dataDe; }
-        if ($dataAte !== '') { $cond[] = 'DATE(p.data_registo) <= ?'; $params[] = $dataAte; }
-        if ($utilizadorId)   { $cond[] = 'p.registado_por = ?';       $params[] = $utilizadorId; }
+        if ($dataDe !== '')  { $cond[] = "DATE($campoData) >= ?"; $params[] = $dataDe; }
+        if ($dataAte !== '') { $cond[] = "DATE($campoData) <= ?"; $params[] = $dataAte; }
+        if ($utilizadorId)   { $cond[] = 'p.registado_por = ?';   $params[] = $utilizadorId; }
 
         return [$cond, $params];
     }
@@ -75,6 +83,15 @@ class EstatisticaModel
         $totais['total_acumulado'] = (int)$global['total_acumulado'];
         $totais['pendentes']       = (int)$global['pendentes'];
         $totais['findos']          = (int)$global['findos'];
+
+        // Processos de Entrada — mesmo período, mas por data_entrada em vez de data_registo
+        // (card "Processos de Entrada" do Painel Geral, distinto de "Processos Registados").
+        [$condEntrada, $paramsEntrada] = $this->condicoesPorCampo($get, 'p.data_entrada');
+        $ondeEntrada = $condEntrada ? ' WHERE ' . implode(' AND ', $condEntrada) : '';
+        $stmtEntrada = $this->pdo->prepare("SELECT COUNT(*) FROM processos p$ondeEntrada");
+        $stmtEntrada->execute($paramsEntrada);
+        $totais['entrada_total']           = (int)$stmtEntrada->fetchColumn();
+        $totais['entrada_total_acumulado'] = (int)$this->pdo->query('SELECT COUNT(*) FROM processos')->fetchColumn();
 
         return ['totais' => $totais, 'porEstado' => $porEstado];
     }

@@ -95,9 +95,10 @@ todas as linhas, em vez de repetir o rótulo em cada uma.
 
 ## Painel Geral
 `painel.php` / `js/painel.js` agrega dados de 4 APIs em `Promise.all` e apresenta:
-- **3 cards de topo**: Total de Processos Entrados (com filtro de período: todo / este ano / este mês),
-  Total Pendentes (estados ≠ concluded/archived) e Total Findos (concluded + archived) — os dois últimos
-  reflectem sempre o acumulado global, independentemente do filtro de período.
+- **4 cards de topo**: Processos Registados e Processos de Entrada (ambos com filtro de período: todo /
+  este ano / este mês), Total Pendentes (estados ≠ concluded/archived) e Total Findos (concluded +
+  archived) — os dois últimos reflectem sempre o acumulado global, independentemente do filtro de
+  período.
 - **Distribuição por estado** e **Produtividade por Juiz Relator** lado a lado (`.row2`): gráfico de
   Pizza (total por estado) e gráfico de coluna agrupada (Pendentes/Findos por juiz), ambos Chart.js.
 - **Processos recentes**: tabela compacta com os 8 processos mais recentes, com link directo ao detalhe
@@ -119,6 +120,16 @@ o gráfico de coluna agrupada) e passou a ficar lado a lado com "Distribuição 
 vez de estar num painel próprio, largura total, abaixo da linha "Processos Recentes"/"Registados vs
 Concluídos". O detalhe por juiz (tabela completa) continua disponível no tab "Por Juiz Relator" de
 Estatísticas.
+
+Corrigido e adicionado (2026-07-27): o card "Processos Entrados" na verdade sempre contou por
+`processos.data_registo` (quando o processo foi registado no sistema), nunca por `data_entrada` (quando
+o processo deu entrada) — nome corrigido para "Processos Registados", para não confundir as duas datas.
+Adicionado um card novo, "Processos de Entrada", que conta por `data_entrada` com os mesmos filtros de
+período/utilizador — `EstatisticaModel::resumo()` ganhou `condicoesPorCampo(array $get, string
+$campoData)` (extraído de `condicoes()`, que passou a chamá-lo com `'p.data_registo'`) para reutilizar a
+mesma lógica de filtros com outra coluna de data, devolvendo `entrada_total`/`entrada_total_acumulado`
+ao lado de `total`/`total_acumulado`. Grid de cards passou de 3 para 4 colunas
+(`grid-template-columns:repeat(4,1fr)`).
 
 ## Estatísticas e Relatórios
 `estatisticas.php` / `js/estatisticas.js` reorganizados em 5 tabs independentes, cada um com gráfico
@@ -553,6 +564,16 @@ centrada no ecrã com fundo branco, borda colorida esquerda e barra de progresso
 `type` aceita `'red'` (erro), `'amber'` (aviso) e `'blue'` (informação); omitido = verde (sucesso).
 O HTML em `includes/modais.php` inclui `#toast-bar`; o CSS em `css/estilos.css` anima a barra via
 `@keyframes toast-shrink` (reinicia correctamente se um novo toast aparecer antes do anterior fechar).
+
+**Filtro de datas da Lista de Processos passou a usar Data de Entrada (2026-07-27)**: os dois campos
+`<input type="date">` da barra de filtros (`fDataDe`/`fDataAte`, `app/Views/processos/index.php`)
+filtravam por `DATE(criado_em)` — instante em que a linha foi inserida na BD, sem relação com nenhuma
+data mostrada nas colunas da tabela — em vez de `data_entrada` (a coluna "Data Entrada" já visível na
+própria tabela). Corrigido em `ProcessoModel::listarComFiltros()`. Como a query corre sobre a view
+`v_processos_completos`, que expõe `data_entrada` já formatada (`DATE_FORMAT(p.data_entrada,
+'%d/%m/%Y')`, texto, não `DATE` nativo), a comparação usa `STR_TO_DATE(data_entrada, '%d/%m/%Y')` em vez
+de `DATE(data_entrada)` — aplicar `DATE()` directamente à string formatada devolveria sempre `NULL`.
+Tooltips dos dois campos actualizados de "Data de registo" para "Data de entrada".
 
 ## Parâmetros de URL que abrem algo automaticamente
 `processos.php?novo=1` (abre "Novo Processo") e `processos.php?ver=<numero>` (abre o detalhe desse

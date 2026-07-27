@@ -55,16 +55,23 @@ function renderPainel(resumo, processos, volume, prod) {
     ? '<div class="stat-sub">Acumulado: ' + (t.total_acumulado || 0) + '</div>'
     : '<div class="stat-sub">Total acumulado</div>';
 
+  var numEntrada = temPeriodo ? (t.entrada_total || 0) : (t.entrada_total_acumulado || 0);
+  var subEntrada = temPeriodo
+    ? '<div class="stat-sub">Acumulado: ' + (t.entrada_total_acumulado || 0) + '</div>'
+    : '<div class="stat-sub">Total acumulado</div>';
+
   G('content').innerHTML = [
     /* filtros de período */
     '<div style="display:flex;gap:6px;margin-bottom:14px">'
       + btnPeriodo('tudo', 'Todo o período') + btnPeriodo('ano', 'Este ano') + btnPeriodo('mes', 'Este mês')
       + '</div>',
 
-    /* 3 cards */
-    '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">'
-      + '<div class="stat"><div class="stat-lbl"><i class="ti ti-inbox" style="color:var(--blue)"></i> Processos Entrados</div>'
+    /* 4 cards */
+    '<div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px">'
+      + '<div class="stat"><div class="stat-lbl"><i class="ti ti-inbox" style="color:var(--blue)"></i> Processos Registados</div>'
       + '<div class="stat-num" style="color:var(--blue)">' + numEntrados + '</div>' + subEntrados + '</div>'
+      + '<div class="stat"><div class="stat-lbl"><i class="ti ti-door-enter" style="color:var(--purple)"></i> Processos de Entrada</div>'
+      + '<div class="stat-num" style="color:var(--purple)">' + numEntrada + '</div>' + subEntrada + '</div>'
       + '<div class="stat"><div class="stat-lbl"><i class="ti ti-hourglass" style="color:var(--amber)"></i> Processos Pendentes</div>'
       + '<div class="stat-num" style="color:var(--amber)">' + (t.pendentes || 0) + '</div>'
       + '<div class="stat-sub">Em tramitação ativa</div></div>'

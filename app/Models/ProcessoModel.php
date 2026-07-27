@@ -57,12 +57,15 @@ class ProcessoModel
             $where[]                 = 'distribuicao LIKE :distribuicao';
             $params[':distribuicao'] = '%' . $get['distribuicao'] . '%';
         }
+        // v_processos_completos expõe data_entrada já formatada ('%d/%m/%Y'), não como
+        // DATE nativo — STR_TO_DATE reconstrói a data para comparar com o filtro (:data_de/:data_ate
+        // chegam em formato ISO, do <input type="date"> em processos.php).
         if (!empty($get['data_de'])) {
-            $where[]            = 'DATE(criado_em) >= :data_de';
+            $where[]            = "STR_TO_DATE(data_entrada, '%d/%m/%Y') >= :data_de";
             $params[':data_de'] = $get['data_de'];
         }
         if (!empty($get['data_ate'])) {
-            $where[]             = 'DATE(criado_em) <= :data_ate';
+            $where[]             = "STR_TO_DATE(data_entrada, '%d/%m/%Y') <= :data_ate";
             $params[':data_ate'] = $get['data_ate'];
         }
         if (!empty($get['q'])) {

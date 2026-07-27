@@ -30,8 +30,8 @@
                 <option value="<?= sgd_e($esp) ?>"><?= sgd_e($esp) ?></option>
               <?php endforeach; ?>
             </select>
-            <input type="date" class="btn btn-sm" id="fDataDe" title="Data de registo — de">
-            <input type="date" class="btn btn-sm" id="fDataAte" title="Data de registo — até">
+            <input type="date" class="btn btn-sm" id="fDataDe" title="Data de entrada — de">
+            <input type="date" class="btn btn-sm" id="fDataAte" title="Data de entrada — até">
             <button class="btn btn-sm" id="btnLimparFiltros"><i class="ti ti-filter-off"></i></button>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
