@@ -374,6 +374,20 @@ conclusão decrescente. Como as Estatísticas já não carregam `jspdf-autotable
 acima), a tabela é desenhada célula a célula com `doc.text()`, com paginação manual (cabeçalho repetido
 em cada página nova) tal como o resto do documento.
 
+Removido (2026-07-27): a antiga secção "Relatório — [Tab activo]" (dados do tab em frases de texto,
+"Cabeçalho: valor, Cabeçalho: valor") deixou de fazer parte do PDF principal — Resumo Geral + a tabela
+"Por Relator" já cobrem o que interessa mostrar, sempre com dados reais. `labelTabActiva()` foi removida
+por ter ficado sem uso.
+
+Afinado (2026-07-27): no cabeçalho institucional, o traço logo a seguir ao logótipo é tracejado e mais
+espesso (negrito); o logótipo tem tamanho fixo 48×26mm (mais largo que alto — a imagem de origem,
+510×280px, já é assim, mas maior do que o tamanho anterior). O bloco de título (duas linhas) fica
+centrado entre esse traço e um segundo traço, este contínuo e fino, adicionado logo antes do parágrafo
+institucional — 10mm de espaço antes e depois do título (para o centrar entre os dois traços) e 16mm
+entre o traço fino e o início do parágrafo. No "Resumo geral", as duas linhas passam a ter uma marca "•"
+a negrito no início (via `escreverParagrafoComNegrito()`, reaproveitada aqui para um marcador em vez de
+uma palavra a destacar).
+
 ## Estrutura de ficheiros
 ```
 SGD/
