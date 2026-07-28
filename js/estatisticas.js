@@ -787,20 +787,23 @@ function desenharCabecalhoInstitucionalPdf(doc, logo) {
   var margem = 14;
   var y = 14;
 
-  // Tamanho fixo, maior que antes e mais alto do que largo — a imagem de origem
+  // Tamanho fixo, maior que antes e mais largo do que alto — a imagem de origem
   // (assets/img/logostj.jpg) é mais larga do que alta (510×280), por isso NÃO se usa a
-  // proporção original aqui (ficaria sempre mais larga), o tamanho é intencionalmente fixo.
-  var logoW = 30, logoH = 42;
+  // proporção original aqui (ficaria sempre com outra proporção), o tamanho é intencionalmente fixo.
+  var logoW = 48, logoH = 26;
   doc.addImage(logo.dataUrl, 'JPEG', (pageW - logoW) / 2, y, logoW, logoH);
   y += logoH + 6;
 
-  // Traço a negrito (sólido, mais espesso) logo a seguir ao logótipo — separa o logótipo
-  // do bloco de título/parágrafo institucional.
+  // Traço a negrito (tracejado, mais espesso) logo a seguir ao logótipo — separa o
+  // logótipo do bloco de título/parágrafo institucional.
+  var temLineDash = typeof doc.setLineDashPattern === 'function';
   doc.setDrawColor(0);
   doc.setLineWidth(0.8);
+  if (temLineDash) doc.setLineDashPattern([2, 1.5], 0);
   doc.line(margem, y, pageW - margem, y);
+  if (temLineDash) doc.setLineDashPattern([], 0);
   doc.setLineWidth(0.2);
-  y += 8;
+  y += 10;
 
   var t = totaisFiltrados();
   var pctFindos = t.total ? Math.round(t.findos / t.total * 100) : 0;
@@ -843,7 +846,13 @@ function desenharCabecalhoInstitucionalPdf(doc, logo) {
     doc.text(s.texto, xSeg, y);
     xSeg += doc.getTextWidth(s.texto);
   });
-  y += 12;
+  y += 10;
+
+  // Traço contínuo bem fino entre o título e o corpo do texto.
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.1);
+  doc.line(margem, y, pageW - margem, y);
+  y += 16;
 
   doc.setFont('times', 'normal'); doc.setFontSize(12);
   y = escreverParagrafoComNegrito(doc, paragrafoPartes, margem, y, pageW - margem * 2, ALTURA_LINHA_CORPO, 20) + 6;
@@ -1069,7 +1078,10 @@ function gerarPdfRelatorio(logo) {
   doc.text('Resumo geral', margem, y); y += 7;
   doc.setFont('times', 'normal'); doc.setFontSize(12);
   resumoGeralLinhas().forEach(function (linha) {
-    y = escreverParagrafoJustificado(doc, linha, margem + 4, y, pageW - margem * 2 - 4, ALTURA_LINHA_CORPO, 20) + 1;
+    y = escreverParagrafoComNegrito(doc, [
+      { texto: '• ', negrito: true },
+      { texto: linha, negrito: false },
+    ], margem + 4, y, pageW - margem * 2 - 4, ALTURA_LINHA_CORPO, 20) + 1;
   });
   y += 4;
 
