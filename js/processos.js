@@ -14,11 +14,11 @@ var PARAM_VER_INICIAL = new URLSearchParams(window.location.search).get('ver');
 document.addEventListener('DOMContentLoaded', function () {
   ['fQ'].forEach(function (id) {
     var el = G(id);
-    if (el) el.addEventListener('input', function () { PROC_PG = 1; recarregarProcessos(); });
+    if (el) el.addEventListener('input', function () { PROC_PG = 1; atualizarBotaoLimparFiltrosProc(); recarregarProcessos(); });
   });
   ['fEstado', 'fEspecie', 'fDataDe', 'fDataAte'].forEach(function (id) {
     var el = G(id);
-    if (el) el.addEventListener('change', function () { PROC_PG = 1; recarregarProcessos(); });
+    if (el) el.addEventListener('change', function () { PROC_PG = 1; atualizarBotaoLimparFiltrosProc(); recarregarProcessos(); });
   });
 
   var limpar = G('btnLimparFiltros');
@@ -26,8 +26,10 @@ document.addEventListener('DOMContentLoaded', function () {
     G('fQ').value = ''; G('fEstado').value = ''; G('fEspecie').value = '';
     G('fDataDe').value = ''; G('fDataAte').value = '';
     PROC_PG = 1;
+    atualizarBotaoLimparFiltrosProc();
     recarregarProcessos();
   });
+  atualizarBotaoLimparFiltrosProc();
 
   var closeCrudBtn = G('closeCrudBtn');
   if (closeCrudBtn) closeCrudBtn.addEventListener('click', closeCrud);
@@ -50,6 +52,17 @@ document.addEventListener('DOMContentLoaded', function () {
     history.replaceState(null, '', window.location.pathname);
   }
 });
+
+/* Destaca "Limpar Filtros" (cor + texto) enquanto Pesquisa/Estado/Espécie/Data De/Data Até
+   tiverem algum valor escolhido — mesmo comportamento de Estatísticas (atualizarBotaoLimparFiltros(),
+   js/estatisticas.js), sem isso o botão é só um ícone e passava despercebido. */
+function atualizarBotaoLimparFiltrosProc() {
+  var btn = G('btnLimparFiltros');
+  if (!btn) return;
+  var activo = !!(GV('fQ') || GV('fEstado') || GV('fEspecie') || GV('fDataDe') || GV('fDataAte'));
+  btn.className = 'btn btn-sm' + (activo ? ' btn-danger' : '');
+  btn.innerHTML = '<i class="ti ti-filter-off"></i>' + (activo ? ' Limpar Filtros' : '');
+}
 
 function paramsFiltro() {
   var p = new URLSearchParams();

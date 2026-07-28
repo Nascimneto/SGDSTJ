@@ -575,6 +575,13 @@ própria tabela). Corrigido em `ProcessoModel::listarComFiltros()`. Como a query
 de `DATE(data_entrada)` — aplicar `DATE()` directamente à string formatada devolveria sempre `NULL`.
 Tooltips dos dois campos actualizados de "Data de registo" para "Data de entrada".
 
+**Botão "Limpar Filtros" destacado, também na Lista de Processos (2026-07-27)**: mesmo tratamento já
+existente em Estatísticas (`atualizarBotaoLimparFiltros()`, `#btnLimparFiltrosEst`) — o botão
+(`#btnLimparFiltros`) passa de simples ícone a `btn-danger` com o texto "Limpar Filtros" assim que
+Pesquisa, Estado, Espécie, Data De ou Data Até tiverem algum valor escolhido, para não passar
+despercebido que a lista está filtrada. `atualizarBotaoLimparFiltrosProc()` (`js/processos.js`) corre a
+cada `input`/`change` desses 5 campos, ao clicar no próprio botão, e uma vez ao carregar a página.
+
 ## Parâmetros de URL que abrem algo automaticamente
 `processos.php?novo=1` (abre "Novo Processo") e `processos.php?ver=<numero>` (abre o detalhe desse
 processo) limpam o parâmetro da URL com `history.replaceState()` logo depois de o consumir
