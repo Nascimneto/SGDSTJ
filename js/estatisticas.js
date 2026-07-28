@@ -779,48 +779,75 @@ function totaisFiltrados() {
 }
 
 /* ─── Cabeçalho institucional partilhado por TODOS os PDFs de Estatísticas (o do tab
-   activo e o do modal de detalhe): logótipo centrado, traço tracejado, título/parágrafo
-   com os totais do filtro/selecção activa, outro tracejado. Devolve o "y" onde o
-   conteúdo específico de cada PDF deve começar a desenhar-se. ─── */
+   activo e o do modal de detalhe): logótipo centrado, traço a negrito, título/parágrafo
+   com os totais do filtro/selecção activa. Devolve o "y" onde o conteúdo específico de
+   cada PDF deve começar a desenhar-se. ─── */
 function desenharCabecalhoInstitucionalPdf(doc, logo) {
   var pageW = doc.internal.pageSize.getWidth();
   var margem = 14;
   var y = 14;
 
-  var logoW = 26, logoH = logo.h ? (logoW * logo.h / logo.w) : 26;
+  // Tamanho fixo, maior que antes e mais alto do que largo — a imagem de origem
+  // (assets/img/logostj.jpg) é mais larga do que alta (510×280), por isso NÃO se usa a
+  // proporção original aqui (ficaria sempre mais larga), o tamanho é intencionalmente fixo.
+  var logoW = 30, logoH = 42;
   doc.addImage(logo.dataUrl, 'JPEG', (pageW - logoW) / 2, y, logoW, logoH);
   y += logoH + 6;
 
-  var temLineDash = typeof doc.setLineDashPattern === 'function';
-  function tracejado() {
-    if (temLineDash) doc.setLineDashPattern([1, 1], 0);
-    doc.setDrawColor(140);
-    doc.line(margem, y, pageW - margem, y);
-    if (temLineDash) doc.setLineDashPattern([], 0);
-    y += 8;
-  }
-  tracejado();
+  // Traço a negrito (sólido, mais espesso) logo a seguir ao logótipo — separa o logótipo
+  // do bloco de título/parágrafo institucional.
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.8);
+  doc.line(margem, y, pageW - margem, y);
+  doc.setLineWidth(0.2);
+  y += 8;
 
   var t = totaisFiltrados();
   var pctFindos = t.total ? Math.round(t.findos / t.total * 100) : 0;
   var pctPendentes = t.total ? Math.round(t.pendentes / t.total * 100) : 0;
-  var paragrafo = 'Durante o ano judicial de 2025/2026, deu-se entrada na secretaria do Supremo '
-    + 'Tribunal de Justiça (STJ) em um total de ' + t.total + ' (' + numeroPorExtenso(t.total) + ') processos. '
-    + t.findos + ' (' + numeroPorExtenso(t.findos) + ') foram concluídos, o que equivale a ' + pctFindos
-    + '% dos processos entrados/registados, e ' + t.pendentes + ' (' + numeroPorExtenso(t.pendentes) + ') '
-    + 'ainda estão em tramitação, o equivalente a ' + pctPendentes + '% dos processos entrados.';
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
-  doc.text('RELATÓRIO GESTÃO DE PROCESSOS', pageW / 2, y, { align: 'center' }); y += 6;
-  doc.setFontSize(10);
-  doc.text('ENTIDADE - SUPREMO TRIBUNAL DE JUSTIÇA - ANO JUDICIAL: 2025/2026', pageW / 2, y, { align: 'center' }); y += 7;
+  // "Supremo Tribunal de Justiça (STJ)" e os 3 números por extenso entre parênteses
+  // ficam a negrito, a meio da frase — ver escreverParagrafoComNegrito().
+  var paragrafoPartes = [
+    { texto: 'Durante o ano judicial de 2025/2026, deu-se entrada na secretaria do ' },
+    { texto: 'Supremo Tribunal de Justiça (STJ)', negrito: true },
+    { texto: ' em um total de ' + t.total + ' (' },
+    { texto: numeroPorExtenso(t.total), negrito: true },
+    { texto: ') processos. ' + t.findos + ' (' },
+    { texto: numeroPorExtenso(t.findos), negrito: true },
+    { texto: ') foram concluídos, o que equivale a ' + pctFindos + '% dos processos entrados/registados, e ' + t.pendentes + ' (' },
+    { texto: numeroPorExtenso(t.pendentes), negrito: true },
+    { texto: ') ainda estão em tramitação, o equivalente a ' + pctPendentes + '% dos processos entrados.' },
+  ];
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-  var linhasPar = doc.splitTextToSize(paragrafo, pageW - margem * 2);
-  doc.text(linhasPar, margem, y);
-  y += linhasPar.length * 5 + 4;
+  doc.setFont('times', 'bold'); doc.setFontSize(14);
+  doc.text('RELATÓRIO GESTÃO DE PROCESSOS', pageW / 2, y, { align: 'center' }); y += 7;
 
-  tracejado();
+  // 2ª linha: "ENTIDADE" e "ANO JUDICIAL:" a negrito, "2025/2026" e o resto normal —
+  // desenhada segmento a segmento (jsPDF não mistura pesos num só doc.text()) para poder
+  // manter a linha inteira centrada apesar dos pesos diferentes.
+  doc.setFontSize(14);
+  var segs = [
+    { texto: 'ENTIDADE', negrito: true },
+    { texto: ' - SUPREMO TRIBUNAL DE JUSTIÇA - ', negrito: false },
+    { texto: 'ANO JUDICIAL: ', negrito: true },
+    { texto: '2025/2026', negrito: false },
+  ];
+  var largTotal = segs.reduce(function (soma, s) {
+    doc.setFont('times', s.negrito ? 'bold' : 'normal');
+    return soma + doc.getTextWidth(s.texto);
+  }, 0);
+  var xSeg = (pageW - largTotal) / 2;
+  segs.forEach(function (s) {
+    doc.setFont('times', s.negrito ? 'bold' : 'normal');
+    doc.text(s.texto, xSeg, y);
+    xSeg += doc.getTextWidth(s.texto);
+  });
+  y += 12;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(12);
+  y = escreverParagrafoComNegrito(doc, paragrafoPartes, margem, y, pageW - margem * 2, ALTURA_LINHA_CORPO, 20) + 6;
+
   return y;
 }
 
@@ -846,16 +873,16 @@ function gerarPdfDetalhe(logo) {
   var margem = 14;
   var y = desenharCabecalhoInstitucionalPdf(doc, logo);
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+  doc.setFont('times', 'bold'); doc.setFontSize(12);
   doc.text(DETALHE_ACTUAL.titulo, margem, y); y += 8;
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.setFont('times', 'normal'); doc.setFontSize(12);
   var statsTxt = G('estDetalheStats').querySelectorAll('.stat').length
     ? Array.prototype.map.call(G('estDetalheStats').querySelectorAll('.stat'), function (el) {
         return el.querySelector('.stat-lbl').textContent.trim() + ': ' + el.querySelector('.stat-num').textContent.trim();
       }).join('   |   ')
     : '';
-  if (statsTxt) { doc.text(doc.splitTextToSize(statsTxt, pageW - margem * 2), margem, y); y += 10; }
+  if (statsTxt) { y = escreverParagrafoJustificado(doc, statsTxt, margem, y, pageW - margem * 2, ALTURA_LINHA_CORPO, 20) + 2; }
 
   var chartW = (pageW - margem * 2 - 6) / 2;
   [{ chart: CHART_DETALHE_A, label: 'estDetalheLabelA' }, { chart: CHART_DETALHE_B, label: 'estDetalheLabelB' }]
@@ -903,15 +930,130 @@ function resumoGeralLinhas() {
   ];
 }
 
-/** Escreve um bloco de linhas de texto, paginando automaticamente quando o conteúdo
- *  não cabe na página actual (doc.text() sozinho não pagina). Devolve o novo "y". */
-function escreverTextoComPaginacao(doc, linhas, x, y, margemInferior) {
+// Corpo do relatório (Times New Roman, 12pt) segue a proporção clássica de espaçamento
+// entre linhas 1,5: 12pt * 1.5 / scaleFactor(pt→mm, ≈2.8346) ≈ 6.35mm, arredondado.
+var ALTURA_LINHA_CORPO = 6.5;
+
+/** Escreve um parágrafo justificado (Times, 12pt) — jsPDF trata o "word-wrap" e a
+ *  justificação internamente ao receber a string completa + {maxWidth, align:'justify'}
+ *  (a última linha do parágrafo nunca é esticada, só as anteriores; um parágrafo com uma
+ *  única linha fica sempre alinhado à esquerda, nunca esticado a preencher a largura
+ *  toda). splitTextToSize() só serve para saber quantas linhas vão sair, já que text()
+ *  não devolve essa contagem, e assim decidir se cabe na página antes de desenhar
+ *  (quebra de página só acontece ANTES do parágrafo, não a meio dele). */
+function escreverParagrafoJustificado(doc, texto, x, y, largura, alturaLinha, margemInferior) {
   var alturaPagina = doc.internal.pageSize.getHeight();
-  linhas.forEach(function (linha) {
-    if (y > alturaPagina - margemInferior) { doc.addPage(); y = 14; }
-    doc.text(linha, x, y);
-    y += 5;
+  var nLinhas = doc.splitTextToSize(texto, largura).length;
+  if (y + nLinhas * alturaLinha > alturaPagina - margemInferior) { doc.addPage(); y = 14; }
+  doc.text(texto, x, y, { maxWidth: largura, align: 'justify' });
+  return y + nLinhas * alturaLinha;
+}
+
+/** Escreve um parágrafo com trechos negrito/normal misturados (ex.: destacar "Supremo
+ *  Tribunal de Justiça (STJ)" ou um número por extenso a meio da frase), com
+ *  justificação real linha a linha — jsPDF não mistura pesos dentro do mesmo doc.text(),
+ *  por isso este helper faz o "word-wrap" e a justificação à mão: mede cada palavra com
+ *  a fonte certa (negrito/normal), empacota em linhas até `largura`, e distribui o
+ *  espaço sobrante entre as palavras de cada linha (excepto a última, que fica alinhada
+ *  à esquerda, tal como escreverParagrafoJustificado() faz via jsPDF para texto de um só
+ *  peso). `partes` = [{ texto:'antes ' }, { texto:'destaque', negrito:true }, ...],
+ *  concatenadas por ordem. Devolve o novo "y". */
+function escreverParagrafoComNegrito(doc, partes, x, y, largura, alturaLinha, margemInferior) {
+  doc.setFont('times', 'normal'); doc.setFontSize(12);
+  var espacoLargura = doc.getTextWidth(' ');
+
+  var palavras = [];
+  partes.forEach(function (parte) {
+    parte.texto.split(/\s+/).filter(function (w) { return w.length; }).forEach(function (w) {
+      palavras.push({ texto: w, negrito: !!parte.negrito });
+    });
   });
+
+  function largP(p) {
+    doc.setFont('times', p.negrito ? 'bold' : 'normal');
+    return doc.getTextWidth(p.texto);
+  }
+
+  var linhas = [], linhaActual = [], largAcumulada = 0;
+  palavras.forEach(function (p) {
+    var w = largP(p);
+    var largComEspaco = largAcumulada + (linhaActual.length ? espacoLargura : 0) + w;
+    if (linhaActual.length && largComEspaco > largura) {
+      linhas.push(linhaActual);
+      linhaActual = [p]; largAcumulada = w;
+    } else {
+      linhaActual.push(p); largAcumulada = largComEspaco;
+    }
+  });
+  if (linhaActual.length) linhas.push(linhaActual);
+
+  var alturaPagina = doc.internal.pageSize.getHeight();
+  if (y + linhas.length * alturaLinha > alturaPagina - margemInferior) { doc.addPage(); y = 14; }
+
+  linhas.forEach(function (linha, i) {
+    var largTotalPalavras = linha.reduce(function (s, p) { return s + largP(p); }, 0);
+    var nEspacos = linha.length - 1;
+    var ultima = i === linhas.length - 1;
+    var espacoUsado = (ultima || !nEspacos) ? espacoLargura : (largura - largTotalPalavras) / nEspacos;
+
+    var xAtual = x;
+    linha.forEach(function (p, j) {
+      doc.setFont('times', p.negrito ? 'bold' : 'normal');
+      doc.text(p.texto, xAtual, y);
+      xAtual += largP(p) + (j < linha.length - 1 ? espacoUsado : 0);
+    });
+    y += alturaLinha;
+  });
+
+  return y;
+}
+
+/** Tabela "Por Relator (ordenado por % de conclusão)" — sempre presente no relatório
+ *  principal, com os mesmos dados reais de produtividade do tab "Por Juiz Relator"
+ *  (ULTIMOS_DADOS.produtividade.relatores), ordenados por taxa de conclusão decrescente.
+ *  Desenhada manualmente, célula a célula — Estatísticas já não carrega jspdf-autotable
+ *  (ver README, 2026-07-26: removido por não ter uso nessa altura). Devolve o novo "y". */
+function desenharTabelaPorRelator(doc, y, margem, pageW) {
+  var relatores = ((ULTIMOS_DADOS.produtividade || {}).relatores || [])
+    .filter(function (r) { return +r.total > 0; })
+    .slice()
+    .sort(function (a, b) { return (+b.taxa) - (+a.taxa); });
+  if (!relatores.length) return y;
+
+  var alturaPagina = doc.internal.pageSize.getHeight();
+  var xRelator = margem, xTotal = 130, xPend = 152, xFind = 174, xPct = pageW - margem;
+
+  // Tabela sem linhas (nem separadora nem de grelha) — só espaçamento e alinhamento de
+  // colunas; cabeçalho a negrito é o que distingue visualmente da linha de dados.
+  function cabecalho() {
+    doc.setFont('times', 'bold'); doc.setFontSize(12);
+    doc.text('Relator', xRelator, y);
+    doc.text('Total',     xTotal, y, { align: 'right' });
+    doc.text('Pendentes', xPend,  y, { align: 'right' });
+    doc.text('Findos',    xFind,  y, { align: 'right' });
+    doc.text('%',         xPct,   y, { align: 'right' });
+    y += ALTURA_LINHA_CORPO;
+  }
+
+  doc.setFont('times', 'bold'); doc.setFontSize(12);
+  doc.text('Por Relator (ordenado por % de conclusão)', margem, y); y += 8;
+  cabecalho();
+
+  doc.setFont('times', 'normal'); doc.setFontSize(12);
+  relatores.forEach(function (r) {
+    if (y > alturaPagina - 20) {
+      doc.addPage(); y = 14;
+      cabecalho();
+      doc.setFont('times', 'normal'); doc.setFontSize(12);
+    }
+    doc.text(String(r.relator), xRelator, y);
+    doc.text(String(+r.total),     xTotal, y, { align: 'right' });
+    doc.text(String(+r.pendentes), xPend,  y, { align: 'right' });
+    doc.text(String(+r.findos),    xFind,  y, { align: 'right' });
+    doc.text(r.taxa + '%',         xPct,   y, { align: 'right' });
+    y += ALTURA_LINHA_CORPO;
+  });
+
   return y;
 }
 
@@ -921,29 +1063,22 @@ function gerarPdfRelatorio(logo) {
   var margem = 14;
   var y = desenharCabecalhoInstitucionalPdf(doc, logo);
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
-  doc.text('Relatório — ' + labelTabActiva(), margem, y); y += 7;
-
-  // Dados do tab activo em texto (não em tabela) — cada linha de dadosExportacao()
-  // vira uma frase "Cabeçalho: valor, Cabeçalho: valor", já reflectindo o filtro activo.
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-  var linhasTexto = [];
-  dadosExportacao().forEach(function (t) {
-    t.linhas.forEach(function (linha) {
-      var frase = t.cabecalho.map(function (h, i) { return h + ': ' + linha[i]; }).join(', ');
-      linhasTexto = linhasTexto.concat(doc.splitTextToSize(frase, pageW - margem * 2));
-    });
-  });
-  if (!linhasTexto.length) linhasTexto = ['Sem dados para o filtro seleccionado.'];
-  y = escreverTextoComPaginacao(doc, linhasTexto, margem, y, 60) + 4;
-
-  if (y > doc.internal.pageSize.getHeight() - 40) { doc.addPage(); y = 14; }
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
-  doc.text('Resumo geral', margem, y); y += 6;
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  // Resumo geral primeiro — antes do detalhe do tab activo, para o relatório abrir com a
+  // visão geral (pedido explicitamente, ao contrário da ordem anterior).
+  doc.setFont('times', 'bold'); doc.setFontSize(12);
+  doc.text('Resumo geral', margem, y); y += 7;
+  doc.setFont('times', 'normal'); doc.setFontSize(12);
   resumoGeralLinhas().forEach(function (linha) {
-    y = escreverTextoComPaginacao(doc, doc.splitTextToSize(linha, pageW - margem * 2 - 4), margem + 4, y, 20) + 2;
+    y = escreverParagrafoJustificado(doc, linha, margem + 4, y, pageW - margem * 2 - 4, ALTURA_LINHA_CORPO, 20) + 1;
   });
+  y += 4;
+
+  // Tabela "Por Relator" — sempre presente, independente do tab activo. É a última secção
+  // do relatório: o antigo bloco "Relatório — [Tab activo]" (dados do tab em frases de
+  // texto) deixou de ser necessário, agora que Resumo Geral + Por Relator já cobrem o que
+  // interessa mostrar, sempre com dados reais do sistema.
+  if (y > doc.internal.pageSize.getHeight() - 50) { doc.addPage(); y = 14; }
+  desenharTabelaPorRelator(doc, y, margem, pageW);
 
   doc.save('SGD_Relatorio_' + relatorioActivo + '.pdf');
 }
@@ -987,9 +1122,4 @@ function dadosExportacao() {
       linhas: ori.map(function (o) { return [o.origem, +o.total]; }) }];
   }
   return [];
-}
-
-function labelTabActiva() {
-  var m = { periodo:'Por Período', juiz:'Por Juiz Relator', especie:'Por Espécie', estado:'Por Estado', origem:'Por Origem' };
-  return m[relatorioActivo] || '';
 }

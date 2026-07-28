@@ -340,6 +340,40 @@ mais baixo em mobile do que em desktop). Achados:
   `app/Models/EstatisticaModel.php`, `app/Models/ProcessoModel.php`) — confirmado por contagem de
   ocorrências de cada símbolo introduzido.
 
+Reformatado (2026-07-27): formatação institucional do corpo dos PDFs de Estatísticas (PDF do tab activo
+e PDF do modal de detalhe, ambos via `desenharCabecalhoInstitucionalPdf()`) — fonte Times New Roman
+(`doc.setFont('times', ...)`, fonte nativa do jsPDF, em vez de Helvetica), corpo a 12pt, justificado, com
+espaçamento entre linhas de 1,5 (`ALTURA_LINHA_CORPO = 6.5mm` ≈ 12pt × 1,5 ÷ 2,8346pt/mm). Título
+"RELATÓRIO GESTÃO DE PROCESSOS" passou de 13pt para 14pt; a linha "ENTIDADE - SUPREMO TRIBUNAL DE
+JUSTIÇA - ANO JUDICIAL: 2025/2026" passou de 10pt para 14pt, com "ENTIDADE" e "ANO JUDICIAL: 2025/2026"
+a negrito e o resto normal — jsPDF não mistura pesos dentro do mesmo `doc.text()`, por isso esta linha é
+desenhada segmento a segmento (mede a largura de cada troço com a fonte certa, `doc.getTextWidth()`,
+para poder centrar a linha inteira apesar dos pesos diferentes). No parágrafo institucional, "Supremo
+Tribunal de Justiça (STJ)" e os 3 números por extenso entre parênteses (total/findos/pendentes) também
+ficam a negrito, a meio da frase.
+
+Como o texto justificado com trechos negrito/normal misturados não tem suporte nativo no jsPDF (só
+`{align:'justify', maxWidth}` num `doc.text()` de um peso só), duas funções novas cobrem os dois casos:
+- `escreverParagrafoJustificado(doc, texto, x, y, largura, alturaLinha, margemInferior)` — parágrafos de
+  um só peso: delega o "word-wrap" e a justificação ao próprio jsPDF (passa a string completa +
+  `{maxWidth, align:'justify'}`); usa `splitTextToSize()` só para saber quantas linhas vão sair (o
+  `text()` não devolve essa contagem) e decidir se cabe na página antes de desenhar.
+- `escreverParagrafoComNegrito(doc, partes, x, y, largura, alturaLinha, margemInferior)` — parágrafos
+  com trechos negrito/normal (`partes = [{texto, negrito}, ...]`): faz o "word-wrap" e a justificação à
+  mão, palavra a palavra — mede cada palavra com a fonte certa, empacota em linhas até `largura`, e
+  distribui o espaço sobrante entre as palavras de cada linha (excepto a última, sempre alinhada à
+  esquerda — um parágrafo de uma única linha nunca fica esticado a preencher a largura toda).
+
+Reordenado e ampliado (2026-07-27): no PDF principal (`gerarPdfRelatorio()`), "Resumo geral" passou a
+aparecer **antes** dos dados do tab activo (era depois). Nova secção fixa "Por Relator (ordenado por %
+de conclusão)" (`desenharTabelaPorRelator()`) a seguir ao Resumo Geral, **sempre presente independentemente
+do tab activo** — tabela sem linhas (nem separadora nem de grelha, só espaçamento e alinhamento de
+colunas: Relator à esquerda, Total/Pendentes/Findos/% à direita), com os mesmos dados reais de
+produtividade do tab "Por Juiz Relator" (`ULTIMOS_DADOS.produtividade.relatores`), ordenados por taxa de
+conclusão decrescente. Como as Estatísticas já não carregam `jspdf-autotable` (ver "Limpo/optimizado"
+acima), a tabela é desenhada célula a célula com `doc.text()`, com paginação manual (cabeçalho repetido
+em cada página nova) tal como o resto do documento.
+
 ## Estrutura de ficheiros
 ```
 SGD/
