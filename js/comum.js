@@ -121,8 +121,11 @@ function showToast(msg, icon, type) {
 }
 
 /* ─── Diálogo de confirmação ───
- * opts (opcional): { simTxt, naoTxt, naoCb } — textos dos botões e acção ao
- * clicar em "Não"/Cancelar (por omissão só fecha, sem acção nenhuma).
+ * opts (opcional): { simTxt, naoTxt, naoCb, icone } — textos dos botões, acção ao
+ * clicar em "Não"/Cancelar (por omissão só fecha, sem acção nenhuma), e um ícone
+ * de aviso (ex: 'alert-triangle') mostrado acima do título só quando indicado —
+ * este diálogo também serve para confirmações não destrutivas (sessão a expirar,
+ * senha resetada...), por isso o ícone é opt-in por chamada, não global.
  */
 var cfCb = null;
 var cfNoCb = null;
@@ -132,6 +135,7 @@ function cfDlg(title, msg, cb, opts) {
   G('cfP').innerHTML = msg;
   G('cfYes').textContent = opts.simTxt || 'Confirmar';
   G('cfNo').textContent = opts.naoTxt || 'Cancelar';
+  G('cfIcon').className = 'ti' + (opts.icone ? ' ti-' + opts.icone + ' show' : '');
   cfCb = cb;
   cfNoCb = opts.naoCb || null;
   G('cfbg').classList.add('open');

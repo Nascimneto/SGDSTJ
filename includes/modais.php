@@ -2,6 +2,7 @@
 
 <div id="cfbg">
   <div id="cfbox">
+    <i id="cfIcon" class="ti"></i>
     <h3 id="cfT">Confirmar</h3>
     <p id="cfP">Tem a certeza?</p>
     <div class="btns">

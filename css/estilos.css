@@ -265,7 +265,7 @@ body[data-pagina="processos"] .pt .badge   { font-size:10px; }
 /* ── Modal ── */
 .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:500; align-items:flex-end; justify-content:center; backdrop-filter:blur(3px); }
 .modal-bg.open { display:flex; }
-.modal    { background:var(--white); border-radius:var(--rl) var(--rl) 0 0; width:100%; max-height:93vh; overflow-y:auto; animation:slUp .22s ease; }
+.modal    { background:var(--white); border-radius:var(--rl) var(--rl) 0 0; width:100%; max-height:93vh; overflow-y:auto; overflow-x:hidden; animation:slUp .22s ease; }
 .modal-hd { padding:14px 16px 11px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; position:sticky; top:0; background:var(--white); z-index:1; }
 .modal-hd h2 { font-size:14px; font-weight:600; flex:1; color:var(--tx); min-width:0; }
 .modal-body  { padding:16px; }
@@ -335,10 +335,12 @@ body[data-pagina="processos"] .pt .badge   { font-size:10px; }
 .dr    { display:flex; gap:8px; align-items:flex-start; padding:5px 0; border-bottom:1px solid var(--border); }
 .dr-l  { font-size:10px; font-weight:700; color:var(--tx2); text-transform:uppercase; letter-spacing:.4px; min-width:145px; flex-shrink:0; padding-top:1px; }
 .dr-v  { font-size:12px; color:var(--tx); }
-.dsec  { font-size:10px; font-weight:700; color:var(--tx2); text-transform:uppercase; letter-spacing:.6px; margin:12px 0 7px; padding-bottom:3px; }
+.dsec  { font-size:14px; font-weight:700; color:var(--tx); text-transform:uppercase; letter-spacing:.6px; margin:12px 0 7px; padding-bottom:3px; }
 .dsec.bl { border-bottom:2px solid var(--blue);  }
 .dsec.am { border-bottom:2px solid var(--amber); }
 .dsec.gr { border-bottom:2px solid var(--green); }
+.dsec.pu { border-bottom:2px solid var(--purple); }
+.dsec.rd { border-bottom:2px solid var(--red);   }
 .obs-box { background:var(--amberl); border:1px solid #fde68a; border-radius:var(--rs); padding:9px 12px; font-size:12px; color:#92400e; margin-top:9px; }
 
 /* ── Fade-in ao trocar o esqueleto "A carregar..." pelos dados reais ──
@@ -365,8 +367,10 @@ body[data-pagina="processos"] .pt .badge   { font-size:10px; }
 #cfbg.open { display:flex; }
 #cfbox { background:var(--white); border-radius:var(--rl); padding:24px; width:min(340px,92vw); box-shadow:var(--sh2); text-align:center; }
 #cfbox h3  { font-size:15px; font-weight:700; margin-bottom:7px; }
-#cfbox p   { font-size:12px; color:var(--tx2); margin-bottom:18px; line-height:1.6; }
+#cfbox p   { font-size:12px; color:var(--tx2); margin-bottom:12px; line-height:1.6; }
 #cfbox .btns { display:flex; gap:9px; justify-content:center; }
+#cfIcon { display:none; font-size:30px; color:var(--red); margin-bottom:8px; }
+#cfIcon.show { display:block; }
 
 /* ── Paginação ── */
 .pager      { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border-top:1px solid var(--border); flex-wrap:wrap; gap:7px; }
@@ -454,6 +458,8 @@ body[data-pagina="processos"] .pt .badge   { font-size:10px; }
 @media(min-width:768px) {
   .modal-bg { align-items:center; }
   .modal    { border-radius:var(--rl); max-width:800px; max-height:88vh; }
+  #crudM .modal { max-width:980px; }
+  #detM  .modal { max-width:980px; }
   @keyframes slUp { from { transform:scale(.96); opacity:0; } to { transform:scale(1); opacity:1; } }
   .topbar-menu { display:none !important; }
 }

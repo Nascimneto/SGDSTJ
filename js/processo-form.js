@@ -268,9 +268,9 @@ function abrirDetalhe(id) {
     var dr = function (l, v) { return '<div class="dr"><span class="dr-l">' + l + '</span><span class="dr-v">' + v + '</span></div>'; };
     var dd = function (l, v, num) {
       var extra = (v && num) ? ' <span style="color:var(--tx3);font-weight:500">(n&ordm; ' + esc(num) + ')</span>' : '';
-      return '<div class="dr"><span class="dr-l">' + l + '</span><span class="dr-v" style="display:flex;align-items:center;gap:5px">'
-        + '<i class="ti ti-' + (v ? 'circle-check' : 'circle') + '" style="font-size:14px;color:' + (v ? 'var(--green)' : 'var(--tx3)') + '"></i>'
-        + '<span style="color:' + (v ? 'var(--green)' : 'var(--tx3)') + '">' + (v ? esc(v) : 'Pendente') + '</span>' + extra + '</span></div>';
+      var badge = '<span class="badge ' + (v ? 'b-concluded' : 'b-distributed') + '" style="display:inline-flex;align-items:center;gap:4px">'
+        + '<i class="ti ti-' + (v ? 'circle-check' : 'clock') + '" style="font-size:12px"></i>' + (v ? esc(v) : 'Pendente') + '</span>';
+      return '<div class="dr"><span class="dr-l">' + l + '</span><span class="dr-v">' + badge + extra + '</span></div>';
     };
     var estados = window.SGD_ESTADOS || [];
     var stOpts  = estados.map(function (e) { return '<option value="' + esc(e.codigo) + '" ' + (p.estado_codigo === e.codigo ? 'selected' : '') + '>' + esc(e.label) + '</option>'; }).join('');
@@ -280,30 +280,34 @@ function abrirDetalhe(id) {
       + '<div class="dsec bl">Identificacao</div>'
       + dr('N&ordm; Registo de Processo', '<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:600;color:var(--blue)">' + esc(p.numero_processo) + '</span>')
       + dr('Data de Registo', esc(p.data_registo)) + dr('Data de Entrada', esc(p.data_entrada)) + dr('Especie', '<span class="badge b-type">' + esc(p.especie) + '</span>')
-      + dr('Partes', esc(p.partes)) + dr('Origem', esc(p.origem || '—')) + dr('Distribuicao', esc(p.distribuicao || '—'))
-      + dr('Data de Distribuicao', esc(p.distribuicao_data || '—'))
-      + dr('Redistribuicao', esc(p.redistribuicao || '—'))
+      + dr('Partes', esc(p.partes)) + dr('Origem', esc(p.origem || '—'))
       + (p.numero_processo_externo ? dr('N&ordm; Processo', esc(p.numero_processo_externo)) : '')
       + dr('Estado', '<span class="badge ' + esc(p.estado_cor) + '">' + esc(p.estado) + '</span>')
-      + '<div class="dsec am" style="margin-top:14px">Datas de Controlo</div>'
-      + dd('Redistribuicao', p.redistribuicao_data)
-      + dd('Notificacao/Citacao', p.notificacao_citacao) + dd('Notificacao 1', p.notificacao1) + dd('Notificacao 2', p.notificacao2) + dd('Conclusao', p.conclusao)
-      + dd('Visto MP', p.visto_mp) + dd('Visto Adj.1', p.visto_adjunto1) + dd('Visto Adj.2', p.visto_adjunto2)
-      + dd('Ins. Tabela', p.inscricao_tabela)
+      + '<div class="dsec pu" style="margin-top:14px">Distribuicao</div>'
+      + dr('Distribuicao', esc(p.distribuicao || '—')) + dr('Data de Distribuicao', esc(p.distribuicao_data || '—'))
+      + dr('Redistribuicao', esc(p.redistribuicao || '—')) + dd('Data de Redistribuicao', p.redistribuicao_data)
+      + '<div class="dsec am" style="margin-top:14px">Notificacoes</div>'
+      + dd('Notificacao/Citacao', p.notificacao_citacao) + dd('Notificacao 1', p.notificacao1) + dd('Notificacao 2', p.notificacao2)
+      + '<div class="dsec bl" style="margin-top:14px">Julgamento</div>'
+      + dd('Conclusao', p.conclusao) + dd('Visto MP', p.visto_mp) + dd('Visto Adj.1', p.visto_adjunto1) + dd('Visto Adj.2', p.visto_adjunto2)
+      + '</div>'
+      + '<div style="flex:1;min-width:220px">'
+      + '<div class="dsec pu">Acordaos</div>'
       + dd('Acordao', p.acordao, p.numero_acordao) + dd('2&ordm; Acordao', p.acordao2, p.numero_acordao2) + dd('3&ordm; Acordao', p.acordao3, p.numero_acordao3)
+      + '<div class="dsec am" style="margin-top:14px">Notif. Acordaos</div>'
       + dd('Notif. Acordao', p.notificacao_acordao) + dd('Notif. 2&ordm; Acordao', p.notificacao_acordao2) + dd('Notif. 3&ordm; Acordao', p.notificacao_acordao3)
+      + '<div class="dsec gr" style="margin-top:14px">Custas</div>'
       + dd('Conta/Custas', p.conta_custas) + dd('2&ordm; Conta/Custas', p.conta_custas2)
       + dd('Notif. Conta/Custas', p.notificacao_conta_custas) + dd('Notif. 2&ordm; Conta/Custas', p.notificacao_conta_custas2)
-      + dd('Arquivamento', p.arquivamento)
+      + '<div class="dsec rd" style="margin-top:14px">Encerramento</div>'
+      + dd('Ins. Tabela', p.inscricao_tabela) + dd('Arquivamento', p.arquivamento)
       + (p.observacoes ? '<div class="obs-box" style="margin-top:10px"><b>OBS:</b> ' + esc(p.observacoes) + '</div>' : '')
-      + '</div>'
       + (podeEditar()
-        ? '<div style="flex:1;min-width:200px">'
-          + '<div class="fg"><label>Actualizar Estado</label>'
+        ? '<div class="dsec" style="margin-top:14px">Actualizar Estado</div>'
           + '<div style="display:flex;gap:8px"><select id="dt_st" style="flex:1;border:1.5px solid var(--border);border-radius:var(--rs);padding:8px;font-size:13px;font-family:inherit">' + stOpts + '</select>'
-          + '<button class="btn btn-primary btn-sm" onclick="dtSt(' + id + ')"><i class="ti ti-check"></i></button></div></div>'
-          + '</div>'
+          + '<button class="btn btn-primary btn-sm" onclick="dtSt(' + id + ')"><i class="ti ti-check"></i></button></div>'
         : '')
+      + '</div>'
       + '</div>';
 
     var delBtn = isAdm()
@@ -341,10 +345,11 @@ function dtSt(id) {
 
 /* ─── Eliminar ─── */
 function delDoc(id, numero) {
-  cfDlg('Eliminar Processo', 'Eliminar permanentemente <b>' + esc(numero) + '</b>? Acção irreversível.', function () {
+  var numHtml = '<b style="font-family:\'IBM Plex Mono\',monospace;color:var(--blue)">' + esc(numero) + '</b>';
+  cfDlg('Eliminar Processo', 'O processo ' + numHtml + ' ser&aacute; eliminado permanentemente.', function () {
     apiPost('api/processos/eliminar.php', { id: id }).then(function () {
       if (typeof recarregarProcessos === 'function') recarregarProcessos();
       showToast(numero + ' eliminado.', 'ti-trash', 'red');
     }).catch(function (e) { showToast(e.message, 'ti-alert-circle', 'red'); });
-  });
+  }, { icone: 'alert-triangle' });
 }

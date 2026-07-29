@@ -671,6 +671,48 @@ separadores da edição sem precisar de um listener por campo. `sgdColorirFormul
 logo a seguir a construir o HTML em `abrirCriar()`/`abrirEditar()`, para os valores já preenchidos
 (modo edição) começarem coloridos, sem esperar por uma interacção do utilizador.
 
+**Janela de Detalhe do Processo reorganizada por etapas e com badges de cor (2026-07-29)**:
+`abrirDetalhe()` (`js/processo-form.js`), a modal de "Ver" acedida a partir da Lista de Processos,
+tinha só 2 blocos: "Identificacao" (borda azul, `.dsec.bl`) e um único "Datas de Controlo" (borda
+âmbar, `.dsec.am`) onde entravam misturados Redistribuição, Notificações, Vistos, Acórdãos, Custas e
+Arquivamento — sem correspondência com os separadores por etapa já usados no formulário de Editar
+(ver entrada acima, "Formulário de Editar Processo reorganizado em separadores por etapa"). Passou a
+ter as mesmas 8 secções e cores da edição, divididas em 2
+colunas dentro da mesma `.dsec`: coluna esquerda — **Identificação** (azul), **Distribuição** (roxo,
+nova classe `.dsec.pu`), **Notificações** (âmbar), **Julgamento** (azul); coluna direita —
+**Acórdãos** (roxo), **Notif. Acórdãos** (âmbar), **Custas** (verde), **Encerramento** (vermelho, nova
+classe `.dsec.rd`) + Observações + o selector de "Actualizar Estado". As duas classes de cor que
+faltavam (`.dsec.pu`, `.dsec.rd`) foram acrescentadas ao CSS ao lado de `.dsec.bl`/`.am`/`.gr` já
+existentes. A função `dd()` (campos com data de controlo) deixou de mostrar um simples ícone
+verde/cinza + texto e passou a gerar um badge de pílula reaproveitando as classes já usadas no badge
+de Estado — `b-concluded` (verde, campo preenchido) ou `b-distributed` (âmbar, "Pendente") — para que
+o preenchido/pendente também se distinga por cor consistente com o resto da aplicação, e não só por
+um ícone. Os títulos das secções (`.dsec`) passaram de 10px para 14px — antes eram do mesmo tamanho
+do texto normal e quase não se destacavam apesar de já estarem a negrito — e a cor do texto passou de
+`var(--tx2)` (cinza secundário) para `var(--tx)` (cor de texto principal), para contrastar mais com o
+resto do conteúdo. O selector "Actualizar Estado", que antes era um `<label>` pequeno igual aos dos
+formulários (`.fg label`, 10px), passou também a usar `.dsec`, ficando visualmente ao mesmo nível dos
+restantes títulos de secção.
+
+**Modal de Editar/Novo Processo mais largo em ecrã grande (2026-07-29)**: `.modal` (regra partilhada
+por `#crudM` e `#detM`) fica limitado a `max-width:800px` a partir dos 768px de viewport
+(`@media(min-width:768px)`). Nesse limite, os separadores por etapa do formulário de Editar
+(`.fg3`, grid de 3 colunas) ficavam apertados o suficiente para aparecer scroll horizontal dentro do
+modal em ecrãs maiores. Acrescentada `#crudM .modal { max-width:980px; }` dentro do mesmo media query,
+só para o modal de criar/editar. O modal de detalhe (`#detM`) recebeu o mesmo ajuste
+(`#detM .modal { max-width:980px; }`) pouco depois, pela mesma razão — as 2 colunas de secções
+(`.dsec`) acrescentadas na reorganização por etapas também ficavam apertadas nos 800px, com scroll
+horizontal a aparecer nos ecrãs maiores.
+
+**Scroll horizontal persistente nos modais, mesmo depois de os alargar (2026-07-29)**: alargar
+`#crudM`/`#detM` não resolveu — a causa real era `.modal` ter `overflow-y:auto` sem `overflow-x`
+definido. Pela especificação CSS, quando um eixo tem um valor que gera scroll (`auto`/`scroll`) e o
+outro fica em `visible`, o `visible` passa a computar como `auto` também — por isso qualquer overflow
+horizontal mínimo (por exemplo, o espaço que a própria barra de scroll vertical ocupa ao aparecer)
+já bastava para mostrar scroll à direita, independentemente da largura do modal. Corrigido com
+`overflow-x:hidden` explícito em `.modal` — a única forma de o conteúdo ficar mais largo que o modal
+é o `flex-wrap:wrap` das colunas empilhar verticalmente, nunca aparecer scroll lateral.
+
 ## Parâmetros de URL que abrem algo automaticamente
 `processos.php?novo=1` (abre "Novo Processo") e `processos.php?ver=<numero>` (abre o detalhe desse
 processo) limpam o parâmetro da URL com `history.replaceState()` logo depois de o consumir
@@ -681,6 +723,19 @@ no caso do formulário), porque o parâmetro continuava na barra de endereço.
 O modal `#crudM` (Novo/Editar Processo, Novo/Editar Utilizador) não fecha ao clicar fora nem com Esc —
 só o botão "Cancelar" (`closeCrud()`) ou o "×" fecham (`js/comum.js`). Evita perder dados a meio do
 preenchimento por um clique a seguir. O modal de detalhe (`#detM`, só leitura) continua a fechar normalmente.
+
+**Diálogo de confirmação (`cfDlg`) com ícone de aviso opcional e menos espaço em branco (2026-07-29)**:
+`cfDlg()` (`js/comum.js`) é partilhado por confirmações destrutivas (eliminar processo/utilizador/
+espécie/estado/departamento/magistrado) e não destrutivas (sessão a expirar, senha resetada), por
+isso o `#cfIcon` acrescentado ao `#cfbox` (`includes/modais.php`) começa escondido e só aparece
+quando a chamada passa `{ icone: 'nome-do-icone-tabler' }` em `opts` — sem isto, o ícone de alerta
+apareceria também em diálogos informativos onde não faz sentido. O diálogo de eliminar processo
+(`delDoc()`, `js/processo-form.js`) passa `{ icone: 'alert-triangle' }`, troca o texto de "Eliminar
+permanentemente SGD-2026-0034? Acção irreversível." (pergunta) para "O processo **SGD-2026-0034**
+será eliminado permanentemente." (afirmação — o ícone de aviso já comunica a irreversibilidade, não
+precisa de o repetir em texto), e destaca o número do processo a negrito com a mesma fonte
+monoespaçada azul (`IBM Plex Mono`) usada no resto da aplicação para números de processo. `#cfbox p`
+perdeu 6px de `margin-bottom` (18px → 12px) para encostar mais o texto aos botões.
 
 ## Navegação
 O logótipo na sidebar (`includes/sidebar.php`, partilhado por todas as páginas autenticadas) liga
