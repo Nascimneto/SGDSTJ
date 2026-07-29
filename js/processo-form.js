@@ -21,15 +21,15 @@ function buildFormCriar() {
     + '<div class="fsec-t"><i class="ti ti-id" style="color:var(--blue)"></i> Identificação do Processo</div>'
     + '<div class="fg3-tight"><div class="fg"><label>N&ordm; de Registo</label><input readonly class="auto" value="Gerado automaticamente"></div>'
     + '<div class="fg"><label>Data de Registo</label><input readonly class="auto" value="' + nowPT() + '"></div>'
-    + '<div class="fg"><label class="required">N&ordm; de Processo</label><input id="f_num_externo" placeholder="N&ordm; do processo..."></div></div>'
-    + '<div class="fg2"><div class="fg"><label class="required">Data de Entrada</label><input type="date" id="f_data_entrada" value="' + hojeISO() + '"></div><div></div></div>'
-    + '<div class="fg2"><div class="fg"><label class="required">Espécie de Processo</label><select id="f_esp">' + espOpts + '</select></div>'
+    + '<div class="fg"><label class="required">N&ordm; de Processo</label><input class="req" id="f_num_externo" placeholder="N&ordm; do processo..."></div></div>'
+    + '<div class="fg2"><div class="fg"><label class="required">Data de Entrada</label><input class="req" type="date" id="f_data_entrada" value="' + hojeISO() + '"></div><div></div></div>'
+    + '<div class="fg2"><div class="fg"><label class="required">Espécie de Processo</label><select class="req" id="f_esp">' + espOpts + '</select></div>'
     + '<div class="fg"><label>Origem</label><input id="f_orig" placeholder="Tribunal / Entidade..."></div></div>'
-    + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" placeholder="Ex: Autor vs Reu..."></div>'
-    + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><select id="f_dist">' + distOpts + '</select></div>'
-    + '<div class="fg"><label class="required">Data de Distribuição</label><input type="date" id="f_dist_data" value="' + hojeISO() + '"></div></div>'
+    + '<div class="fg"><label class="required">Intervenientes / Partes</label><input class="req" id="f_partes" placeholder="Ex: Autor vs Reu..."></div>'
+    + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><select class="req" id="f_dist">' + distOpts + '</select></div>'
+    + '<div class="fg"><label class="required">Data de Distribuição</label><input class="req" type="date" id="f_dist_data" value="' + hojeISO() + '"></div></div>'
     + '<div class="fg2"><div class="fg"><label>Redistribuição</label><select id="f_redist">' + redistOpts + '</select></div>'
-    + '<div class="fg"><label class="required">Estado de Processo</label><select id="f_st">' + stOpts + '</select></div></div>'
+    + '<div class="fg"><label class="required">Estado de Processo</label><select class="req" id="f_st">' + stOpts + '</select></div></div>'
     + '</div>'
     + '<div class="fsec"><div class="fsec-t"><i class="ti ti-notes" style="color:var(--green)"></i> Observações</div>'
     + '<div class="fg"><textarea id="f_obs" maxlength="1500" placeholder="Notas adicionais (máx. 1500 caracteres)..."></textarea></div></div>'
@@ -48,52 +48,110 @@ function buildFormEditar(p) {
   var redistOpts = '<option value="">— Nenhuma —</option>' + magistrados.map(function (m) { return magOpt(m, p.redistribuicao); }).join('');
   var iv = function (campo) { return p[campo] ? p2i(p[campo]) : ''; };
 
-  return '<div class="fsec">'
-    + '<div class="fsec-t"><i class="ti ti-id" style="color:var(--blue)"></i> Identificação do Processo</div>'
-    + '<div class="fg3-tight"><div class="fg"><label>N&ordm; de Registo</label><input readonly class="auto" value="' + esc(p.numero_processo) + '"></div>'
-    + '<div class="fg"><label>Data de Registo</label><input readonly class="auto" value="' + esc(p.data_registo) + '"></div>'
-    + '<div class="fg"><label class="required">N&ordm; de Processo</label><input id="f_num_externo" value="' + esc(p.numero_processo_externo || '') + '" placeholder="N&ordm; do processo..."></div></div>'
-    + '<div class="fg2"><div class="fg"><label class="required">Data de Entrada</label><input type="date" id="f_data_entrada" value="' + p2i(p.data_entrada) + '"></div><div></div></div>'
-    + '<div class="fg2"><div class="fg"><label class="required">Espécie de Processo</label><select id="f_esp">' + espOpts + '</select></div>'
-    + '<div class="fg"><label>Origem</label><input id="f_orig" value="' + esc(p.origem || '') + '"></div></div>'
-    + '<div class="fg"><label class="required">Intervenientes / Partes</label><input id="f_partes" value="' + esc(p.partes || '') + '"></div>'
-    + '<div class="fg2"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><select id="f_dist">' + distOpts + '</select></div>'
-    + '<div class="fg"><label class="required">Data de Distribuição</label><input type="date" id="f_dist_data" value="' + (iv('distribuicao_data') || hojeISO()) + '"></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Redistribuição</label><select id="f_redist">' + redistOpts + '</select></div>'
-    + '<div class="fg"><label class="required">Estado de Processo</label><select id="f_st">' + stOpts + '</select></div></div>'
-    + '</div>'
-    + '<div class="fsec"><div class="fsec-t"><i class="ti ti-calendar-event" style="color:var(--amber)"></i> Datas de Controlo Processual</div>'
-    + '<div class="fg2"><div class="fg"><label>Redistribuicao</label><input type="date" id="f_redist_data" value="' + iv('redistribuicao_data') + '"></div><div></div></div>'
-    + '<div class="fg3"><div class="fg"><label>Notificacao / Citacao</label><input type="date" id="f_notif" value="' + iv('notificacao_citacao') + '"></div>'
-    + '<div class="fg"><label>Notificacao 1</label><input type="date" id="f_notif1" value="' + iv('notificacao1') + '"></div>'
-    + '<div class="fg"><label>Notificacao 2</label><input type="date" id="f_notif2" value="' + iv('notificacao2') + '"></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Conclusao</label><input type="date" id="f_conc" value="' + iv('conclusao') + '"></div><div></div></div>'
-    + '<div class="fg3"><div class="fg"><label>Visto &mdash; Min. Publico</label><input type="date" id="f_vmp" value="' + iv('visto_mp') + '"></div>'
-    + '<div class="fg"><label>Visto &mdash; Juiz Adj. 1</label><input type="date" id="f_va1" value="' + iv('visto_adjunto1') + '"></div>'
-    + '<div class="fg"><label>Visto &mdash; Juiz Adj. 2</label><input type="date" id="f_va2" value="' + iv('visto_adjunto2') + '"></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Inscricao de Tabela</label><input type="date" id="f_tab" value="' + iv('inscricao_tabela') + '"></div><div></div></div>'
-    + '<div class="fg2-tight"><div class="fg"><label>Acordao</label><input type="date" id="f_acord" value="' + iv('acordao') + '"></div>'
-    + '<div class="fg"><label>N&ordm; do Acordao</label><input id="f_acord_num" value="' + esc(p.numero_acordao || '') + '" placeholder="Ex: 123/2026..."></div></div>'
-    + '<div class="fg2-tight"><div class="fg"><label>2&ordm; Ac&oacute;rd&atilde;o</label><input type="date" id="f_acord2" value="' + iv('acordao2') + '"></div>'
-    + '<div class="fg"><label>N&ordm; do 2&ordm; Acordao</label><input id="f_acord2_num" value="' + esc(p.numero_acordao2 || '') + '" placeholder="Ex: 123/2026..."></div></div>'
-    + '<div class="fg2-tight"><div class="fg"><label>3&ordm; Ac&oacute;rd&atilde;o</label><input type="date" id="f_acord3" value="' + iv('acordao3') + '"></div>'
-    + '<div class="fg"><label>N&ordm; do 3&ordm; Acordao</label><input id="f_acord3_num" value="' + esc(p.numero_acordao3 || '') + '" placeholder="Ex: 123/2026..."></div></div>'
-    + '<div class="fg3"><div class="fg"><label>Notificacao do Acordao</label><input type="date" id="f_nacord" value="' + iv('notificacao_acordao') + '"></div>'
-    + '<div class="fg"><label>Notificacao do 2&ordm; Acordao</label><input type="date" id="f_nacord2" value="' + iv('notificacao_acordao2') + '"></div>'
-    + '<div class="fg"><label>Notificacao do 3&ordm; Acordao</label><input type="date" id="f_nacord3" value="' + iv('notificacao_acordao3') + '"></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Conta e Custas</label><input type="date" id="f_custas" value="' + iv('conta_custas') + '"></div>'
-    + '<div class="fg"><label>2&ordm; Conta e Custas</label><input type="date" id="f_custas2" value="' + iv('conta_custas2') + '"></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Notificacao de Conta e Custas</label><input type="date" id="f_ncustas" value="' + iv('notificacao_conta_custas') + '"></div>'
-    + '<div class="fg"><label>Notificacao 2&ordm; Conta e Custas</label><input type="date" id="f_ncustas2" value="' + iv('notificacao_conta_custas2') + '"></div></div>'
-    + '<div class="fg2"><div class="fg"><label>Arquivamento</label><input type="date" id="f_arch" value="' + iv('arquivamento') + '"></div><div></div></div></div>'
-    + '<div class="fsec"><div class="fsec-t"><i class="ti ti-notes" style="color:var(--green)"></i> Observações</div>'
-    + '<div class="fg"><textarea id="f_obs" maxlength="1500" placeholder="Notas adicionais (máx. 1500 caracteres)...">' + esc(p.observacoes || '') + '</textarea></div></div>';
+  var tabs = [
+    { icon: 'ti-id', color: 'var(--blue)', label: '1. Identificação', html:
+        '<div class="fg3"><div class="fg"><label>N&ordm; de Registo</label><input readonly class="auto" value="' + esc(p.numero_processo) + '"></div>'
+      + '<div class="fg"><label>Data de Registo</label><input readonly class="auto" value="' + esc(p.data_registo) + '"></div>'
+      + '<div class="fg"><label class="required">N&ordm; de Processo</label><input class="req" id="f_num_externo" value="' + esc(p.numero_processo_externo || '') + '" placeholder="N&ordm; do processo..."></div></div>'
+      + '<div class="fg3"><div class="fg"><label class="required">Data de Entrada</label><input class="req" type="date" id="f_data_entrada" value="' + p2i(p.data_entrada) + '"></div>'
+      + '<div class="fg"><label class="required">Espécie de Processo</label><select class="req" id="f_esp">' + espOpts + '</select></div>'
+      + '<div class="fg"><label>Origem</label><input id="f_orig" value="' + esc(p.origem || '') + '"></div></div>'
+      + '<div class="fg3"><div class="fg"><label class="required">Intervenientes / Partes</label><input class="req" id="f_partes" value="' + esc(p.partes || '') + '"></div>'
+      + '<div class="fg"><label class="required">Estado de Processo</label><select class="req" id="f_st">' + stOpts + '</select></div></div>' },
+    { icon: 'ti-user-check', color: 'var(--purple)', label: '2. Distribuição', html:
+        '<div class="fg3"><div class="fg"><label class="required">Distribuição (Juiz/Relator)</label><select class="req" id="f_dist">' + distOpts + '</select></div>'
+      + '<div class="fg"><label class="required">Data de Distribuição</label><input class="req" type="date" id="f_dist_data" value="' + (iv('distribuicao_data') || hojeISO()) + '"></div>'
+      + '<div class="fg"><label>Redistribuição</label><select id="f_redist">' + redistOpts + '</select></div></div>'
+      + '<div class="fg3"><div class="fg"><label>Data de Redistribuição</label><input type="date" id="f_redist_data" value="' + iv('redistribuicao_data') + '"></div></div>' },
+    { icon: 'ti-bell', color: 'var(--amber)', label: '3. Notificações', html:
+        '<div class="fg3"><div class="fg"><label>Notificacao / Citacao</label><input type="date" id="f_notif" value="' + iv('notificacao_citacao') + '"></div>'
+      + '<div class="fg"><label>Notificacao 1</label><input type="date" id="f_notif1" value="' + iv('notificacao1') + '"></div>'
+      + '<div class="fg"><label>Notificacao 2</label><input type="date" id="f_notif2" value="' + iv('notificacao2') + '"></div></div>' },
+    { icon: 'ti-scale', color: 'var(--blue)', label: '4. Julgamento', html:
+        '<div class="fg3"><div class="fg"><label>Conclusao</label><input type="date" id="f_conc" value="' + iv('conclusao') + '"></div>'
+      + '<div class="fg"><label>Visto &mdash; Min. Publico</label><input type="date" id="f_vmp" value="' + iv('visto_mp') + '"></div>'
+      + '<div class="fg"><label>Visto &mdash; Juiz Adj. 1</label><input type="date" id="f_va1" value="' + iv('visto_adjunto1') + '"></div></div>'
+      + '<div class="fg3"><div class="fg"><label>Visto &mdash; Juiz Adj. 2</label><input type="date" id="f_va2" value="' + iv('visto_adjunto2') + '"></div></div>' },
+    { icon: 'ti-book', color: 'var(--purple)', label: '5. Acórdãos', html:
+        '<div class="fg3"><div class="fg"><label>Acordao</label><input type="date" id="f_acord" value="' + iv('acordao') + '"></div>'
+      + '<div class="fg"><label>N&ordm; do Acordao</label><input id="f_acord_num" value="' + esc(p.numero_acordao || '') + '" placeholder="Ex: 123/2026..."></div>'
+      + '<div class="fg"><label>2&ordm; Ac&oacute;rd&atilde;o</label><input type="date" id="f_acord2" value="' + iv('acordao2') + '"></div></div>'
+      + '<div class="fg3"><div class="fg"><label>N&ordm; do 2&ordm; Acordao</label><input id="f_acord2_num" value="' + esc(p.numero_acordao2 || '') + '" placeholder="Ex: 123/2026..."></div>'
+      + '<div class="fg"><label>3&ordm; Ac&oacute;rd&atilde;o</label><input type="date" id="f_acord3" value="' + iv('acordao3') + '"></div>'
+      + '<div class="fg"><label>N&ordm; do 3&ordm; Acordao</label><input id="f_acord3_num" value="' + esc(p.numero_acordao3 || '') + '" placeholder="Ex: 123/2026..."></div></div>' },
+    { icon: 'ti-bell-ringing', color: 'var(--amber)', label: '6. Notif. Acórdãos', html:
+        '<div class="fg3"><div class="fg"><label>Notificacao do Acordao</label><input type="date" id="f_nacord" value="' + iv('notificacao_acordao') + '"></div>'
+      + '<div class="fg"><label>Notificacao do 2&ordm; Acordao</label><input type="date" id="f_nacord2" value="' + iv('notificacao_acordao2') + '"></div>'
+      + '<div class="fg"><label>Notificacao do 3&ordm; Acordao</label><input type="date" id="f_nacord3" value="' + iv('notificacao_acordao3') + '"></div></div>' },
+    { icon: 'ti-cash', color: 'var(--green)', label: '7. Custas', html:
+        '<div class="fg3"><div class="fg"><label>Conta e Custas</label><input type="date" id="f_custas" value="' + iv('conta_custas') + '"></div>'
+      + '<div class="fg"><label>2&ordm; Conta e Custas</label><input type="date" id="f_custas2" value="' + iv('conta_custas2') + '"></div>'
+      + '<div class="fg"><label>Notificacao de Conta e Custas</label><input type="date" id="f_ncustas" value="' + iv('notificacao_conta_custas') + '"></div></div>'
+      + '<div class="fg3"><div class="fg"><label>Notificacao 2&ordm; Conta e Custas</label><input type="date" id="f_ncustas2" value="' + iv('notificacao_conta_custas2') + '"></div></div>' },
+    { icon: 'ti-archive', color: 'var(--red)', label: '8. Encerramento', html:
+        '<div class="fg3"><div class="fg"><label>Inscricao de Tabela</label><input type="date" id="f_tab" value="' + iv('inscricao_tabela') + '"></div>'
+      + '<div class="fg"><label>Arquivamento</label><input type="date" id="f_arch" value="' + iv('arquivamento') + '"></div></div>'
+      + '<div class="fg"><label>Observações</label><textarea id="f_obs" maxlength="1500" placeholder="Notas adicionais (máx. 1500 caracteres)...">' + esc(p.observacoes || '') + '</textarea></div>' }
+  ];
+
+  var nav = tabs.map(function (t, i) {
+    return '<button type="button" class="ftab-btn' + (i === 0 ? ' active' : '') + '" data-ft="' + i + '" onclick="mostrarFTab(' + i + ')">'
+      + '<i class="ti ' + t.icon + '" style="color:' + t.color + '"></i> ' + t.label + '</button>';
+  }).join('');
+  var panels = tabs.map(function (t, i) {
+    return '<div class="ftab-panel' + (i === 0 ? ' active' : '') + '" data-ft="' + i + '">' + t.html + '</div>';
+  }).join('');
+
+  return '<div class="ftabs">' + nav + '</div>' + panels;
 }
+
+/* Troca de separador do formulário de Editar Processo — opera sobre #crudB
+   porque só a edição (não a criação) tem etapas. */
+function mostrarFTab(idx) {
+  var root = G('crudB');
+  if (!root) return;
+  var btns   = root.querySelectorAll('.ftab-btn');
+  var panels = root.querySelectorAll('.ftab-panel');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', i === idx);
+    panels[i].classList.toggle('active', i === idx);
+  }
+}
+
+/* ─── Codificação de cor dos campos (obrigatório / preenchido / data passada
+   ou futura) — ver comentário em css/estilos.css junto às classes .req/
+   .f-filled/.f-past/.f-future. Reage a input/change via delegação em #crudB,
+   por isso funciona nos dois formulários (criar e editar) sem listeners por
+   campo, incluindo campos ainda por existir (tabs trocadas dinamicamente). */
+function sgdColorirCampo(el) {
+  if (!el || el.classList.contains('auto')) return;
+  var valor = (el.value || '').trim();
+  el.classList.remove('f-filled', 'f-past', 'f-future');
+  if (el.tagName === 'INPUT' && el.type === 'date') {
+    if (valor && valor < hojeISO()) el.classList.add('f-past');
+    else if (valor && valor > hojeISO()) el.classList.add('f-future');
+  } else if (valor) {
+    el.classList.add('f-filled');
+  }
+}
+
+function sgdColorirFormulario(root) {
+  if (!root) return;
+  var els = root.querySelectorAll('.fg input, .fg select, .fg textarea');
+  for (var i = 0; i < els.length; i++) sgdColorirCampo(els[i]);
+}
+
+['input', 'change'].forEach(function (evt) {
+  document.addEventListener(evt, function (e) {
+    if (e.target.closest && e.target.closest('#crudB')) sgdColorirCampo(e.target);
+  });
+});
 
 /* ─── Abrir / fechar modal CRUD ─── */
 function abrirCriar() {
   G('crudT').textContent = 'Registar Novo Processo';
   G('crudB').innerHTML = buildFormCriar();
+  sgdColorirFormulario(G('crudB'));
   G('crudF').innerHTML = '<button class="btn" onclick="closeCrud()">Cancelar</button>'
     + '<button class="btn btn-primary" onclick="guardarCriar()"><i class="ti ti-device-floppy"></i> Registar Processo</button>';
   G('crudM').classList.add('open');
@@ -104,6 +162,7 @@ function abrirEditar(id) {
     var p = res.processo;
     G('crudT').textContent = 'Editar - ' + p.numero_processo;
     G('crudB').innerHTML = buildFormEditar(p);
+    sgdColorirFormulario(G('crudB'));
     G('crudF').innerHTML = '<button class="btn" onclick="closeCrud()">Cancelar</button>'
       + '<button class="btn btn-primary" onclick="guardarEditar(' + id + ')"><i class="ti ti-device-floppy"></i> Guardar Alterações</button>';
     G('crudM').classList.add('open');
@@ -156,12 +215,12 @@ function guardarCriar() {
 
 function guardarEditar(id) {
   var dados = lerCamposComuns();
-  if (!dados.partes) { showToast('Preencha Intervenientes/Partes', 'ti-alert-circle', 'red'); return; }
-  if (!dados.numero_processo_externo) { showToast('Preencha o Número de Processo', 'ti-alert-circle', 'red'); return; }
-  if (!dados.data_entrada) { showToast('Preencha a Data de Entrada', 'ti-alert-circle', 'red'); return; }
-  if (!dados.distribuicao) { G('f_dist').classList.add('err-input'); showToast('Preencha a Distribuição (Juiz Relator)', 'ti-alert-circle', 'red'); return; }
+  if (!dados.partes) { mostrarFTab(0); showToast('Preencha Intervenientes/Partes', 'ti-alert-circle', 'red'); return; }
+  if (!dados.numero_processo_externo) { mostrarFTab(0); showToast('Preencha o Número de Processo', 'ti-alert-circle', 'red'); return; }
+  if (!dados.data_entrada) { mostrarFTab(0); showToast('Preencha a Data de Entrada', 'ti-alert-circle', 'red'); return; }
+  if (!dados.distribuicao) { mostrarFTab(1); G('f_dist').classList.add('err-input'); showToast('Preencha a Distribuição (Juiz Relator)', 'ti-alert-circle', 'red'); return; }
   G('f_dist').classList.remove('err-input');
-  if (!dados.distribuicao_data) { G('f_dist_data').classList.add('err-input'); showToast('Preencha a Data de Distribuição', 'ti-alert-circle', 'red'); return; }
+  if (!dados.distribuicao_data) { mostrarFTab(1); G('f_dist_data').classList.add('err-input'); showToast('Preencha a Data de Distribuição', 'ti-alert-circle', 'red'); return; }
   G('f_dist_data').classList.remove('err-input');
 
   dados.id                  = id;

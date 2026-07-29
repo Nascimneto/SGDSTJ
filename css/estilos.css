@@ -285,6 +285,16 @@ body[data-pagina="processos"] .pt .badge   { font-size:10px; }
 .fg textarea { resize:vertical; min-height:68px; }
 .auto       { background:var(--bg) !important; font-family:'IBM Plex Mono',monospace !important; color:var(--blue) !important; font-weight:600 !important; }
 .err-input  { border-color:var(--red) !important; }
+/* ── Codificação de cor dos campos do formulário de Processos (js/processo-form.js,
+   sgdColorirCampo/sgdColorirFormulario) — para os campos deixarem de parecer todos
+   iguais. Obrigatório = borda azul (fica independente do preenchimento). Preenchido
+   = fundo verde claro, excepto datas: uma data preenchida troca o verde por vermelho
+   claro (já passou) ou azul claro (ainda por vir), porque "preenchida" por si só não
+   diz nada de útil sobre uma data — o que importa é se já passou ou não. */
+.fg input.req, .fg select.req { border-color:var(--blue); }
+.fg input.f-filled, .fg select.f-filled, .fg textarea.f-filled { background:var(--greenl); }
+.fg input.f-past   { background:var(--redl); }
+.fg input.f-future { background:var(--bluel); }
 .fg2 { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
 .fg3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px; }
 /* Colunas com largura fixa (não "1fr") — os campos não esticam até ao fim
@@ -296,6 +306,17 @@ body[data-pagina="processos"] .pt .badge   { font-size:10px; }
 .required::after { content:' *'; color:var(--red); }
 .fsec   { background:var(--bg); border-radius:var(--r); padding:12px 14px; margin-bottom:12px; }
 .fsec-t { font-size:10px; font-weight:700; color:var(--tx2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+
+/* ── Separadores do formulário de Editar Processo (buildFormEditar) — cada
+   etapa do processo (Identificação, Distribuição, Notificações...) fica
+   num painel próprio, trocado por mostrarFTab() em js/processo-form.js. */
+.ftabs      { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.ftab-btn   { display:inline-flex; align-items:center; gap:6px; padding:7px 11px; border-radius:var(--rs); border:1px solid var(--border); background:var(--white); color:var(--tx2); cursor:pointer; font-size:11px; font-weight:600; font-family:inherit; white-space:nowrap; transition:all .15s; }
+.ftab-btn:hover  { background:var(--bg); }
+.ftab-btn.active { background:var(--tx); border-color:var(--tx); color:#fff; }
+.ftab-btn.active i { color:#fff !important; }
+.ftab-panel { display:none; background:var(--bg); border-radius:var(--r); padding:12px 14px; }
+.ftab-panel.active { display:block; }
 
 /* ── Upload ── */
 .upz       { border:2px dashed var(--border); border-radius:var(--r); padding:14px; text-align:center; cursor:pointer; transition:all .15s; background:var(--bg); }

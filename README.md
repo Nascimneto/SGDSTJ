@@ -630,6 +630,47 @@ Pesquisa, Estado, Espécie, Data De ou Data Até tiverem algum valor escolhido, 
 despercebido que a lista está filtrada. `atualizarBotaoLimparFiltrosProc()` (`js/processos.js`) corre a
 cada `input`/`change` desses 5 campos, ao clicar no próprio botão, e uma vez ao carregar a página.
 
+**Formulário de Editar Processo reorganizado em separadores por etapa (2026-07-28)**:
+`buildFormEditar()` (`js/processo-form.js`) listava todos os ~30 campos em sequência dentro de 2
+blocos `.fsec` ("Identificação do Processo" e "Datas de Controlo Processual"), com linhas `.fg2`/
+`.fg3-tight`/`.fg2-tight` inconsistentes entre si e bastante espaço vazio nas linhas de 1-2 campos.
+Passou a gerar uma barra de separadores (`.ftabs`/`.ftab-btn`) + painéis (`.ftab-panel`, um por
+etapa, trocados por `mostrarFTab(idx)`), todos usando a mesma grid de 3 colunas (`.fg3`) para
+alinhamento consistente: **1. Identificação** (Nº Registo, Data Registo, Nº Processo, Data Entrada,
+Espécie, Origem, Partes, Estado — Nº de Processo ao lado de Data de Entrada), **2. Distribuição**
+(Distribuição, Data Distribuição, Redistribuição, Data de Redistribuição), **3. Notificações**
+(Notificação/Citação, Notificação 1, Notificação 2), **4. Julgamento** (Conclusão, Vistos MP/Adj.1/
+Adj.2), **5. Acórdãos** (Data + Nº de cada um dos 3 Acórdãos), **6. Notificações dos Acórdãos**
+(as 3 notificações de Acórdão juntas, separadas da etapa 5), **7. Custas** (Conta e Custas, 2ª Conta
+e Custas, e as respectivas Notificações), **8. Encerramento** (Inscrição de Tabela, Arquivamento,
+Observações). `mostrarFTab()` procura `.ftab-btn`/`.ftab-panel` dentro de `#crudB` (não há `id`
+próprio no wrapper de separadores, por isso a troca é sempre relativa ao container do modal CRUD,
+que só tem tabs na edição — `buildFormCriar()`, formulário de criação fase 1, continua numa página
+única, sem tabs, pois não tem os campos de controlo processual). `guardarEditar()` chama
+`mostrarFTab(0)` ou `mostrarFTab(1)` antes de mostrar o toast de erro de validação, para saltar
+automaticamente para o separador onde está o campo em falta (Identificação ou Distribuição) — sem
+isto, o utilizador via o erro mas o campo destacado podia estar escondido noutro separador.
+
+**Codificação de cor dos campos do formulário de Processos (2026-07-28)**: antes, todos os campos
+(obrigatórios, opcionais, vazios, preenchidos) tinham o mesmo fundo branco e a mesma borda cinza —
+nada no próprio campo indicava se era obrigatório ou se já tinha sido preenchido. `sgdColorirCampo(el)`
++ `sgdColorirFormulario(root)` (`js/processo-form.js`) aplicam classes conforme o estado do campo:
+`.req` (borda azul, `var(--blue)`) nos campos já marcados como obrigatórios (mesmos campos da label
+`.required`, agora também na tag do input/select — `f_num_externo`, `f_data_entrada`, `f_esp`,
+`f_partes`, `f_st`, `f_dist`, `f_dist_data`); `.f-filled` (fundo verde claro, `var(--greenl)`) em
+qualquer campo de texto/select com valor; e, só para `<input type="date">`, `.f-past` (fundo vermelho
+claro, `var(--redl)`, valor anterior a hoje) ou `.f-future` (fundo azul claro, `var(--bluel)`, valor
+posterior a hoje) em vez do verde genérico — uma data preenchida não diz nada de útil por si só, o
+que importa é se já passou ou ainda está por vir. Campos `.auto` (Nº/Data de Registo, só leitura)
+ficam de fora do esquema. A comparação de datas usa comparação de strings `'aaaa-mm-dd' </>/ hojeISO()`
+— funciona porque o valor nativo de `<input type="date">` já vem nesse formato zero-padded, a mesma
+ordem lexicográfica e cronológica. Em vez de recolorir cada campo manualmente ao editar, um único
+listener delegado em `document` (`input`/`change`, filtrando por `closest('#crudB')`) chama
+`sgdColorirCampo()` no campo alterado — funciona nos dois formulários (criar e editar) e em todos os
+separadores da edição sem precisar de um listener por campo. `sgdColorirFormulario()` corre uma vez
+logo a seguir a construir o HTML em `abrirCriar()`/`abrirEditar()`, para os valores já preenchidos
+(modo edição) começarem coloridos, sem esperar por uma interacção do utilizador.
+
 ## Parâmetros de URL que abrem algo automaticamente
 `processos.php?novo=1` (abre "Novo Processo") e `processos.php?ver=<numero>` (abre o detalhe desse
 processo) limpam o parâmetro da URL com `history.replaceState()` logo depois de o consumir
