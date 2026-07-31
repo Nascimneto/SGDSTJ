@@ -713,6 +713,24 @@ já bastava para mostrar scroll à direita, independentemente da largura do moda
 `overflow-x:hidden` explícito em `.modal` — a única forma de o conteúdo ficar mais largo que o modal
 é o `flex-wrap:wrap` das colunas empilhar verticalmente, nunca aparecer scroll lateral.
 
+**PDF da Lista de Processos reconstruído com cabeçalho institucional e cor por estado (2026-07-31)**:
+`exportarPDF()` (`js/processos.js`) gerava uma tabela crua com as ~29 colunas todas da view (`colunasExport()`/
+`linhasExport()`, ainda usadas pelo Excel) e um título de uma linha sem qualquer identidade institucional.
+Passou a montar o PDF em duas partes: cabeçalho — logótipo (`assets/img/logostj.jpg`) centrado no topo
+(carregado como dataURL via `<canvas>` em `carregarLogoInstitucionalProc()`, o mesmo truque já usado em
+`carregarImagemDataURL()` de `js/estatisticas.js`, porque o jsPDF não aceita um caminho/URL directamente),
+seguido do nome "SUPREMO TRIBUNAL DE JUSTIÇA" também centrado e do título "Lista de Processos" — e corpo —
+tabela reduzida às 9 variáveis mais relevantes para leitura rápida (`colunasExportPdf()`/`linhasExportPdf()`):
+Nº SGD, Data Registo, Nº Processo, Data Entrada, Espécie, Partes, Distribuição, Origem, Estado. A linha de
+cabeçalho da tabela usa `headStyles.fillColor` a azul (`[37,99,235]`, a mesma cor de destaque usada em botões
+primários e no badge `.b-entry`). A coluna Estado é colorida célula a célula via `didParseCell` do
+autoTable, mapeando `estado_codigo` para o mesmo par fundo/texto claro dos badges `.b-entry`/`.b-analysis`/
+`.b-distributed`/`.b-concluded`/`.b-archived` de `css/estilos.css` (`ESTADO_CORES_PDF`, com um par cinza de
+omissão para códigos sem regra própria) — para que o PDF impresso continue a distinguir o estado de cada
+processo à primeira vista, tal como a lista no ecrã. O Excel (`exportarExcel()`) não foi tocado — continua a
+exportar as ~29 colunas completas via `colunasExport()`/`linhasExport()`, sem cor (formato de dados, não de
+leitura).
+
 ## Parâmetros de URL que abrem algo automaticamente
 `processos.php?novo=1` (abre "Novo Processo") e `processos.php?ver=<numero>` (abre o detalhe desse
 processo) limpam o parâmetro da URL com `history.replaceState()` logo depois de o consumir

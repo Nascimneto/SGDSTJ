@@ -216,12 +216,96 @@ function linhasExport() {
   });
 }
 
+/* Cores do PDF por estado — mesmos tons usados nos badges da aplicação
+   (ver .b-entry/.b-analysis/.../.b-archived em css/estilos.css), para que a
+   lista impressa continue a "ler-se" da mesma forma que o ecrã. */
+var ESTADO_CORES_PDF = {
+  entry:       { bg: [239, 246, 255], tx: [37, 99, 235] },
+  analysis:    { bg: [245, 243, 255], tx: [124, 58, 237] },
+  distributed: { bg: [255, 251, 235], tx: [217, 119, 6] },
+  concluded:   { bg: [236, 253, 245], tx: [5, 150, 105] },
+  archived:    { bg: [241, 239, 232], tx: [92, 92, 85] },
+};
+var ESTADO_COR_PDF_OMISSAO = { bg: [241, 245, 249], tx: [71, 85, 105] };
+
+function colunasExportPdf() {
+  return ['Nº SGD', 'Data Registo', 'Nº Processo', 'Data Entrada', 'Espécie', 'Partes', 'Distribuição', 'Origem', 'Estado'];
+}
+
+function linhasExportPdf() {
+  return TODOS_PROCESSOS.map(function (d) {
+    return [d.numero_processo, d.data_registo || '', d.numero_processo_externo || '', d.data_entrada, d.especie, d.partes, d.distribuicao || '', d.origem, d.estado];
+  });
+}
+
+/* Carrega o logótipo institucional (assets/img/logostj.jpg) como dataURL —
+   jsPDF precisa de dataURL, não de um caminho/URL de imagem. */
+function carregarLogoInstitucionalProc() {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      resolve(c.toDataURL('image/jpeg'));
+    };
+    img.onerror = reject;
+    img.src = 'assets/img/logostj.jpg';
+  });
+}
+
 function exportarPDF() {
   if (!TODOS_PROCESSOS.length) { showToast('Sem processos para exportar', 'ti-alert-circle', 'red'); return; }
+  carregarLogoInstitucionalProc().then(gerarPdfProcessos).catch(function (e) {
+    showToast('Erro ao gerar PDF: ' + (e.message || e), 'ti-alert-triangle', 'red');
+  });
+}
+
+function gerarPdfProcessos(logoDataUrl) {
   var doc = new window.jspdf.jsPDF({ orientation: 'landscape' });
-  doc.setFontSize(13);
-  doc.text('SGD — Lista de Processos', 14, 12);
-  doc.autoTable({ head: [colunasExport()], body: linhasExport(), startY: 18, styles: { fontSize: 6 } });
+  var pageW = doc.internal.pageSize.getWidth();
+  var margem = 14;
+  var y = 12;
+
+  // Logótipo centrado no topo.
+  var logoW = 40, logoH = 22;
+  doc.addImage(logoDataUrl, 'JPEG', (pageW - logoW) / 2, y, logoW, logoH);
+  y += logoH + 6;
+
+  // Nome da instituição centrado, seguido do título da lista.
+  doc.setFont('times', 'bold'); doc.setFontSize(13);
+  doc.text('SUPREMO TRIBUNAL DE JUSTIÇA', pageW / 2, y, { align: 'center' }); y += 7;
+
+  doc.setFont('times', 'normal'); doc.setFontSize(11);
+  doc.text('Lista de Processos', pageW / 2, y, { align: 'center' }); y += 6;
+
+  doc.setFontSize(9); doc.setTextColor(100);
+  doc.text('Gerado em ' + new Date().toLocaleDateString('pt-PT') + ' — ' + TODOS_PROCESSOS.length + ' processo(s)', pageW / 2, y, { align: 'center' });
+  doc.setTextColor(0);
+  y += 6;
+
+  doc.autoTable({
+    head: [colunasExportPdf()],
+    body: linhasExportPdf(),
+    startY: y,
+    margin: { left: margem, right: margem },
+    styles: { fontSize: 8, cellPadding: 2.5 },
+    // Linha de cabeçalho a azul, conforme pedido.
+    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+    columnStyles: { 5: { cellWidth: 60 } },
+    // Coluna "Estado" (índice 8) colorida por estado, seguindo a mesma
+    // lógica de cores usada nos badges do resto da aplicação.
+    didParseCell: function (data) {
+      if (data.section === 'body' && data.column.index === 8) {
+        var d = TODOS_PROCESSOS[data.row.index];
+        var cor = (d && ESTADO_CORES_PDF[d.estado_codigo]) || ESTADO_COR_PDF_OMISSAO;
+        data.cell.styles.fillColor = cor.bg;
+        data.cell.styles.textColor = cor.tx;
+        data.cell.styles.fontStyle = 'bold';
+      }
+    },
+  });
+
   doc.save('SGD_Processos.pdf');
 }
 
