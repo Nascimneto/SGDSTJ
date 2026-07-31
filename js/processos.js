@@ -229,7 +229,7 @@ var ESTADO_CORES_PDF = {
 var ESTADO_COR_PDF_OMISSAO = { bg: [241, 245, 249], tx: [71, 85, 105] };
 
 function colunasExportPdf() {
-  return ['Nº SGD', 'Data Registo', 'Nº Processo', 'Data Entrada', 'Espécie', 'Partes', 'Distribuição', 'Origem', 'Estado'];
+  return ['Número de Registo', 'Data Registo', 'Nº Processo', 'Data Entrada', 'Espécie', 'Partes', 'Distribuição', 'Origem', 'Estado'];
 }
 
 function linhasExportPdf() {

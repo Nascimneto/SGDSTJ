@@ -721,7 +721,7 @@ Passou a montar o PDF em duas partes: cabeçalho — logótipo (`assets/img/logo
 `carregarImagemDataURL()` de `js/estatisticas.js`, porque o jsPDF não aceita um caminho/URL directamente),
 seguido do nome "SUPREMO TRIBUNAL DE JUSTIÇA" também centrado e do título "Lista de Processos" — e corpo —
 tabela reduzida às 9 variáveis mais relevantes para leitura rápida (`colunasExportPdf()`/`linhasExportPdf()`):
-Nº SGD, Data Registo, Nº Processo, Data Entrada, Espécie, Partes, Distribuição, Origem, Estado. A linha de
+Número de Registo, Data Registo, Nº Processo, Data Entrada, Espécie, Partes, Distribuição, Origem, Estado. A linha de
 cabeçalho da tabela usa `headStyles.fillColor` a azul (`[37,99,235]`, a mesma cor de destaque usada em botões
 primários e no badge `.b-entry`). A coluna Estado é colorida célula a célula via `didParseCell` do
 autoTable, mapeando `estado_codigo` para o mesmo par fundo/texto claro dos badges `.b-entry`/`.b-analysis`/
