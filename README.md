@@ -226,6 +226,11 @@ quantidade) e calcula a largura do contentor a partir do nome mais comprido de f
 × nº de caracteres, com uma margem), em vez de uma proporção fixa da altura — assim a largura
 reservada acompanha o conteúdo real da legenda, e não só a quantidade de fatias.
 
+Ajustado (2026-08-07): o contentor (círculo + legenda) do gráfico de Pizza, nos 5 tabs e no modal de
+detalhe, passou de encostado à esquerda do painel (`margin-right:auto`) para centrado
+(`margin:0 auto`) — mais equilibrado visualmente do que ficar sempre "colado" à margem esquerda,
+mantendo tudo dentro da janela como antes (só muda o alinhamento horizontal, não a largura máxima).
+
 Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
 barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um
 modal (`#estDetalheBg`, `app/Views/estatisticas/index.php`) com estatísticas rápidas (Total,

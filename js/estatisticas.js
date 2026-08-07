@@ -42,11 +42,11 @@ function alturaGrafico(n) {
   return Math.max(400, Math.min(820, n * 26 + 90));
 }
 /* Em Pizza, limita a largura do contentor do canvas (em vez de esticar a 100% do
-   painel) — sem isto, num painel largo o Chart.js centra o círculo (mais estreito, por
-   ser limitado pela altura) a meio de todo esse espaço e "empurra" a legenda vertical
-   para a direita, para lá do que é visível. Largura generosa (não só o mínimo para
-   caber) para o gráfico e a legenda ficarem bem visíveis, só limitada o suficiente para
-   nunca ultrapassar a janela/painel. */
+   painel) e centra-o (`margin:0 auto`) — sem a largura limitada, num painel largo o
+   Chart.js centra o círculo (mais estreito, por ser limitado pela altura) a meio de todo
+   esse espaço e "empurra" a legenda vertical para a direita, para lá do que é visível.
+   Largura generosa (não só o mínimo para caber) para o gráfico e a legenda ficarem bem
+   visíveis, só limitada o suficiente para nunca ultrapassar a janela/painel. */
 function estiloContainerGrafico(rotulos) {
   var n = rotulos.length;
   var altura = alturaGrafico(n);
@@ -58,7 +58,7 @@ function estiloContainerGrafico(rotulos) {
   var maiorLen = rotulos.reduce(function (m, r) { return Math.max(m, String(r || '').length); }, 0);
   var largLegenda = Math.round(maiorLen * (tamFonte <= 10 ? 5.4 : (tamFonte <= 11 ? 6 : 6.8))) + 40;
   var largura = Math.max(520, Math.min(960, altura + largLegenda));
-  return 'height:' + altura + 'px;max-width:' + largura + 'px;margin-right:auto';
+  return 'height:' + altura + 'px;max-width:' + largura + 'px;margin:0 auto';
 }
 
 /* ─── jsPDF e XLSX só servem os botões de exportação (raramente usados em cada
@@ -556,7 +556,7 @@ function desenharPizzaDetalhe(canvasId, labels, valores, cores) {
     var altura = Math.max(280, Math.min(480, labels.length * 24 + 80));
     container.style.height = altura + 'px';
     container.style.maxWidth = Math.max(340, Math.min(560, Math.round(altura * 1.6))) + 'px';
-    container.style.marginRight = 'auto';
+    container.style.margin = '0 auto';
   }
   if (!valores.length) {
     var ctx = canvas.getContext('2d');
