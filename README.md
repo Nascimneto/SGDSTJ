@@ -205,10 +205,26 @@ círculo da Pizza fica limitado pela altura do canvas (bem menor do que a largur
 Chart.js centra esse círculo, agora mais estreito, no meio de todo o espaço disponível — o que
 empurrava a legenda para a direita, a par com a largura do painel, em vez de a manter encostada ao
 círculo. `estiloContainerGrafico(n)` (`js/estatisticas.js`) resolve isto limitando a largura do
-contentor do canvas em modo Pizza (`max-width` entre 360–620px nos 5 tabs, 280–460px no modal de
-detalhe, proporcional à altura calculada por `alturaGrafico(n)`) em vez de o deixar esticar a 100% do
-painel, com `margin-right:auto` para o manter encostado à esquerda — círculo e legenda ficam sempre
-lado a lado, sem o espaço morto que empurrava os nomes para fora da janela.
+contentor do canvas em modo Pizza (`max-width` proporcional à altura calculada por `alturaGrafico(n)`)
+em vez de o deixar esticar a 100% do painel, com `margin-right:auto` para o manter encostado à
+esquerda — círculo e legenda ficam sempre lado a lado, sem o espaço morto que empurrava os nomes para
+fora da janela.
+
+Ajustado (2026-08-07): os limites da correcção acima (raio, legenda e altura/largura do contentor)
+tinham ficado demasiado apertados — gráfico e legenda pequenos demais. Valores aumentados em
+`js/estatisticas.js` para o conjunto ficar bem visível, mantendo-se sempre dentro da janela/painel
+(sem repetir o problema original): `raioPizza(n)` subiu de 62–90% para 72–92%; `legendaPizza(n)`
+aumentou tipo de letra (9–12px→10–13px), `boxWidth` (8–13→9–14) e o limite de truncagem dos rótulos
+(16–30→18–34 caracteres); `alturaGrafico(n)` subiu de 320–760px para 400–820px (220–420px→280–480px no
+modal de detalhe); e o `max-width` do contentor (`estiloContainerGrafico(n)`) passou de
+`altura × 1.45` (360–620px) para `altura × 1.65` (520–860px nos 5 tabs, 340–560px no modal).
+
+Ajustado (2026-08-07): `legendaPizza(n)` deixou de truncar (com "…") os nomes dos rótulos na legenda
+da Pizza — os nomes aparecem sempre por extenso, mesmo os mais compridos. Para compensar,
+`estiloContainerGrafico()` (`js/estatisticas.js`) passou a receber a lista de rótulos (em vez de só a
+quantidade) e calcula a largura do contentor a partir do nome mais comprido de facto (tamanho de letra
+× nº de caracteres, com uma margem), em vez de uma proporção fixa da altura — assim a largura
+reservada acompanha o conteúdo real da legenda, e não só a quantidade de fatias.
 
 Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
 barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um
