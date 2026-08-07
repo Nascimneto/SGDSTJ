@@ -180,6 +180,36 @@ de itens (Juiz e Origem, quando o tipo é Barras), a fórmula subiu de `nº iten
 para `nº itens × 42px` (260–480px). A legenda da Pizza também ficou maior (`font-size` 10→12,
 `boxWidth` 12→14, `padding` 10px entre itens).
 
+Corrigido (2026-08-07): com muitas fatias (ex: muitos juízes/espécies/origens diferentes), a legenda
+da Pizza — de tamanho fixo desde o ajuste de 2026-07-26 acima — ficava mais alta do que os 400px (ou
+280px, no modal de detalhe) do canvas, e os últimos nomes acabavam cortados/invisíveis fora da área do
+gráfico, tanto nos 5 tabs como no modal de drill-down (`chartDetalheA`/`chartDetalheB`). Três
+ajustes, todos em `js/estatisticas.js`:
+
+- `legendaPizza(n)`: `font-size`, `boxWidth` e `padding` da legenda diminuem em dois patamares (mais
+  de 6 e mais de 10 fatias) e os rótulos são truncados com "…" acima de 16–30 caracteres (consoante o
+  patamar) — evita que um único nome muito comprido force a coluna da legenda a alargar à custa do
+  círculo.
+- `raioPizza(n)`: o raio do círculo (`options.radius`) também diminui nos mesmos dois patamares
+  (90%→76%→62%), deixando o gráfico visivelmente mais pequeno e "encostado" à esquerda, com mais
+  espaço reservado à legenda à direita.
+- `alturaGrafico(n)`: nos 5 tabs, a altura do canvas em modo Pizza deixou de ser fixa (400px) e passou
+  a acompanhar a quantidade de fatias (`nº itens × 24px + 60`, entre 320–760px); no modal de detalhe,
+  `desenharPizzaDetalhe()` ajusta a altura do contentor da mesma forma (220–420px) antes de desenhar.
+  Isto garante que a coluna vertical da legenda tem sempre altura suficiente para listar todos os
+  itens, mesmo com grandes quantidades de dados.
+
+Corrigido (2026-08-07): mesmo depois do ajuste acima, a legenda vertical (Chart.js, `position:'right'`)
+continuava a acabar fora da vista em painéis largos. Motivo: com `maintainAspectRatio:false`, o
+círculo da Pizza fica limitado pela altura do canvas (bem menor do que a largura do painel), mas o
+Chart.js centra esse círculo, agora mais estreito, no meio de todo o espaço disponível — o que
+empurrava a legenda para a direita, a par com a largura do painel, em vez de a manter encostada ao
+círculo. `estiloContainerGrafico(n)` (`js/estatisticas.js`) resolve isto limitando a largura do
+contentor do canvas em modo Pizza (`max-width` entre 360–620px nos 5 tabs, 280–460px no modal de
+detalhe, proporcional à altura calculada por `alturaGrafico(n)`) em vez de o deixar esticar a 100% do
+painel, com `margin-right:auto` para o manter encostado à esquerda — círculo e legenda ficam sempre
+lado a lado, sem o espaço morto que empurrava os nomes para fora da janela.
+
 Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
 barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um
 modal (`#estDetalheBg`, `app/Views/estatisticas/index.php`) com estatísticas rápidas (Total,

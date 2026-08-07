@@ -17,6 +17,49 @@ if (window.Chart && window.ChartDataLabels) {
   window.Chart.register(window.ChartDataLabels);
 }
 
+/* ─── Gráficos de Pizza: legenda compacta e raio menor à medida que a quantidade de
+   fatias aumenta — evita que, com muitos dados, os nomes da legenda (à direita) fiquem
+   maiores do que o espaço disponível e acabem cortados/fora da janela do gráfico. ─── */
+function legendaPizza(n) {
+  var compacta = n > 10, media = n > 6 && n <= 10;
+  var maxChars = compacta ? 16 : (media ? 22 : 30);
+  return {
+    display:true, position:'right', align:'start',
+    labels: {
+      font:{ size: compacta ? 9 : (media ? 10 : 12) },
+      boxWidth: compacta ? 8 : (media ? 10 : 13),
+      padding: compacta ? 4 : (media ? 6 : 9),
+      generateLabels: function (chart) {
+        var itens = window.Chart.overrides.pie.plugins.legend.labels.generateLabels(chart);
+        itens.forEach(function (it) {
+          if (it.text && it.text.length > maxChars) it.text = it.text.slice(0, maxChars - 1) + '…';
+        });
+        return itens;
+      }
+    }
+  };
+}
+function raioPizza(n) {
+  return n > 10 ? '62%' : (n > 6 ? '76%' : '90%');
+}
+/* Altura do painel do gráfico: em Pizza cresce com a quantidade de fatias (para a
+   legenda vertical à direita caber toda); nos outros tipos mantém-se fixa. */
+function alturaGrafico(n) {
+  if (TIPO_GRAFICO !== 'pie') return 400;
+  return Math.max(320, Math.min(760, n * 24 + 60));
+}
+/* Em Pizza, limita a largura do contentor do canvas (em vez de esticar a 100% do
+   painel) — sem isto, num painel largo o Chart.js centra o círculo (mais estreito, por
+   ser limitado pela altura) a meio de todo esse espaço e "empurra" a legenda vertical
+   para a direita, para lá do que é visível. Com a largura limitada, o círculo e a
+   legenda ficam sempre encostados um ao outro, mais para a esquerda do painel. */
+function estiloContainerGrafico(n) {
+  var altura = alturaGrafico(n);
+  if (TIPO_GRAFICO !== 'pie') return 'height:' + altura + 'px';
+  var largura = Math.max(360, Math.min(620, Math.round(altura * 1.45)));
+  return 'height:' + altura + 'px;max-width:' + largura + 'px;margin-right:auto';
+}
+
 /* ─── jsPDF e XLSX só servem os botões de exportação (raramente usados em cada
    visita) — carregadas a pedido em vez de sempre no arranque da página, para não
    pesar no desempenho (sobretudo em ligações/CPUs móveis mais lentas). ─── */
@@ -201,7 +244,7 @@ function htmlTabPeriodo(vol) {
     + '<button id="btn-escala-mensal" class="btn btn-xs' + (escala === 'mensal' ? ' btn-primary' : '') + '">Mensal</button>'
     + '<button id="btn-escala-anual"  class="btn btn-xs' + (escala === 'anual'  ? ' btn-primary' : '') + '">Anual</button>'
     + '</div></div>'
-    + '<div style="position:relative;height:400px"><canvas id="chartPeriodo"></canvas></div>'
+    + '<div style="position:relative;' + estiloContainerGrafico(2) + '"><canvas id="chartPeriodo"></canvas></div>'
     + '</div>'
     + '<div class="panel" style="padding:0">'
     + '<div class="panel-hd"><i class="ti ti-table" style="color:var(--blue)"></i>'
@@ -262,9 +305,9 @@ function desenharGraficoPeriodo(vol) {
         datasets: [{ data:[totalReg, totalConc], backgroundColor:['#2563EB','#059669'], borderWidth:1 }]
       },
       options: {
-        responsive:true, maintainAspectRatio:false,
+        responsive:true, maintainAspectRatio:false, radius: raioPizza(2),
         plugins: {
-          legend: { display:true, position:'right', align:'center', labels:{ font:{ size:12 }, boxWidth:14, padding:10 } },
+          legend: legendaPizza(2),
           datalabels: { display:true, color:'#fff', anchor:'center', align:'center', font:{ size:11, weight:'600' },
             formatter: function (v) { return totalPie ? Math.round(v / totalPie * 100) + '%' : ''; } }
         }
@@ -311,7 +354,6 @@ function htmlTabJuiz(prod) {
   var rel = (prod && prod.relatores) || [];
   var totalP = rel.reduce(function (a, r) { return a + (+r.total || 0); }, 0);
   var taxaM  = rel.length ? Math.round(rel.reduce(function (a, r) { return a + (+r.taxa || 0); }, 0) / rel.length * 10) / 10 : 0;
-  var altG   = 400;
 
   var linhas = rel.map(function (r) {
     var cor = +r.taxa >= 70 ? 'var(--green)' : +r.taxa >= 40 ? 'var(--amber)' : 'var(--red)';
@@ -335,7 +377,7 @@ function htmlTabJuiz(prod) {
     + '<div class="row2" style="margin-bottom:12px">'
     + '<div class="panel" style="padding:16px">'
     + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Processos por Juiz Relator</div>'
-    + '<div style="position:relative;height:' + altG + 'px"><canvas id="chartJuiz"></canvas></div>'
+    + '<div style="position:relative;' + estiloContainerGrafico(rel.length) + '"><canvas id="chartJuiz"></canvas></div>'
     + '</div>'
     + '<div class="panel" style="padding:0">'
     + '<div class="panel-hd"><i class="ti ti-table" style="color:var(--blue)"></i><span class="panel-title">Detalhe por Juiz</span></div>'
@@ -402,9 +444,9 @@ function desenharGraficoJuiz(prod) {
       }]
     },
     options: Object.assign({
-      responsive:true, maintainAspectRatio:false,
+      responsive:true, maintainAspectRatio:false, radius: isPie ? raioPizza(labels.length) : undefined,
       plugins: {
-        legend: { display:isPie, position:'right', align:'center', labels:{ font:{ size:12 }, boxWidth:14, padding:10 } },
+        legend: isPie ? legendaPizza(labels.length) : { display:false },
         datalabels: {
           display:true, color: isPie ? '#fff' : '#374151',
           anchor: isPie ? 'center' : 'end', align: isPie ? 'center' : 'end', offset: isPie ? 0 : 4,
@@ -508,6 +550,13 @@ function preencherSlotDetalhe(slot, chave, dados) {
 function desenharPizzaDetalhe(canvasId, labels, valores, cores) {
   var canvas = G(canvasId);
   if (!canvas || !window.Chart) return null;
+  var container = canvas.parentElement;
+  if (container) {
+    var altura = Math.max(220, Math.min(420, labels.length * 22 + 60));
+    container.style.height = altura + 'px';
+    container.style.maxWidth = Math.max(280, Math.min(460, Math.round(altura * 1.45))) + 'px';
+    container.style.marginRight = 'auto';
+  }
   if (!valores.length) {
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -518,9 +567,9 @@ function desenharPizzaDetalhe(canvasId, labels, valores, cores) {
     type: 'pie',
     data: { labels: labels, datasets: [{ data: valores, backgroundColor: cores, borderWidth: 1 }] },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false, radius: raioPizza(labels.length),
       plugins: {
-        legend: { display: true, position: 'right', align: 'center', labels: { font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        legend: legendaPizza(labels.length),
         datalabels: {
           display: true, color: '#fff', anchor: 'center', align: 'center', font: { size: 11, weight: '600' },
           formatter: function (v) { return total ? Math.round(v / total * 100) + '%' : ''; }
@@ -539,7 +588,7 @@ function htmlTabEspecie(dist) {
   return '<div class="row2" style="margin-bottom:12px">'
     + '<div class="panel" style="padding:16px">'
     + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-category" style="color:var(--purple)"></i> Distribuição por Espécie</div>'
-    + '<div style="position:relative;height:400px"><canvas id="chartEspecie"></canvas></div>'
+    + '<div style="position:relative;' + estiloContainerGrafico(items.length) + '"><canvas id="chartEspecie"></canvas></div>'
     + '</div>'
     + tabelaDistribuicao('Espécie', items, total, 'var(--purple)', 'especie')
     + '</div>';
@@ -554,7 +603,7 @@ function htmlTabEstado(dist) {
   return '<div class="row2" style="margin-bottom:12px">'
     + '<div class="panel" style="padding:16px">'
     + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-circle" style="color:var(--blue)"></i> Distribuição por Estado</div>'
-    + '<div style="position:relative;height:400px"><canvas id="chartEstado"></canvas></div>'
+    + '<div style="position:relative;' + estiloContainerGrafico(items.length) + '"><canvas id="chartEstado"></canvas></div>'
     + '</div>'
     + tabelaDistribuicao('Estado', items, total, 'var(--blue)', 'estado')
     + '</div>';
@@ -565,12 +614,11 @@ function htmlTabOrigem(dist) {
   var dados = (dist && dist.porOrigem) || [];
   var total = dados.reduce(function (a, o) { return a + (+o.total || 0); }, 0);
   var items = dados.map(function (o, i) { return { label: o.origem, total: +o.total || 0, cor: PALETA[i % PALETA.length], valor: o.origem }; });
-  var altG  = 400;
 
   return '<div class="row2" style="margin-bottom:12px">'
     + '<div class="panel" style="padding:16px">'
     + '<div style="font-size:13px;font-weight:600;margin-bottom:12px"><i class="ti ti-building" style="color:var(--amber)"></i> Distribuição por Origem</div>'
-    + '<div style="position:relative;height:' + altG + 'px"><canvas id="chartOrigem"></canvas></div>'
+    + '<div style="position:relative;' + estiloContainerGrafico(items.length) + '"><canvas id="chartOrigem"></canvas></div>'
     + '</div>'
     + tabelaDistribuicao('Origem', items, total, 'var(--amber)', 'origem')
     + '</div>';
@@ -683,9 +731,9 @@ function desenharGraficoSimples(canvasId, dados, tipo) {
     },
     options: Object.assign({
       indexAxis: (!isPie && isHoriz) ? 'y' : 'x',
-      responsive: true, maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false, radius: isPie ? raioPizza(labels.length) : undefined,
       plugins: {
-        legend: { display: isPie, position:'right', align:'center', labels:{ font:{ size:12 }, boxWidth:14, padding:10 } },
+        legend: isPie ? legendaPizza(labels.length) : { display:false },
         datalabels: {
           display: isPie || TIPO_GRAFICO === 'bar',
           color: isPie ? '#fff' : '#374151',
