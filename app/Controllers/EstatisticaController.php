@@ -69,6 +69,15 @@ class EstatisticaController
         } catch (InvalidArgumentException $e) {
             http_response_code(400);
             echo json_encode(['erro' => $e->getMessage()]);
+        } catch (Throwable $e) {
+            // Erro de base de dados ou outro imprevisto: nunca deixar um 500 "em branco"
+            // chegar ao cliente (o toast do frontend só sabe mostrar `body.erro` — sem
+            // isto, apiGet() cai no fallback genérico "Erro HTTP 500", sem pista nenhuma
+            // do que falhou de facto). A mensagem real fica só no log do servidor (mesmo
+            // padrão de ProcessoModel::atualizar()), nunca exposta ao cliente.
+            error_log('SGD detalheEixo: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['erro' => 'Erro ao obter o detalhe deste valor.']);
         }
     }
 }

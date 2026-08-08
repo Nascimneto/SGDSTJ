@@ -308,6 +308,23 @@ período concluiu mais processos do que os que entraram nele) passou a **"A Conc
 
 A exportação Excel (cabeçalho "Saldo" da folha "Por Período") continua sem alterações.
 
+Corrigido (2026-08-08): `EstatisticaController::detalheEixo()` (`app/Controllers/EstatisticaController.php`)
+só apanhava `InvalidArgumentException` — qualquer outro erro (nomeadamente `PDOException` de uma query
+mal formada) escapava por completo do `try/catch`, dando um HTTP 500 "em branco" (sem corpo JSON) ao
+cliente. `apiGet()` (`js/api.js`) já lida bem com isto (`r.json()` falha, cai no `{}`, e mostra "Erro
+HTTP 500" genérico), mas sem pista nenhuma do que realmente falhou. Passou a apanhar também
+`Throwable`: regista a mensagem real no log do PHP (`error_log('SGD detalheEixo: ' . ...)`, mesmo padrão
+já usado em `ProcessoModel::atualizar()`) e devolve uma mensagem genérica ao cliente com HTTP 500 — nunca
+expõe detalhe da base de dados ao browser. Detectado em produção: ao clicar num período no tab "Por
+Período" (drill-down "Entrados"), a janela de detalhe dava erro 500 mesmo com o resto da página (gráfico
+e tabela) a carregar normalmente — o log do servidor, depois desta correcção, vai mostrar a causa exacta
+(suspeita mais provável: a coluna `processos.data_entrada`, usada desde a mudança "Data de Entrada"
+acima, ainda não existe na base de dados de produção — `scripts/migrar_data_entrada.php` é uma migração
+manual, não corre sozinha ao publicar código novo). Os restantes métodos do controller (`resumo()`,
+`distribuicao()`, `funil()`, `volume()`, `produtividade()`) têm a mesma lacuna (sem try/catch nenhum) —
+não corrigidos aqui por não terem sido reportados como problema, mas candidatos ao mesmo tratamento se
+surgir o mesmo sintoma noutro tab.
+
 Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
 barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um
 modal (`#estDetalheBg`, `app/Views/estatisticas/index.php`) com estatísticas rápidas (Total,
