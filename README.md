@@ -231,6 +231,30 @@ detalhe, passou de encostado à esquerda do painel (`margin-right:auto`) para ce
 (`margin:0 auto`) — mais equilibrado visualmente do que ficar sempre "colado" à margem esquerda,
 mantendo tudo dentro da janela como antes (só muda o alinhamento horizontal, não a largura máxima).
 
+Melhorado (2026-08-07): em vez de tentar sempre caber *todas* as fatias (o que, com muitas categorias,
+ainda obrigava a letra pequena/gráfico grande para caber tudo), o gráfico de Pizza (nos 5 tabs e no
+modal de detalhe) passou a **limitar-se a 8 fatias principais + "Outras"** — mais legível e mais
+próximo do que se usa em relatórios deste tipo. Tudo em `js/estatisticas.js`:
+
+- `agruparTopN(itens, fnRotulo, fnValor, fnCor)`: ordena da maior para a menor fatia e, havendo mais de
+  `MAX_FATIAS_PIZZA` (9) itens, agrupa os mais pequenos numa fatia final "Outras (N)" — devolve
+  `{ item, label, valor, cor }` por fatia, com `item:null` em "Outras" (não corresponde a um registo
+  específico).
+- `atribuirPaletaSequencial(grupos)`: para Juiz Relator/Espécie/Origem (sem cor semântica própria),
+  reatribui a `PALETA` pela posição já ordenada — evita cores parecidas lado a lado, o que podia
+  acontecer ao usar a posição no array original antes de ordenar. "Por Estado" continua a usar sempre
+  a cor fixa de `SGD_COR_ESTADO` (nunca esta função), por ser semântica.
+- Dentro da pizza só aparece a percentagem de fatias com **≥ 3%** do total (`datalabels.formatter`);
+  fatias menores (1–2%) só ficam identificadas na legenda, não dentro do círculo — evita números
+  ilegíveis sobrepostos em fatias muito finas.
+- Clicar na fatia "Outras" não abre o modal de drill-down (`onClick` verifica `item:null` e ignora) —
+  não corresponde a um único Juiz/Espécie/Estado/Origem, por isso não haveria detalhe correcto a
+  mostrar.
+- `estiloContainerGrafico()` e `desenharPizzaDetalhe()` passaram a dimensionar o contentor com base no
+  limite de 9 fatias (não na quantidade real de itens do relatório), já que é isso que a pizza mostra
+  de facto — evita reservar espaço a mais quando há, por exemplo, 30 origens diferentes mas só 9
+  fatias visíveis.
+
 Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
 barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um
 modal (`#estDetalheBg`, `app/Views/estatisticas/index.php`) com estatísticas rápidas (Total,

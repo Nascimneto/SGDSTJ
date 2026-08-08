@@ -48,9 +48,12 @@ function alturaGrafico(n) {
    Largura generosa (não só o mínimo para caber) para o gráfico e a legenda ficarem bem
    visíveis, só limitada o suficiente para nunca ultrapassar a janela/painel. */
 function estiloContainerGrafico(rotulos) {
-  var n = rotulos.length;
+  if (TIPO_GRAFICO !== 'pie') return 'height:' + alturaGrafico(rotulos.length) + 'px';
+  // Em Pizza o nº de fatias mostradas está sempre limitado a MAX_FATIAS_PIZZA (ver
+  // agruparTopN/"Outras"), por isso o dimensionamento usa esse limite, não a quantidade
+  // total de itens do relatório.
+  var n = Math.min(rotulos.length, MAX_FATIAS_PIZZA);
   var altura = alturaGrafico(n);
-  if (TIPO_GRAFICO !== 'pie') return 'height:' + altura + 'px';
   // Como os nomes da legenda nunca são truncados, a largura reservada para eles tem de
   // acompanhar o nome mais comprido (em vez de uma proporção fixa da altura) — senão os
   // nomes maiores voltam a ficar cortados/fora da janela.
@@ -59,6 +62,37 @@ function estiloContainerGrafico(rotulos) {
   var largLegenda = Math.round(maiorLen * (tamFonte <= 10 ? 5.4 : (tamFonte <= 11 ? 6 : 6.8))) + 40;
   var largura = Math.max(520, Math.min(960, altura + largLegenda));
   return 'height:' + altura + 'px;max-width:' + largura + 'px;margin:0 auto';
+}
+
+var COR_OUTRAS = '#94A3B8';
+var MAX_FATIAS_PIZZA = 9; /* Top 8 + "Outras" */
+
+/** Reduz o nº de fatias de um gráfico de Pizza: ordena da maior para a menor e, havendo
+ *  mais itens do que `MAX_FATIAS_PIZZA`, agrupa os mais pequenos numa fatia "Outras" —
+ *  mantém a pizza e a legenda legíveis mesmo com muitas categorias diferentes. Devolve
+ *  um array de { item, label, valor, cor }, com `item:null` na fatia "Outras" (não
+ *  corresponde a nenhum registo original — usado para desactivar o drill-down nela). */
+function agruparTopN(itens, fnRotulo, fnValor, fnCor) {
+  var pares = itens.map(function (it) { return { item: it, label: fnRotulo(it), valor: fnValor(it), cor: fnCor(it) }; });
+  pares.sort(function (a, b) { return b.valor - a.valor; });
+  if (pares.length <= MAX_FATIAS_PIZZA) return pares;
+
+  var principais = pares.slice(0, MAX_FATIAS_PIZZA - 1);
+  var resto = pares.slice(MAX_FATIAS_PIZZA - 1);
+  var somaResto = resto.reduce(function (a, p) { return a + p.valor; }, 0);
+  principais.push({ item: null, label: 'Outras (' + resto.length + ')', valor: somaResto, cor: COR_OUTRAS });
+  return principais;
+}
+
+/** Reatribui a PALETA às fatias (menos "Outras") pela posição já ordenada — evita que,
+ *  ao agrupar/ordenar, duas fatias mostradas fiquem com cores demasiado parecidas
+ *  (o que podia acontecer usando a posição no array original, antes de ordenar). Só
+ *  para relatórios sem cor semântica própria (Juiz Relator, Espécie, Origem) — "Por
+ *  Estado" usa sempre a cor fixa de `SGD_COR_ESTADO`, nunca esta função. */
+function atribuirPaletaSequencial(grupos) {
+  var i = 0;
+  grupos.forEach(function (g) { if (g.item) { g.cor = PALETA[i % PALETA.length]; i++; } });
+  return grupos;
 }
 
 /* ─── jsPDF e XLSX só servem os botões de exportação (raramente usados em cada
@@ -310,7 +344,7 @@ function desenharGraficoPeriodo(vol) {
         plugins: {
           legend: legendaPizza(2),
           datalabels: { display:true, color:'#fff', anchor:'center', align:'center', font:{ size:11, weight:'600' },
-            formatter: function (v) { return totalPie ? Math.round(v / totalPie * 100) + '%' : ''; } }
+            formatter: function (v) { var pct = totalPie ? Math.round(v / totalPie * 100) : 0; return pct >= 3 ? pct + '%' : ''; } }
         }
       }
     });
@@ -426,37 +460,55 @@ function desenharGraficoJuiz(prod) {
     return;
   }
 
-  var isPie   = TIPO_GRAFICO === 'pie';
-  var isLine  = !isPie;
+  if (TIPO_GRAFICO === 'pie') {
+    var totalG = rel.reduce(function (a, r) { return a + (+r.total || 0); }, 0);
+    var grupos = atribuirPaletaSequencial(agruparTopN(rel,
+      function (r) { return r.relator; }, function (r) { return +r.total || 0; }, function () { return null; }));
+
+    CHART_ACTIVO = new window.Chart(canvas, {
+      type: 'pie',
+      data: {
+        labels: grupos.map(function (g) { return g.label; }),
+        datasets: [{ data: grupos.map(function (g) { return g.valor; }), backgroundColor: grupos.map(function (g) { return g.cor; }), borderWidth: 1 }]
+      },
+      options: Object.assign({
+        responsive:true, maintainAspectRatio:false, radius: raioPizza(grupos.length),
+        plugins: {
+          legend: legendaPizza(grupos.length),
+          datalabels: {
+            display:true, color:'#fff', anchor:'center', align:'center', font:{ size:11, weight:'600' },
+            formatter: function (v) { var pct = totalG ? Math.round(v / totalG * 100) : 0; return pct >= 3 ? pct + '%' : ''; },
+            clamp:true
+          }
+        }
+      }, {
+        onHover: aoClicar.onHover,
+        onClick: function (evt, elements) {
+          if (!elements.length) return;
+          var g = grupos[elements[0].index];
+          if (!g.item) return; /* fatia "Outras" — sem drill-down, não corresponde a um único juiz */
+          abrirDetalheEixo('relator', g.item.relator, 'Juiz Relator — ' + g.item.relator);
+        }
+      })
+    });
+    return;
+  }
+
   var valores = rel.map(function (r) { return +r.total || 0; });
-  var cores   = rel.map(function (_, i) { return PALETA[i % PALETA.length]; });
-  var totalG  = valores.reduce(function (a, b) { return a + b; }, 0);
 
   CHART_ACTIVO = new window.Chart(canvas, {
-    type: isPie ? 'pie' : 'line',
+    type: 'line',
     data: {
       labels: labels,
-      datasets: [{
-        data: valores,
-        backgroundColor: isPie ? cores : 'rgba(37,99,235,.12)',
-        borderColor: isPie ? cores : '#2563EB',
-        borderWidth: isPie ? 1 : 2,
-        fill: isLine, tension:.3
-      }]
+      datasets: [{ data: valores, backgroundColor:'rgba(37,99,235,.12)', borderColor:'#2563EB', borderWidth:2, fill:true, tension:.3 }]
     },
     options: Object.assign({
-      responsive:true, maintainAspectRatio:false, radius: isPie ? raioPizza(labels.length) : undefined,
+      responsive:true, maintainAspectRatio:false,
       plugins: {
-        legend: isPie ? legendaPizza(labels.length) : { display:false },
-        datalabels: {
-          display:true, color: isPie ? '#fff' : '#374151',
-          anchor: isPie ? 'center' : 'end', align: isPie ? 'center' : 'end', offset: isPie ? 0 : 4,
-          font:{ size:11, weight:'600' },
-          formatter: function (v) { return isPie ? (totalG ? Math.round(v / totalG * 100) + '%' : '') : (v || ''); },
-          clamp:true
-        }
+        legend: { display:false },
+        datalabels: { display:true, color:'#374151', anchor:'end', align:'end', offset:4, font:{ size:11, weight:'600' }, formatter: function (v) { return v || ''; }, clamp:true }
       },
-      scales: isPie ? {} : { x:{ ticks:{ precision:0 } }, y:{ beginAtZero:true, ticks:{ precision:0 } } }
+      scales: { x:{ ticks:{ precision:0 } }, y:{ beginAtZero:true, ticks:{ precision:0 } } }
     }, aoClicar)
   });
 }
@@ -541,11 +593,13 @@ function preencherSlotDetalhe(slot, chave, dados) {
   if (elLabel) elLabel.textContent = info ? info.titulo : '';
   if (!info) { return desenharPizzaDetalhe('chartDetalhe' + slot, [], [], []); }
 
-  var itens   = (dados || []).filter(function (e) { return +e.total > 0; });
-  var labels  = itens.map(info.rotulo);
-  var valores = itens.map(function (e) { return +e.total || 0; });
-  var cores   = itens.map(function (e, i) { return info.cor(e, i); });
-  return desenharPizzaDetalhe('chartDetalhe' + slot, labels, valores, cores);
+  var itens  = (dados || []).filter(function (e) { return +e.total > 0; });
+  var grupos = agruparTopN(itens, info.rotulo, function (e) { return +e.total || 0; },
+    chave === 'porEstado' ? info.cor : function () { return null; });
+  if (chave !== 'porEstado') grupos = atribuirPaletaSequencial(grupos);
+
+  return desenharPizzaDetalhe('chartDetalhe' + slot,
+    grupos.map(function (g) { return g.label; }), grupos.map(function (g) { return g.valor; }), grupos.map(function (g) { return g.cor; }));
 }
 
 function desenharPizzaDetalhe(canvasId, labels, valores, cores) {
@@ -573,7 +627,7 @@ function desenharPizzaDetalhe(canvasId, labels, valores, cores) {
         legend: legendaPizza(labels.length),
         datalabels: {
           display: true, color: '#fff', anchor: 'center', align: 'center', font: { size: 11, weight: '600' },
-          formatter: function (v) { return total ? Math.round(v / total * 100) + '%' : ''; }
+          formatter: function (v) { var pct = total ? Math.round(v / total * 100) : 0; return pct >= 3 ? pct + '%' : ''; }
         }
       }
     }
@@ -658,6 +712,11 @@ function valorEixoItem(tipo, item) {
   return tipo === 'estado' ? item.codigo : tipo === 'especie' ? item.especie : item.origem;
 }
 
+/** Rótulo apresentado (diferente do valor de filtro apenas em Estado — ver acima). */
+function rotuloEixoItem(tipo, item) {
+  return tipo === 'estado' ? item.label : valorEixoItem(tipo, item);
+}
+
 /* ─── Gráfico genérico (espécie, estado, origem) ─── */
 function desenharGraficoSimples(canvasId, dados, tipo) {
   var canvas = G(canvasId);
@@ -694,6 +753,44 @@ function desenharGraficoSimples(canvasId, dados, tipo) {
     return;
   }
 
+  if (TIPO_GRAFICO === 'pie') {
+    var totalG = dados.reduce(function (a, d) { return a + (+d.total || 0); }, 0);
+    var fnCor  = tipo === 'estado'
+      ? function (item) { return SGD_COR_ESTADO[item.codigo] || '#888'; }
+      : function () { return null; };
+    var grupos = agruparTopN(dados,
+      function (item) { return rotuloEixoItem(tipo, item); }, function (item) { return +item.total || 0; }, fnCor);
+    if (tipo !== 'estado') grupos = atribuirPaletaSequencial(grupos);
+
+    CHART_ACTIVO = new window.Chart(canvas, {
+      type: 'pie',
+      data: {
+        labels: grupos.map(function (g) { return g.label; }),
+        datasets: [{ data: grupos.map(function (g) { return g.valor; }), backgroundColor: grupos.map(function (g) { return g.cor; }), borderWidth: 1 }]
+      },
+      options: Object.assign({
+        responsive:true, maintainAspectRatio:false, radius: raioPizza(grupos.length),
+        plugins: {
+          legend: legendaPizza(grupos.length),
+          datalabels: {
+            display:true, color:'#fff', anchor:'center', align:'center', font:{ size:11, weight:'600' },
+            formatter: function (v) { var pct = totalG ? Math.round(v / totalG * 100) : 0; return pct >= 3 ? pct + '%' : ''; },
+            clamp:true
+          }
+        }
+      }, {
+        onHover: aoClicar.onHover,
+        onClick: function (evt, elements) {
+          if (!elements.length) return;
+          var g = grupos[elements[0].index];
+          if (!g.item) return; /* fatia "Outras" — sem drill-down, não corresponde a um único item */
+          abrirDetalheEixo(tipo, valorEixoItem(tipo, g.item), TITULO_EIXO[tipo] + ' — ' + valorEixoItem(tipo, g.item));
+        }
+      })
+    });
+    return;
+  }
+
   var labels, valores, cores;
   if (tipo === 'estado') {
     labels = dados.map(function (e) { return e.label; });
@@ -703,16 +800,14 @@ function desenharGraficoSimples(canvasId, dados, tipo) {
     labels = dados.map(function (e) { return e.especie; });
     valores = dados.map(function (e) { return +e.total || 0; });
     cores   = dados.map(function (_, i) { return PALETA[i % PALETA.length]; });
-  } else { /* origem: pizza/linha */
+  } else { /* origem: linha */
     labels = dados.map(function (o) { return o.origem; });
     valores = dados.map(function (o) { return +o.total || 0; });
     cores   = dados.map(function (_, i) { return PALETA[i % PALETA.length]; });
   }
 
-  var totalG  = valores.reduce(function (a, b) { return a + b; }, 0);
-  var isPie   = TIPO_GRAFICO === 'pie';
   var isLine  = TIPO_GRAFICO === 'line';
-  var chartType = isPie ? 'pie' : (isLine ? 'line' : 'bar');
+  var chartType = isLine ? 'line' : 'bar';
   var isHoriz = tipo === 'origem' && chartType === 'bar'; /* origens são texto longo, só em barras */
   var maxV = Math.max.apply(null, valores) || 1;
 
@@ -722,32 +817,32 @@ function desenharGraficoSimples(canvasId, dados, tipo) {
       labels: labels,
       datasets: [{
         data: valores,
-        backgroundColor: isPie ? cores : (isLine ? 'rgba(37,99,235,.12)' : cores),
+        backgroundColor: isLine ? 'rgba(37,99,235,.12)' : cores,
         borderColor: isLine ? '#2563EB' : cores,
-        borderWidth: isPie ? 1 : (isLine ? 2 : 1),
+        borderWidth: isLine ? 2 : 1,
         fill: isLine,
         tension: 0.3,
         borderRadius: chartType === 'bar' ? 3 : 0
       }]
     },
     options: Object.assign({
-      indexAxis: (!isPie && isHoriz) ? 'y' : 'x',
-      responsive: true, maintainAspectRatio: false, radius: isPie ? raioPizza(labels.length) : undefined,
+      indexAxis: isHoriz ? 'y' : 'x',
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: isPie ? legendaPizza(labels.length) : { display:false },
+        legend: { display:false },
         datalabels: {
-          display: isPie || TIPO_GRAFICO === 'bar',
-          color: isPie ? '#fff' : '#374151',
-          anchor: isPie ? 'center' : 'end',
-          align:  isPie ? 'center' : 'end',
-          offset: isPie ? 0 : 4,
+          display: !isLine,
+          color: '#374151',
+          anchor: 'end',
+          align:  'end',
+          offset: 4,
           font: { size:11, weight:'600' },
-          formatter: function (v) { return totalG ? Math.round(v / totalG * 100) + '%' : ''; },
+          formatter: function (v) { var total = valores.reduce(function (a, b) { return a + b; }, 0); return total ? Math.round(v / total * 100) + '%' : ''; },
           clamp: true
         }
       },
-      layout: isPie ? {} : (isHoriz ? { padding:{ right:38 } } : { padding:{ top:18 } }),
-      scales: isPie ? {} : {
+      layout: isHoriz ? { padding:{ right:38 } } : { padding:{ top:18 } },
+      scales: {
         x: isHoriz ? { beginAtZero:true, ticks:{ precision:0 } } : { ticks:{ precision:0 }, suggestedMax: !isLine ? Math.ceil(maxV * 1.2) : undefined },
         y: isHoriz ? {} : { beginAtZero:true, ticks:{ precision:0 }, suggestedMax: (!isLine && !isHoriz) ? Math.ceil(maxV * 1.2) : undefined }
       }
