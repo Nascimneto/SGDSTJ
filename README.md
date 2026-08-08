@@ -255,6 +255,16 @@ próximo do que se usa em relatórios deste tipo. Tudo em `js/estatisticas.js`:
   de facto — evita reservar espaço a mais quando há, por exemplo, 30 origens diferentes mas só 9
   fatias visíveis.
 
+Adicionado (2026-08-08): como clicar na fatia "Outras" não abre o modal de detalhe (ver acima), não
+havia forma de ver rapidamente quais itens tinham sido agrupados nela — só consultando a tabela
+completa por baixo do gráfico. `agruparTopN()` passou a guardar, na fatia "Outras", a lista
+`agrupados` (rótulo + valor de cada item que lá foi parar); `tooltipPizza(grupos)`
+(`js/estatisticas.js`) usa essa lista para substituir o tooltip por omissão do Chart.js ("Outras (N):
+total") por uma lista linha a linha ao passar o rato sobre essa fatia (limitada a 14 linhas, com "…
+mais X" a seguir se sobrarem mais); nas restantes fatias mantém o tooltip normal. Aplicado aos 3
+gráficos de Pizza que agrupam em "Outras" (Juiz Relator, Espécie/Estado/Origem, e os 2 do modal de
+drill-down).
+
 Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
 barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um
 modal (`#estDetalheBg`, `app/Views/estatisticas/index.php`) com estatísticas rápidas (Total,

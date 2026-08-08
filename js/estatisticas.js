@@ -70,8 +70,10 @@ var MAX_FATIAS_PIZZA = 9; /* Top 8 + "Outras" */
 /** Reduz o nº de fatias de um gráfico de Pizza: ordena da maior para a menor e, havendo
  *  mais itens do que `MAX_FATIAS_PIZZA`, agrupa os mais pequenos numa fatia "Outras" —
  *  mantém a pizza e a legenda legíveis mesmo com muitas categorias diferentes. Devolve
- *  um array de { item, label, valor, cor }, com `item:null` na fatia "Outras" (não
- *  corresponde a nenhum registo original — usado para desactivar o drill-down nela). */
+ *  um array de { item, label, valor, cor, agrupados? }, com `item:null` na fatia
+ *  "Outras" (não corresponde a nenhum registo original — usado para desactivar o
+ *  drill-down nela) e `agrupados` com o detalhe (label/valor) de cada item que lá foi
+ *  parar, usado por `tooltipPizza()` para os listar ao passar o rato. */
 function agruparTopN(itens, fnRotulo, fnValor, fnCor) {
   var pares = itens.map(function (it) { return { item: it, label: fnRotulo(it), valor: fnValor(it), cor: fnCor(it) }; });
   pares.sort(function (a, b) { return b.valor - a.valor; });
@@ -80,8 +82,32 @@ function agruparTopN(itens, fnRotulo, fnValor, fnCor) {
   var principais = pares.slice(0, MAX_FATIAS_PIZZA - 1);
   var resto = pares.slice(MAX_FATIAS_PIZZA - 1);
   var somaResto = resto.reduce(function (a, p) { return a + p.valor; }, 0);
-  principais.push({ item: null, label: 'Outras (' + resto.length + ')', valor: somaResto, cor: COR_OUTRAS });
+  principais.push({
+    item: null, label: 'Outras (' + resto.length + ')', valor: somaResto, cor: COR_OUTRAS,
+    agrupados: resto.map(function (p) { return { label: p.label, valor: p.valor }; })
+  });
   return principais;
+}
+
+/** Tooltip do Chart.js para gráficos de Pizza: na fatia "Outras", em vez de só
+ *  "Outras (N): total", lista os itens agrupados (um por linha) — até um limite, para
+ *  não crescer sem fim com muitas categorias pequenas. Nas restantes fatias mantém o
+ *  comportamento por omissão do Chart.js ("rótulo: valor"). */
+function tooltipPizza(grupos) {
+  var MAX_LINHAS = 14;
+  return {
+    callbacks: {
+      label: function (contexto) {
+        var g = grupos[contexto.dataIndex];
+        var linha0 = contexto.label + ': ' + contexto.formattedValue;
+        if (!g || !g.agrupados || !g.agrupados.length) return linha0;
+        var linhas = [linha0];
+        g.agrupados.slice(0, MAX_LINHAS).forEach(function (a) { linhas.push('• ' + a.label + ': ' + a.valor); });
+        if (g.agrupados.length > MAX_LINHAS) linhas.push('… mais ' + (g.agrupados.length - MAX_LINHAS));
+        return linhas;
+      }
+    }
+  };
 }
 
 /** Reatribui a PALETA às fatias (menos "Outras") pela posição já ordenada — evita que,
@@ -475,6 +501,7 @@ function desenharGraficoJuiz(prod) {
         responsive:true, maintainAspectRatio:false, radius: raioPizza(grupos.length),
         plugins: {
           legend: legendaPizza(grupos.length),
+          tooltip: tooltipPizza(grupos),
           datalabels: {
             display:true, color:'#fff', anchor:'center', align:'center', font:{ size:11, weight:'600' },
             formatter: function (v) { var pct = totalG ? Math.round(v / totalG * 100) : 0; return pct >= 3 ? pct + '%' : ''; },
@@ -591,40 +618,43 @@ function preencherSlotDetalhe(slot, chave, dados) {
   var info = DIM_INFO[chave];
   var elLabel = G('estDetalheLabel' + slot);
   if (elLabel) elLabel.textContent = info ? info.titulo : '';
-  if (!info) { return desenharPizzaDetalhe('chartDetalhe' + slot, [], [], []); }
+  if (!info) { return desenharPizzaDetalhe('chartDetalhe' + slot, []); }
 
   var itens  = (dados || []).filter(function (e) { return +e.total > 0; });
   var grupos = agruparTopN(itens, info.rotulo, function (e) { return +e.total || 0; },
     chave === 'porEstado' ? info.cor : function () { return null; });
   if (chave !== 'porEstado') grupos = atribuirPaletaSequencial(grupos);
 
-  return desenharPizzaDetalhe('chartDetalhe' + slot,
-    grupos.map(function (g) { return g.label; }), grupos.map(function (g) { return g.valor; }), grupos.map(function (g) { return g.cor; }));
+  return desenharPizzaDetalhe('chartDetalhe' + slot, grupos);
 }
 
-function desenharPizzaDetalhe(canvasId, labels, valores, cores) {
+function desenharPizzaDetalhe(canvasId, grupos) {
   var canvas = G(canvasId);
   if (!canvas || !window.Chart) return null;
   var container = canvas.parentElement;
   if (container) {
-    var altura = Math.max(280, Math.min(480, labels.length * 24 + 80));
+    var altura = Math.max(280, Math.min(480, grupos.length * 24 + 80));
     container.style.height = altura + 'px';
     container.style.maxWidth = Math.max(340, Math.min(560, Math.round(altura * 1.6))) + 'px';
     container.style.margin = '0 auto';
   }
-  if (!valores.length) {
+  if (!grupos.length) {
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     return null;
   }
-  var total = valores.reduce(function (a, b) { return a + b; }, 0);
+  var total = grupos.reduce(function (a, g) { return a + g.valor; }, 0);
   return new window.Chart(canvas, {
     type: 'pie',
-    data: { labels: labels, datasets: [{ data: valores, backgroundColor: cores, borderWidth: 1 }] },
+    data: {
+      labels: grupos.map(function (g) { return g.label; }),
+      datasets: [{ data: grupos.map(function (g) { return g.valor; }), backgroundColor: grupos.map(function (g) { return g.cor; }), borderWidth: 1 }]
+    },
     options: {
-      responsive: true, maintainAspectRatio: false, radius: raioPizza(labels.length),
+      responsive: true, maintainAspectRatio: false, radius: raioPizza(grupos.length),
       plugins: {
-        legend: legendaPizza(labels.length),
+        legend: legendaPizza(grupos.length),
+        tooltip: tooltipPizza(grupos),
         datalabels: {
           display: true, color: '#fff', anchor: 'center', align: 'center', font: { size: 11, weight: '600' },
           formatter: function (v) { var pct = total ? Math.round(v / total * 100) : 0; return pct >= 3 ? pct + '%' : ''; }
@@ -772,6 +802,7 @@ function desenharGraficoSimples(canvasId, dados, tipo) {
         responsive:true, maintainAspectRatio:false, radius: raioPizza(grupos.length),
         plugins: {
           legend: legendaPizza(grupos.length),
+          tooltip: tooltipPizza(grupos),
           datalabels: {
             display:true, color:'#fff', anchor:'center', align:'center', font:{ size:11, weight:'600' },
             formatter: function (v) { var pct = totalG ? Math.round(v / totalG * 100) : 0; return pct >= 3 ? pct + '%' : ''; },
