@@ -29,8 +29,8 @@
                 <option value="<?= (int)$u['id'] ?>"><?= sgd_e($u['nome_completo']) ?></option>
               <?php endforeach; ?>
             </select>
-            <input type="date" class="btn btn-sm" id="fEstDataDe" title="Data de registo — de">
-            <input type="date" class="btn btn-sm" id="fEstDataAte" title="Data de registo — até">
+            <input type="date" class="btn btn-sm" id="fEstDataDe" title="Data de entrada — de">
+            <input type="date" class="btn btn-sm" id="fEstDataAte" title="Data de entrada — até">
             <button class="btn btn-sm" id="btnLimparFiltrosEst"><i class="ti ti-filter-off"></i></button>
             <select class="btn btn-sm" id="fTipoGrafico" style="margin-left:auto">
               <option value="bar">Gráfico de Barras</option>

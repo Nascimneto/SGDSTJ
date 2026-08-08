@@ -137,7 +137,7 @@ ao lado de `total`/`total_acumulado`. Grid de cards passou de 3 para 4 colunas
 
 | Tab | API | Gráfico | Exportação |
 |---|---|---|---|
-| **Por Período** | `volume.php` (Mensal/Anual) | Barras agrupadas/Pizza/Linha (selector) | Período, Reg., Conc., Saldo |
+| **Por Período** | `volume.php` (Mensal/Anual) | Barras agrupadas/Pizza/Linha (selector) | Período, Ent., Conc., Saldo |
 | **Por Juiz Relator** | `produtividade.php` | Coluna agrupada (Pendentes/Findos)/Pizza/Linha (selector) | Juiz, Total, Pendentes, Findos, Taxa % |
 | **Por Espécie** | `distribuicao.php → porEspecie` | Barras/Pizza/Linha (selector) | Espécie, Total |
 | **Por Estado** | `distribuicao.php → porEstado` | Barras/Pizza/Linha (selector) | Estado, Total |
@@ -148,7 +148,7 @@ ao lado de `total`/`total_acumulado`. Grid de cards passou de 3 para 4 colunas
 `EstatisticaModel::volume()` e `EstatisticaModel::produtividade()` servem tanto o Painel como a tab
 correspondente de Estatísticas. Os botões **PDF** e **Excel** exportam apenas o tab activo.
 O selector `#fTipoGrafico` (Barras/Pizza/Linha) actua sobre os 5 tabs. Em "Por Período" a opção Pizza
-agrega o intervalo filtrado em duas fatias (Registados/Concluídos), já que o gráfico normal tem duas
+agrega o intervalo filtrado em duas fatias (Entrados/Concluídos), já que o gráfico normal tem duas
 séries ao longo do tempo; em "Por Juiz Relator" a Pizza mostra a proporção de processos por juiz e a
 Linha desenha os mesmos valores em vez de barras horizontais. Botão "Imprimir" usa `window.print()` com
 a barra de filtros e os tabs escondidos via `.no-print`.
@@ -264,6 +264,36 @@ total") por uma lista linha a linha ao passar o rato sobre essa fatia (limitada 
 mais X" a seguir se sobrarem mais); nas restantes fatias mantém o tooltip normal. Aplicado aos 3
 gráficos de Pizza que agrupam em "Outras" (Juiz Relator, Espécie/Estado/Origem, e os 2 do modal de
 drill-down).
+
+Alterado (2026-08-08): o filtro de datas de Estatísticas ("Data De"/"Data Até") passou a filtrar por
+**Data de Entrada** (`data_entrada`, o campo editável no processo) em vez de **Data de Registo**
+(`data_registo`, o carimbo automático de quando o registo foi criado no sistema) — consistente com a
+Lista de Processos, que já filtra por Data de Entrada. Isto aplica-se a todos os 5 tabs, ao drill-down,
+e às exportações PDF/Excel (que partilham os mesmos dados carregados no ecrã). No tab **Por Período**,
+a coluna/série antes chamada "Registados" passou a "Entrados" e também agrupa por `data_entrada` em vez
+de `data_registo`.
+
+Importante: o **Painel Geral** usa os mesmos endpoints (`volume.php`, `produtividade.php`) mas
+**mantém-se sem alterações** — continua a filtrar/agrupar por Data de Registo como sempre, e continua a
+distinguir os cartões "Processos Registados" (Data de Registo) de "Processos de Entrada" (Data de
+Entrada), tal como já fazia. A escolha de campo é feita por um parâmetro novo, `campo_data`, que só a
+página de Estatísticas envia:
+
+- `EstatisticaModel::condicoes()` (`app/Models/EstatisticaModel.php`): passou a ler
+  `$get['campo_data']` — usa `p.data_entrada` quando vale `'entrada'`, senão mantém `p.data_registo`
+  por omissão (comportamento anterior, preservado para quem não enviar o parâmetro). Como
+  `distribuicao()`, `produtividade()` e `funil()` chamam sempre `condicoes()`, herdam este
+  comportamento automaticamente.
+- `volume()`: a coluna de agrupamento por período (antes sempre `p.data_registo`) segue agora o mesmo
+  `campo_data`, coerente com os filtros extra devolvidos por `condicoes()` — sem isto, o "Entrados" por
+  período estaria a contar uma data mas a filtrar por outra.
+- `detalheEixo()`, eixo `'periodo'`: o mesmo critério, para o drill-down de um período agrupar pela
+  mesma coluna usada para o calcular em `volume()`.
+- `js/estatisticas.js`, `paramsFiltros()`: passou a incluir sempre `campo_data=entrada` em todos os
+  pedidos da página de Estatísticas — é o único consumidor a enviar este parâmetro; o Painel Geral
+  (`js/painel.js`) continua a chamar os mesmos endpoints sem ele, preservando o comportamento anterior.
+- `app/Views/estatisticas/index.php`: os `title` dos campos `#fEstDataDe`/`#fEstDataAte` passaram de
+  "Data de registo — de/até" para "Data de entrada — de/até".
 
 Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
 barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um

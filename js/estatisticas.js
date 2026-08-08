@@ -193,8 +193,15 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /* ─── Filtros e carregamento ─── */
+/* Estatísticas filtra e agrupa sempre por Data de Entrada (data_entrada), não por Data
+   de Registo (data_registo, o carimbo automático do sistema) — `campo_data=entrada`
+   avisa o EstatisticaModel disso (ver EstatisticaModel::condicoes()/volume()). O Painel
+   Geral usa os mesmos endpoints mas não envia este parâmetro, por isso continua a
+   filtrar/agrupar por Data de Registo como sempre — as duas páginas contam datas
+   diferentes de propósito (ver comentário em EstatisticaModel::resumo()). */
 function paramsFiltros() {
   var p = new URLSearchParams();
+  p.set('campo_data', 'entrada');
   var u = GV('fEstUtilizador');  if (u)  p.set('utilizador', u);
   var de = GV('fEstDataDe');     if (de) p.set('data_de', de);
   var at = GV('fEstDataAte');    if (at) p.set('data_ate', at);
@@ -292,26 +299,26 @@ function htmlTabPeriodo(vol) {
   }).join('');
 
   return '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">'
-    + statCard('ti-inbox',        'var(--blue)',  'Registados',  totalReg,  'Segundo o filtro activo')
+    + statCard('ti-inbox',        'var(--blue)',  'Entrados',  totalReg,  'Segundo o filtro activo')
     + statCard('ti-circle-check', 'var(--green)', 'Concluídos',  totalConc, 'Segundo o filtro activo')
-    + statCard('ti-trending-up',  saldo > 0 ? 'var(--amber)' : 'var(--green)', 'Saldo', (saldo > 0 ? '+' : '') + saldo, 'Registados menos concluídos')
+    + statCard('ti-trending-up',  saldo > 0 ? 'var(--amber)' : 'var(--green)', 'Saldo', (saldo > 0 ? '+' : '') + saldo, 'Entrados menos concluídos')
     + '</div>'
     + '<div class="row2" style="margin-bottom:12px">'
     + '<div class="panel" style="padding:16px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">'
-    + '<div style="font-size:13px;font-weight:600"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Registados vs Concluídos '
+    + '<div style="font-size:13px;font-weight:600"><i class="ti ti-chart-bar" style="color:var(--blue)"></i> Entrados vs Concluídos '
     + '<span style="font-weight:400;font-size:11px;color:var(--tx3)">(últimos ' + (escala === 'anual' ? '5 anos' : '13 meses') + ')</span></div>'
     + '<div style="display:flex;gap:4px">'
     + '<button id="btn-escala-mensal" class="btn btn-xs' + (escala === 'mensal' ? ' btn-primary' : '') + '">Mensal</button>'
     + '<button id="btn-escala-anual"  class="btn btn-xs' + (escala === 'anual'  ? ' btn-primary' : '') + '">Anual</button>'
     + '</div></div>'
-    + '<div style="position:relative;' + estiloContainerGrafico(['Registados', 'Concluídos']) + '"><canvas id="chartPeriodo"></canvas></div>'
+    + '<div style="position:relative;' + estiloContainerGrafico(['Entrados', 'Concluídos']) + '"><canvas id="chartPeriodo"></canvas></div>'
     + '</div>'
     + '<div class="panel" style="padding:0">'
     + '<div class="panel-hd"><i class="ti ti-table" style="color:var(--blue)"></i>'
     + '<span class="panel-title">Detalhe por ' + (escala === 'anual' ? 'Ano' : 'Mês') + '</span></div>'
     + '<div class="tbl-outer"><table class="pt pt-stat" style="font-size:12px">'
-    + '<thead><tr><th class="th0">Período</th><th style="text-align:center">Registados</th><th style="text-align:center">Concluídos</th><th style="text-align:center">Saldo</th></tr></thead>'
+    + '<thead><tr><th class="th0">Período</th><th style="text-align:center">Entrados</th><th style="text-align:center">Concluídos</th><th style="text-align:center">Saldo</th></tr></thead>'
     + '<tbody>' + (linhas || '<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--tx3)">Sem dados.</td></tr>') + '</tbody>'
     + '</table></div></div>'
     + '</div>';
@@ -362,7 +369,7 @@ function desenharGraficoPeriodo(vol) {
     CHART_ACTIVO = new window.Chart(canvas, {
       type: 'pie',
       data: {
-        labels: ['Registados', 'Concluídos'],
+        labels: ['Entrados', 'Concluídos'],
         datasets: [{ data:[totalReg, totalConc], backgroundColor:['#2563EB','#059669'], borderWidth:1 }]
       },
       options: {
@@ -387,7 +394,7 @@ function desenharGraficoPeriodo(vol) {
     data: {
       labels: labels,
       datasets: [
-        { label:'Registados', data: dados.map(function (d) { return +d.registados || 0; }),
+        { label:'Entrados', data: dados.map(function (d) { return +d.registados || 0; }),
           backgroundColor: isLine ? 'rgba(37,99,235,.12)' : '#2563EB', borderColor:'#2563EB', fill:isLine, tension:.3, borderRadius:3 },
         { label:'Concluídos', data: dados.map(function (d) { return +d.concluidos || 0; }),
           backgroundColor: isLine ? 'rgba(5,150,105,.12)' : '#059669', borderColor:'#059669', fill:isLine, tension:.3, borderRadius:3 }
@@ -462,7 +469,7 @@ function desenharGraficoJuiz(prod) {
       abrirDetalheEixo('relator', relator, 'Juiz Relator — ' + relator);
     } };
 
-  /* Barras: coluna agrupada Pendentes/Findos por juiz (tal como Registados/Concluídos
+  /* Barras: coluna agrupada Pendentes/Findos por juiz (tal como Entrados/Concluídos
      em "Por Período") — mais informativo do que uma única barra de Total. */
   if (TIPO_GRAFICO === 'bar') {
     CHART_ACTIVO = new window.Chart(canvas, {
@@ -594,7 +601,7 @@ function statsHtmlEixo(eixo, valor) {
     if (!linhaP) return '';
     var saldo = (+linhaP.registados || 0) - (+linhaP.concluidos || 0);
     return '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">'
-      + statCard('ti-inbox',        'var(--blue)',  'Registados', linhaP.registados, null)
+      + statCard('ti-inbox',        'var(--blue)',  'Entrados', linhaP.registados, null)
       + statCard('ti-circle-check', 'var(--green)', 'Concluídos', linhaP.concluidos, null)
       + statCard('ti-trending-up',  saldo > 0 ? 'var(--amber)' : 'var(--green)', 'Saldo', (saldo > 0 ? '+' : '') + saldo, null)
       + '</div>';
@@ -993,7 +1000,7 @@ function desenharCabecalhoInstitucionalPdf(doc, logo) {
     { texto: numeroPorExtenso(t.total), negrito: true },
     { texto: ') processos. ' + t.findos + ' (' },
     { texto: numeroPorExtenso(t.findos), negrito: true },
-    { texto: ') foram concluídos, o que equivale a ' + pctFindos + '% dos processos entrados/registados, e ' + t.pendentes + ' (' },
+    { texto: ') foram concluídos, o que equivale a ' + pctFindos + '% dos processos entrados, e ' + t.pendentes + ' (' },
     { texto: numeroPorExtenso(t.pendentes), negrito: true },
     { texto: ') ainda estão em tramitação, o equivalente a ' + pctPendentes + '% dos processos entrados.' },
   ];
@@ -1285,7 +1292,7 @@ function dadosExportacao() {
   var d = ULTIMOS_DADOS;
   if (relatorioActivo === 'periodo') {
     var vd = (d.volume && d.volume.dados) || [];
-    return [{ folha:'Por Período', cabecalho:['Período','Registados','Concluídos','Saldo'],
+    return [{ folha:'Por Período', cabecalho:['Período','Entrados','Concluídos','Saldo'],
       linhas: vd.map(function (r) { return [r.periodo, +r.registados, +r.concluidos, (+r.registados) - (+r.concluidos)]; }) }];
   }
   if (relatorioActivo === 'juiz') {

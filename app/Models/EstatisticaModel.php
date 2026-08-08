@@ -12,11 +12,17 @@ class EstatisticaModel
      * Filtros opcionais (data_de/data_ate/utilizador) comuns a resumo/distribuicao/funil
      * — não dá para aplicá-los às views v_relatorio_geral/v_distribuicao_especie (sem
      * parâmetros), por isso estes métodos interrogam processos/datas_controlo directamente.
+     * Por omissão filtra por `data_registo` (usado pelo Painel Geral, ver resumo()), mas
+     * a página de Estatísticas passa sempre `campo_data=entrada` (ver js/estatisticas.js,
+     * paramsFiltros()) para filtrar por `data_entrada` em vez disso — o Painel Geral e a
+     * Estatísticas contam datas diferentes de propósito (ver comentário em resumo()) e não
+     * podiam partilhar cegamente o mesmo critério aqui.
      * @return array{0:string[],1:array}
      */
     private function condicoes(array $get): array
     {
-        return $this->condicoesPorCampo($get, 'p.data_registo');
+        $campo = (($get['campo_data'] ?? '') === 'entrada') ? 'p.data_entrada' : 'p.data_registo';
+        return $this->condicoesPorCampo($get, $campo);
     }
 
     /** Mesmos filtros de condicoes(), mas aplicados a outra coluna de data (ex.: p.data_entrada
@@ -157,21 +163,26 @@ class EstatisticaModel
         return ['porEstado' => $porEstado, 'porEspecie' => $porEspecie, 'porUtilizador' => $porUtilizador, 'porOrigem' => $porOrigem];
     }
 
-    /** Volumes mensais ou anuais: processos registados vs concluídos por período,
-     *  respeitando os mesmos filtros de data/utilizador dos outros métodos deste model. */
+    /** Volumes mensais ou anuais: processos registados/entrados vs concluídos por período,
+     *  respeitando os mesmos filtros de data/utilizador dos outros métodos deste model.
+     *  A coluna de agrupamento (`data_registo` por omissão, `data_entrada` quando
+     *  `campo_data=entrada` — ver condicoes()) tem de ser sempre a mesma usada nos
+     *  filtros extra, senão o "Registados"/"Entrados" por período ficaria a contar uma
+     *  data mas a filtrar por outra. */
     public function volume(array $get): array
     {
         $escala    = ($get['escala'] ?? 'mensal') === 'anual' ? 'anual' : 'mensal';
         $formato   = $escala === 'anual' ? '%Y' : '%Y-%m';
         $intervalo = $escala === 'anual' ? '5 YEAR' : '13 MONTH';
+        $campo     = (($get['campo_data'] ?? '') === 'entrada') ? 'p.data_entrada' : 'p.data_registo';
 
         [$cond, $params] = $this->condicoes($get);
         $ondeExtra = $cond ? ' AND ' . implode(' AND ', $cond) : '';
 
         $stmtReg = $this->pdo->prepare(
-            "SELECT DATE_FORMAT(p.data_registo, '$formato') AS periodo, COUNT(*) AS registados
+            "SELECT DATE_FORMAT($campo, '$formato') AS periodo, COUNT(*) AS registados
              FROM processos p
-             WHERE p.data_registo >= DATE_SUB(CURDATE(), INTERVAL $intervalo)$ondeExtra
+             WHERE $campo >= DATE_SUB(CURDATE(), INTERVAL $intervalo)$ondeExtra
              GROUP BY periodo ORDER BY periodo"
         );
         $stmtReg->execute($params);
@@ -181,8 +192,8 @@ class EstatisticaModel
         }
 
         // Concluídos agrupados pela data de conclusão, mas restritos aos processos que
-        // já correspondiam aos filtros (mesmo critério de p.data_registo/p.registado_por
-        // usado em todo o resto do model) — não à data de conclusão em si.
+        // já correspondiam aos filtros (mesmo critério de $campo/p.registado_por usado em
+        // todo o resto do model) — não à data de conclusão em si.
         $stmtConc = $this->pdo->prepare(
             "SELECT DATE_FORMAT(dc.conclusao, '$formato') AS periodo, COUNT(*) AS concluidos
              FROM datas_controlo dc
@@ -290,7 +301,11 @@ class EstatisticaModel
             case 'periodo':
                 $escala     = ($get['escala'] ?? 'mensal') === 'anual' ? 'anual' : 'mensal';
                 $formato    = $escala === 'anual' ? '%Y' : '%Y-%m';
-                $cond[]     = "DATE_FORMAT(p.data_registo, '$formato') = ?";
+                // Tem de agrupar pela mesma coluna que volume() usou para calcular este
+                // período (ver campo_data em condicoes()), senão o drill-down clicado num
+                // período do gráfico ficava a filtrar por outra data.
+                $campo      = (($get['campo_data'] ?? '') === 'entrada') ? 'p.data_entrada' : 'p.data_registo';
+                $cond[]     = "DATE_FORMAT($campo, '$formato') = ?";
                 $params[]   = $valor;
                 $dimensoes  = ['estado', 'especie'];
                 break;
