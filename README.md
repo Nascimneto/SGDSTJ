@@ -295,6 +295,19 @@ página de Estatísticas envia:
 - `app/Views/estatisticas/index.php`: os `title` dos campos `#fEstDataDe`/`#fEstDataAte` passaram de
   "Data de registo — de/até" para "Data de entrada — de/até".
 
+Ajustado (2026-08-08): a coluna/cartão "Saldo" (Entrados − Concluídos, podendo ficar negativa quando um
+período concluiu mais processos do que os que entraram nele) passou a **"A Concluir"**, sempre
+`Math.max(0, ...)` — um saldo negativo não faz sentido como quantidade "por concluir", por isso fica a
+0 em vez de mostrar um número negativo. Aplicado em três locais de `js/estatisticas.js`:
+
+- Tabela "Detalhe por Mês/Ano" do tab **Por Período** (`htmlTabPeriodo()`).
+- Cartão do topo do mesmo tab, acima do gráfico (também `htmlTabPeriodo()`) — o valor aqui vem de
+  `totaisFiltrados().pendentes`, que já nunca é negativo (é sempre `total - findos`, com `findos`
+  subconjunto de `total`), por isso só mudou o rótulo e deixou de ter o prefixo "+".
+- Cartão do modal de drill-down ao clicar num período (`statsHtmlEixo()`).
+
+A exportação Excel (cabeçalho "Saldo" da folha "Por Período") continua sem alterações.
+
 Adicionado (2026-07-26): drill-down genérico nos 5 tabs de Estatísticas — clicar numa
 barra/coluna/fatia/ponto de qualquer gráfico, OU numa linha de qualquer tabela de detalhe, abre um
 modal (`#estDetalheBg`, `app/Views/estatisticas/index.php`) com estatísticas rápidas (Total,

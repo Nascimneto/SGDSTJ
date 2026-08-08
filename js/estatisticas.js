@@ -289,19 +289,22 @@ function htmlTabPeriodo(vol) {
   var linhas = dados.slice().reverse().map(function (d) {
     var lbl = escala === 'anual' ? d.periodo
       : (function () { var p = d.periodo.split('-'); return MESES_PT[parseInt(p[1]) - 1] + '/' + p[0]; }());
-    var s = (+d.registados || 0) - (+d.concluidos || 0);
+    // "A Concluir" nunca é negativo — quando concluídos > entrados nesse período (mais
+    // backlog de outros períodos foi concluído do que entrou de novo), fica a 0 em vez de
+    // mostrar um saldo negativo, que não faz sentido como quantidade "por concluir".
+    var s = Math.max(0, (+d.registados || 0) - (+d.concluidos || 0));
     return '<tr data-eixo="periodo" data-valor="' + esc(d.periodo) + '" data-titulo="Período — ' + esc(lbl) + '" title="Ver detalhe deste período">'
       + '<td class="tdl" style="padding:8px 12px">' + esc(lbl) + '</td>'
       + '<td style="text-align:center;padding:8px 12px;color:var(--blue);font-weight:600">' + d.registados + '</td>'
       + '<td style="text-align:center;padding:8px 12px;color:var(--green);font-weight:600">' + d.concluidos + '</td>'
-      + '<td style="text-align:center;padding:8px 12px;font-weight:600;color:' + (s > 0 ? 'var(--amber)' : 'var(--green)') + '">' + (s > 0 ? '+' : '') + s + '</td>'
+      + '<td style="text-align:center;padding:8px 12px;font-weight:600;color:' + (s > 0 ? 'var(--amber)' : 'var(--green)') + '">' + s + '</td>'
       + '</tr>';
   }).join('');
 
   return '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">'
     + statCard('ti-inbox',        'var(--blue)',  'Entrados',  totalReg,  'Segundo o filtro activo')
     + statCard('ti-circle-check', 'var(--green)', 'Concluídos',  totalConc, 'Segundo o filtro activo')
-    + statCard('ti-trending-up',  saldo > 0 ? 'var(--amber)' : 'var(--green)', 'Saldo', (saldo > 0 ? '+' : '') + saldo, 'Entrados menos concluídos')
+    + statCard('ti-trending-up',  saldo > 0 ? 'var(--amber)' : 'var(--green)', 'A Concluir', saldo, 'Segundo o filtro activo')
     + '</div>'
     + '<div class="row2" style="margin-bottom:12px">'
     + '<div class="panel" style="padding:16px">'
@@ -318,7 +321,7 @@ function htmlTabPeriodo(vol) {
     + '<div class="panel-hd"><i class="ti ti-table" style="color:var(--blue)"></i>'
     + '<span class="panel-title">Detalhe por ' + (escala === 'anual' ? 'Ano' : 'Mês') + '</span></div>'
     + '<div class="tbl-outer"><table class="pt pt-stat" style="font-size:12px">'
-    + '<thead><tr><th class="th0">Período</th><th style="text-align:center">Entrados</th><th style="text-align:center">Concluídos</th><th style="text-align:center">Saldo</th></tr></thead>'
+    + '<thead><tr><th class="th0">Período</th><th style="text-align:center">Entrados</th><th style="text-align:center">Concluídos</th><th style="text-align:center">A Concluir</th></tr></thead>'
     + '<tbody>' + (linhas || '<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--tx3)">Sem dados.</td></tr>') + '</tbody>'
     + '</table></div></div>'
     + '</div>';
@@ -599,11 +602,12 @@ function statsHtmlEixo(eixo, valor) {
   if (eixo === 'periodo') {
     var linhaP = ((d.volume || {}).dados || []).find(function (p) { return p.periodo === valor; });
     if (!linhaP) return '';
-    var saldo = (+linhaP.registados || 0) - (+linhaP.concluidos || 0);
+    // "A Concluir" nunca é negativo — ver mesmo critério em htmlTabPeriodo().
+    var saldo = Math.max(0, (+linhaP.registados || 0) - (+linhaP.concluidos || 0));
     return '<div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">'
       + statCard('ti-inbox',        'var(--blue)',  'Entrados', linhaP.registados, null)
       + statCard('ti-circle-check', 'var(--green)', 'Concluídos', linhaP.concluidos, null)
-      + statCard('ti-trending-up',  saldo > 0 ? 'var(--amber)' : 'var(--green)', 'Saldo', (saldo > 0 ? '+' : '') + saldo, null)
+      + statCard('ti-trending-up',  saldo > 0 ? 'var(--amber)' : 'var(--green)', 'A Concluir', saldo, null)
       + '</div>';
   }
 
